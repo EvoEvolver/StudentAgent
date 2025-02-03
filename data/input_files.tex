@@ -1,0 +1,967 @@
+\section{Simulation input}
+
+Leading spaces and comments at the end of each line are omitted. Empty lines are skipped, 
+and case is not important except in file names (i.e. framework and molecule names).
+
+\subsection*{Simulation types}
+\begin{itemize}
+\item{SimulationType MonteCarlo}\\
+Starts the Monte Carlo part of RASPA. The particular ensemble is not specified but implicitly deduced from
+the specified Monte Carlo moves. Note that a MD-move can be used for hybrid MC/MD.
+\item{SimulationType MolecularDynamics}\\
+Starts the Molecular Dynamics part of RASPA. The ensemble is explicitly specified.
+\item{SimulationType Spectra}\\
+Starts the computation of the vibrational analysis. Possible options include infra red spectrum at zero Kelvin,
+powder diffraction, and mode analysis.
+\item{SimulationType Minimization}\\
+Starts the minimization routine. It produces configurations and crystal structures at zero Kelvin.
+\item{SimulationType Visualization}\\
+Output VTK-files for snapshots and crystal structures, including energy surface pictures.
+\item{SimulationType BarrierCrossing}\\
+Routine for the dynamical correction of dynamically corrected Transition State Theory.
+\item{SimulationType Numerical}\\
+Computes all the forces numerically from the energy and compares them to the analytical expressions.
+Also the strain-derivative tensor (related to the stress tensor), and the second derivative of
+the energy with respect to strain, as well as the Hessian matrix can be checked.
+\item{SimulationType MakeGrid}\\
+Creates pre-tabulated energy-grids for use in rigid frameworks.
+\end{itemize}
+
+\subsection*{Simulation duration}
+\begin{itemize}
+\item{NumberOfCycles [int]}\\
+The number of cycles for the production run. 
+For Monte Carlo a cycle consists of $N$ steps, where $N$ is the amount of
+molecules with a minimum of 20 steps. This means that on average during each cycle on each molecule a
+Monte Carlo move has been attempted (either successful or unsuccessful). For MD the number of cycles
+is simply the amount of integration steps.
+\item{NumberOfInitializationCycles [int]}\\
+The number of cycles used to initialize the system using Monte Carlo. This can be used for both Monte Carlo
+as well as Molecular Dynamics to quickly equilibrate the positions of the atoms in the system.
+\item{NumberOfEquilibrationCycles [int]}\\
+For Molecular Dynamics  it is the number of MD steps to equilibrate the velocities in the systems. After this 
+equilibration the production run is started. For Monte Carlo, in particular CFMC, the equilibration-phase is used
+to measure the biasing factors.
+\end{itemize}
+
+\subsection*{Restart and crash-recovery}
+\begin{itemize}
+\item{RestartFile [yes$|$no]}\\
+Reads the positions, velocities, and force from the directory `RestartInitial'. Any creation of molecules
+in the `simulation.input' file will be in addition and after this first read from file. This is useful to
+load initial positions of cations for example, and after that create adsorbates. The restart file
+is written at `PrintEvery' intervals.
+\item{ContinueAfterCrash [yes$|$no]}\\
+Write a binary file containing the complete status of the program. 
+The file name is `binary\_restart.dat' and is located in the directory `CrashRestart'.
+With this option to `yes' the presence of this file will result in continuation from
+the point where the program was at the moment of outputting this file.
+The file can be quite big (several hundreds of megabytes) and will be outputted every
+`WriteBinaryRestartFileEvery' cycles.
+\item{WriteBinaryRestartFileEvery [int]}\\
+The output frequency (i.e. every [int] cycles) of the crash-recovery file.
+\end{itemize}
+
+\subsection*{Printing options}
+\begin{itemize}
+\item{PrintEvery [int]}\\
+Prints the loadings (when a framework is present) and energies every [int] cycles. For MD information
+like energy conservation and stress are printed.
+\item{PrintPropertiesEvery [int]}\\
+Output running averages of many properties (i.e. Henry coefficients and elastic constants).
+\item{PrintForcefieldToOutput [yes$|$no]}\\
+Prints the force field information to the output-file.
+Default: yes.
+\item{PrintPseudoAtomsToOutput [yes$|$no]}\\
+Prints the pseudo-atom information to the output-file.
+Default: yes.
+\item{PrintMoleculeDefinitionToOutput [yes$|$no]}\\
+Prints the molecule definition information to the output-file.
+Default: yes.
+\end{itemize}
+
+\subsection*{Force field definitions}
+\begin{itemize}
+\item{ChargeFromChargeEquilibration [yes$|$no]}\\
+Compute the charges of the framework using the `charge-equilibration'-method.
+\item{SymmetrizeFrameworkCharges [yes$|$no]}\\
+All charges of the framework are made equivalent for equivalent framework atoms. 
+Using regular charge-equilibration the charges are different for symmtrically equivalent
+framework atoms, and this options restores the symmetry.
+\item{ForceField [string]}\\
+Reads in the force field [string], first the file `pseudo\_atoms.def' is read, then 
+`force\_field\_mixing\_rules.def' and finally `force\_field.def'. The latter overwrites
+general settings for interactions based on mixing rules with specific ones for individual
+interactions. 
+
+Note that if any of these files are in the working directory then these will read and used instead of the
+ones in `\$\{RASPA\_DIR\}/simulations/share/raspa/forcefield/[string]'.
+
+\item{CutOffVDW [real]}\\
+The cutoff of the Van der Waals potentials. Interactions longer then this distance are omitted from the
+energy and force computations. The potential can either be shifted to zero at the cutoff, or interactions
+can just neglected after the cut off, or the remainder of the potential energy can be approximated using
+tail corrections. This is specified in the force field files and can be specified globally or
+for each interaction individually.
+\item{CutOffVDWSwitch [real]}\\
+The distance at which VDW switching will start. The smoothing will make sure the value and derivatives are zero at the cutoff.
+The default: 0.9 times the CutOff.
+\item{CutOffChargeCharge [real]}\\
+The cutoff of the charge-charge potential. The potential is truncated at the cutoff and only shifted when `ChargeMethod CoulombShifted'
+or `ChargeMethod CoulombSmoothed' is used.
+No tail-corrections are (or can be) applied. The only way to include the long-range part is to use `ChargeMethod Ewald'.
+The parameter is also used in combination with the
+Ewald precision to compute the number of wave vectors and Ewald parameter $\alpha$.
+For the Ewald summation using rather large unit cells, a charge-charge cutoff of about half the smallest box-length would be advisable
+in order to avoid the use of an excessive amount of wave-vectors in Fourier space. For non-Ewald methods the cutoff should be as large
+as possible (greater than about 30 \AA).
+\item{CutOffChargeChargeSwitch [real]}\\
+The distance at which charge-charge switching will start. The smoothing will make sure the value and derivatives are zero at the cutoff.
+The default: 0.65 times the CutOff.
+\item{CutOffChargeBondDipole [real]}\\
+The cutoff of the charge-bonddipole potential.
+\item{CutOffChargeBondDipoleSwitch [real]}\\
+The distance at which charge-bonddipole switching will start. The smoothing will make sure the value and derivatives are zero at the cutoff.
+The default: 0.70 times the CutOff.
+\item{CutOffBondDipoleBondDipole [real]}\\
+The cutoff of the bonddipole-bonddipole potential.
+\item{CutOffBondDipoleBondDipoleSwitch [real]}\\
+The distance at which bonddipole-bonddipole switching will start. The smoothing will make sure the value and derivatives are zero at the cutoff.
+The default: 0.75 times the CutOff.
+
+
+\item{OmitAdsorbateAdsorbateVDWInteractions [yes$|$no]}\\
+Omits the Van der Waals interactions between adsorbates.
+\item{OmitAdsorbateAdsorbateCoulombInteractions [yes$|$no]}\\
+Omits the Coulombic (i.e. Ewald) interactions between adsorbates.
+\item{OmitInterMolecularInteractions [yes$|$no]}\\
+Omits the interactions between all molecules (only interactions with the framework). This also
+works with the Ewald summation on. The options implies the setting of both
+\begin{itemize}
+  \item{OmitAdsorbateAdsorbateVDWInteractions [yes$|$no]}
+  \item{OmitAdsorbateAdsorbateCoulombInteractions [yes$|$no]}
+\end{itemize}
+\item{InternalFrameworkLennardJonesInteractions [yes$|$no]}\\
+Compute the Van der Waals interaction of the flexible framework. The Demontis flexible model for silicalite
+is defined with only bond, bend, and torsion for example. One can use this option and also use
+`Charge None'.
+\item{$\begin{array}{l}\text{RemoveBondNeighboursFromLongRangeInteraction [yes$|$no]}\\
+      \text{RemoveBendNeighboursFromLongRangeInteraction [yes$|$no]}\\
+      \text{RemoveTorsionNeighboursFromLongRangeInteraction [yes$|$no]}\end{array}$}\\
+After construction of the connectivity table all interactions are removed from Van der Waals and charge
+interactions that are defined as 1-2 (i.e. bonds), 1-3 (i.e. bends, Urey-Bradley) and 1-4 (i.e. torsion, inversion-bend) respectively.
+\item{Remove12NeighboursFromChargeChargeInteraction [yes$|$no]\\
+      Remove13NeighboursFromChargeChargeInteraction [yes$|$no]\\
+      Remove14NeighboursFromChargeChargeInteraction [yes$|$no]}\\
+Remove all 1-2, 1-3, and/or 1-4 interactions within the framework from the long-range charge-charge
+interaction within the flexible framework respectively.
+\item{Remove12NeighboursFromChargeBondDipoleInteraction [yes$|$no]\\
+      Remove13NeighboursFromChargeBondDipoleInteraction [yes$|$no]\\
+      Remove14NeighboursFromChargeBondDipoleInteraction [yes$|$no]}\\
+Remove all 1-2, 1-3, and/or 1-4 interactions within the framework from the long-range charge-bond dipole
+interaction within the flexible framework respectively.
+\item{Remove12NeighboursFromBondDipoleBondDipoleInteraction [yes$|$no]\\
+      Remove13NeighboursFromBondDipoleBondDipoleInteraction [yes$|$no]\\
+      Remove14NeighboursFromBondDipoleBondDipoleInteraction [yes$|$no]}\\
+Remove all 1-2, 1-3, and/or 1-4 interactions within the framework from the long-range bond dipole-bond dipole
+interaction within the flexible framework respectively.
+\end{itemize}
+
+\subsection*{Thermostat and barostat parameters}
+\begin{itemize}
+\item{ExternalTemperature [list-of-reals]}\\
+The external temperature in Kelvin for each system. Because the system is in contact with this imaginary reservoir the
+average temperature of the system can be controlled. Default: 298K.
+\item{ExternalPressure [list-of-reals]}\\
+The external pressure in Pascal for each system. Because the system is in contact with this imaginary reservoir the
+average pressure of the system can be controlled. 
+\item{ThermostatChainLength [int]}\\
+The length of the chain to thermostat the system. Default: 5.
+\item{BarostatChainLength [int]}\\
+The length of the chain to thermostat the volume and/or cell parameters. Default 5.
+\item{NumberOfYoshidaSuzukiSteps [int]}\\
+The number of Yoshida/Suzuki multiple timesteps.
+\item{TimeScaleParameterThermostat [real]}\\
+The time scale on which the system thermostat evolves. Default: 0.15 ps.
+\item{TimeScaleParameterBarostat [real]}\\
+The time scale on which the thermostat for the volume and/or cell parameters evolve. Default: 0.15 ps.
+\end{itemize}
+
+\subsection*{Molecular dynamics parameters}
+\begin{itemize}
+\item{TimeStep [real]}\\
+The time step in picoseconds for MD integration. Default value: 0.0005 ps (0.5 fs).
+\item{Ensemble [list-of-{\scriptsize NVE$|$NVT$|$NPT$|$NPH$|$NPTPR$|$NPHPR}]}\\
+Sets the ensemble as a list of NVE,NVT, NPT, NPH, NPTPR, or NPHPR for each system. If only a single ensemble is given, it is used for all systems.
+The given ensemble will be used for both initialization as well as the production run.
+\begin{itemize}
+\item{NVE}\\
+The micro canonical ensemble, the number of particle $N$, the volume $V$, and the energy $E$ are constant.
+\item{NVT}\\
+The canonical ensemble, the number of particle $N$, the volume $V$, and the average temperature $\left\langle P\right\rangle$
+are constant. Instantaneous values for the temperature are fluctuating.
+\item{NPT}\\
+The isobaric-isothermal ensemble, the number of particle $N$, the average pressure $\left\langle P\right\rangle$, and the average temperature $\left\langle P\right\rangle$
+are constant. Instantaneous values for the pressure and temperature are fluctuating.
+\item{NPH}\\
+The isoenthalpic-isobaric ensemble, the number of particle $N$, the average pressure $\left\langle P\right\rangle$, and the enthalpy $H$
+are constant. Instantaneous values for the pressure and temperature are fluctuating.
+\item{NPTPR}\\
+The isobaric-isothermal ensemble with a fully flexible cell (Parrinello-Rahman).
+\end{itemize}
+\item{InitEnsemble [list-of-{\scriptsize NVE$|$NVT$|$NPT$|$NPH$|$NPTPR$|$NPHPR}]}\\
+Sets the ensemble as a list of NVE,NVT, NPH, NPTPR, or NPHPR for each system. If only a single ensemble is given, it is used for all systems.
+The given ensemble will be only used for the initialization run.
+\item{RunEnsemble [list-of-{\scriptsize NVE$|$NVT$|$NPT$|$NPH$|$NPTPR$|$NPHPR}]}\\
+Set the ensemble as a list of NVE,NVT, NPH, NPTPR, or NPHPR for each system. If only a single ensemble is given, it is used for all systems.
+The given ensemble will be only used for the production run.
+\item{NPTPRCellType [list-of-{\scriptsize Regular$|$Monoclinic$|$RegularUpperTriangle$|$MonoclinicUpperTriangle$|$Isotropic$|$Anisotropic}]}\\
+The type of constraints on the cell-matrix $\mathbf{h}$. Default: RegularUpperTriangle.
+\begin{itemize}
+\item{Regular}\\
+If the pressure tensor is asymmetric ($P_{\alpha\beta}\not=P_{\beta\alpha}$) at a given instant of
+time, then there will be a net torque acting on the cell that will cause it to rotate. Cell
+rotations can be eliminated by using the symmetrized tensor $P_{\alpha\beta}= (P_{\alpha\beta}+P_{\beta\alpha})/2$ in the
+equations of motion and setting the initial total angular momentum of the cell to zero.
+This approach is formally implemented by constraining the force on the cell $\mathbf{g}=\mathbf{g}^T$.
+All three angles $\alpha,\beta,\gamma$ are allowed to change, as well as the box lengths $\mathbf{a},\mathbf{b},\mathbf{c}$.
+\item{Monoclinic}\\
+All three box lengths $\mathbf{a},\mathbf{b},\mathbf{c}$ are allowed to vary, as well as cell angle $\beta$, but $\alpha=\gamma=90^\circ$.
+\item{RegularUpperTriangle}\\
+Only the upper triangular part of the cell matrix is used to eliminate rotation of the box.
+All three angles $\alpha,\beta,\gamma$ are allowed to change, as well as the box lengths $\mathbf{a},\mathbf{b},\mathbf{c}$.
+\item{MonoclinicUpperTriangle}\\
+Only the upper triangular part of the cell matrix is used to eliminate rotation of the box.
+All three box lengths $\mathbf{a},\mathbf{b},\mathbf{c}$ are allowed to vary, as well as cell angle $\beta$, but $\alpha=\gamma=90^\circ$.
+\item{Isotropic}\\
+All three box lengths $\mathbf{a}=\mathbf{b}=\mathbf{c}$ are allowed to vary isotropically, and the angles remain fixed $\alpha=\beta=\gamma=90^\circ$.
+\item{Anisotropic}\\
+All three box lengths $\mathbf{a},\mathbf{b},\mathbf{c}$ are allowed to vary \emph{independently}, but the angles remain fixed $\alpha=\beta=\gamma=90^\circ$.
+\end{itemize}
+
+\end{itemize}
+
+\subsection*{Box parameters}
+\begin{itemize}
+\item{$\begin{array}{l}\text{Box [int]}\\ \text{[real] [real] [real]}\end{array}$}\\
+Set the system [int] to type `Box' (other option is `Framework' when a framework is present).
+The cell dimensions of rectangular box of system [int] in Angstroms. Default: 25 25 25 \AA.
+\item{$\begin{array}{l}\text{BoxAngles [int]}\\ \text{[real] [real] [real]}\end{array}$}\\
+Set the system [int] to type `Box' (other option is `Framework' when a framework is present).
+The cell angles of rectangular box of system [int] in Angstroms. Default: 90$^\circ$ 90$^\circ$ 90$^\circ$.
+\item{$\begin{array}{l}\text{BoxMatrix [int]}\\ 
+      \text{[real] [real] [real]}\\
+      \text{[real] [real] [real]}\\
+      \text{[real] [real] [real]}\end{array}$\\
+       }\\
+Set the system [int] to type `Box' (other option is `Framework' when a framework is present).
+The $3\times3$ cell matrix of system [int], given as three vectors (as columns). 
+This is the most general form and any box can be specified in this way. Units of the vectors are Angstrom.
+\end{itemize}
+
+
+\subsection*{Framework parameters}
+\begin{itemize}
+\item{Framework [int]}\\
+Set the system [int] to type `Framework' (other option is `Box' when no framework is present).
+All other options listed in the section framework parameters refer to this system, so make sure this is before any other framework options.
+\item{FrameworkName [string]}\\
+Loads the framework with name [string]. Several frameworks can be read per system, 
+which is useful for to study interpenetration of frameworks. Here the frameworks
+are allowed to move independently from each other.
+\item{HeliumVoidFraction [real]}\\
+The void fraction as measure by probing the structure with helium a room temperature. This quantity has to be obtained from a separate
+simulation and is essential to compute the \emph{excess}-adsorption during the simulation.
+\item{UnitCells [int] [int] [int]}\\
+The number of unit cells in x,y, and z direction for the system. The full cell will contain the unit cells, and periodic boundary conditions
+will be applied on the box level (\emph{not} on a unit cell level).
+\item{ShiftUnitCells [real] [real] [real]}\\
+Shift the fractional positions so that the center of a framework can be altered.
+\item{FlexibleFramework [yes$|$no]}\\
+Allow the current framework of the current system to be fully flexible. The name of the flexible model is provided using the
+`FrameworkDefinitions [string]' input option.
+\item{FrameworkDefinitions [string]}\\
+The force field name [string] of the flexible framework. The file is read even when `FlexibleFramework no' is specified (the reason is that 
+framework bond-dipoles are defined using the `framework.def' file).
+\item{ModifyFrameworkAtomConnectedTo [atom-type-1] [atom-type-2] [atom-type-3] [atom-type-4]}\\
+Modifies the atom-type-1 to atom-type-2, always if atom-type-3 and atom-type-4 are omitted, or only it is connected to atom-type-3 when atom-type-3 is specified,
+or only when it is connected to both atom-type-3 and atom-type-4 if both are specified.
+\item{ModifyFrameworkDimer [atom-type-1] [atom-type-2] [atom-type-3] [atom-type-4]}\\
+Modifies the connected atom-type-1 and atom-type-2 dimer to atom-type-3 and atom-type-4.
+\item{ModifyFrameworkTriple [atom-type-1] [atom-type-2] [atom-type-3] [atom-type-4] [atom-type-5] [atom-type-6]}\\
+Modifies the connected triple atom-type-1,atom-type-2,atom-type-3 to atom-type-4,atom-type-5,atom-type-6.
+\item{RemoveAtomNumberCodeFromLabel [yes$|$no]}\\
+Reading structure-files: the number is removed from the framework atom-types, e.g.\ \verb=`O1'=, \verb=`O2'=, \verb=`O3'=, etc.\ are mapped to \verb=`O'=.
+\item{AddAtomNumberCodeToLabel [yes$|$no]}\\
+Writing structure-files: the number is added to the framework atom-types, e.g.\ \verb=`O'= are mapped to \verb=`O1'=, \verb=`O2'=, \verb=`O3'=, etc.
+\item{RestrictFrameworkAtomsToBox [yes$|$no]}\\
+Restricts (places back) atoms to the unit cell dimensions, i.e. fractional positions between 0 and 1.
+\item{ReadCIFAsCartesian [yes$|$no]}\\
+Reads the position listed in the CIF-file as Cartesian. Only applicable to P1 systems (no symmetry).
+\end{itemize}
+
+\subsection*{System moves}
+
+\begin{itemize}
+\item{FrameworkChangeMoveProbability [real]}\\
+The probability per cycle to randomly translate a framework atom. During this move the number of inner cycles is the amount of framework atoms, with a maximum of 500.
+This move is applicable to relatively rigid structures like zeolites. For other structure where movement is caused by collective behavior (for example, the rotation of a phenyl-ring
+in a metal-organic framework) the MC/MD move is more convenient. Such movement is hardly sampled at all by individual MC translation moves.
+\item{VolumeChangeProbability [real]}\\
+The probability per cycle to attempt a volume-change. Rigid molecules are scaled by center-of-mass, while flexible molecules and the framework is atomically scaled.
+\item{VolumeChangeDirection [A$|$B$|$C$|$AB$|$AC$|$BC$|$ABC]}\\
+Change the volume of the unit cell along a particular direction/directions in Monte Carlo. Default: ABC.
+\item{BoxShapeChangeProbability [real]}\\
+The probability per cycle to attempt a shape-change of the box. One of the 6 upper triangular elements of the box matrix is randomly chosen.
+Rigid molecules are scaled by center-of-mass, while flexible molecules and the framework is atomically scaled.
+\item{GibbVolumeChangeProbability [real]}\\
+The probability per cycle to attempt a Gibbs volume-change MC move during a Gibbs ensemble simulation. The total volume of the two boxes 
+(usually one for the gas phase, one for the liquid phase) remains constant, but the individual volume of the boxes are changed.
+The volumes are changed by a random change in $\ln(V_I/V_{II})$.
+\item{HybridNVEMoveProbability [real]}\\
+The probability per cycle to attempt a hybrid Monte Carlo move using Molecular Dynamics in the NVE-ensemble.
+The whole system is integrated using Newton's equations of motion. The new configuration
+is then accepted or rejected using the standard MC rule. Note that the difference in energy $\Delta U$ is the integration error. The integration time step is set using
+`TimeStep'.
+\item{NumberOfHybridNVESteps [int]}\\
+The number of integration steps for the hybrid MC/MD NVE move. Default: 5.
+\item{ParallelTemperingProbability [real]}\\
+A move where two neighboring systems 
+are swapped that differ in their temperature.
+\item{HyperParallelTemperingProbability [real]}\\
+A move where two neighboring systems 
+are swapped that differ in their temperature
+and chemical potentials.
+\item{ParallelMolFractionProbability [real]}\\
+A move where two neighboring systems (similar to parallel tempering)
+are swapped that differ in their mol-fraction of components $A$ and $B$.
+\item{ParallelMolFractionComponentA [int]}\\
+The identifier of the first component.
+\item{ParallelMolFractionComponentB [int]}\\
+The identifier of the second component.
+\item{ChiralInversionProbability [real]}\\
+A move specifically designed for systems with chiral molecules
+to change all $S$-molecules into $R$-molecules and vica versa.
+Note that the spacegroup needs to be set. If you have a framework that is P1 but has higher symmetry then use \verb=`CalculateSpaceGroup yes'= to
+determine the true space group of the framework. An error will be given if this move is impossible for your system (e.g.\ when the framework is chiral).
+\end{itemize}
+
+\subsection*{Component information}
+\begin{itemize}
+\item{Component [int] MoleculeName [string]}\\
+Reads in the definition of component [int] using the file `\emph{molecule-name-string}.def' from the 
+directory `\$\{RASPA\_DIR\}/share/raspa/molecules/\emph{molecule-definitions-string}'.
+\item{MoleculeDefinitions [string]}\\
+The type of the molecule. For example, there could an OPLS version of the molecule, or a TraPPE version, etc. This \emph{molecule-definitions-string} is actually the directory name
+under which the molecule file is found in `\$\{RASPA\_DIR\}/share/raspa/molecules/'.
+\item{StartingBead [int]}\\
+The staring bead for the configurational bias Monte Carlo (CBMC). In CBMC the molecule is grown bead by bead biasing the growth towards energetically favorable configurations.
+Certain operations, like the rotation MC move and Widom particle insertion, use this bead as the center of rotation and position of the probe molecule, respectively.
+\item{BlockPockets [yes$|$no]}\\
+Block certain pockets in the simulation volume. The growth of a molecule is not allowed in a blocked pocket. A typical example is the sodalite cages in FAU and LTA-type zeolites,
+these are not accessible to molecules like methane and bigger.
+\item{BlockPocketsFileName [string]}\\
+The file name for the definitions of all the blocking spheres.
+\item{MolFraction [real]}\\
+The mol fraction of this component in the mixture. The values can be specified relative to other components, as the fractions are normalized afterwards.
+The partial pressures for each component are computed from the total pressure and the mol fraction per component.
+\item{FugacityCoefficient [real]}\\
+The fugacity coefficient for the current component. For values 0 (or by not specifying this line), the fugacity coefficients are automatically computed using the Peng-Robinson
+equation of state. Note the critical pressure, critical temperature, and acentric factor need to be specified in the molecule file.
+\item{Intra14VDWScalingValue [real]}\\
+The scaling factor for intra-molecular 1-4 van der Waals interactions. For example: OPLS uses a factor of $\frac{1}{2}$.
+\item{Intra14ChargeChargeScalingValue [real]}\\
+The scaling factor for intra-molecular 1-4 charge/charge interactions. For example: OPLS uses a factor of $\frac{1}{2}$.
+\item{IdealGasRosenbluthWeight [real]}\\
+The ideal Rosenbluth weight is the growth factor of the CBMC algorithm for a single chain in an empty box. The value only depends on temperature and therefore needs to be computed
+only once. For adsorption, specifying the value in advance is convenient because the applied pressure does not need to be corrected afterwards (the Rosenbluth weight corresponds to a shift
+in the chemical potential reference value, and the chemical potential is directly obtained from the fugacity). For equimolar mixtures this is essential.
+\item{GibbsSwapProbability [real]}\\
+The relative probability to attempt a Gibbs swap MC move for the current component. The `GibbsSwapMove' transfers a randomly selected particle from one box to the other
+(50\% probability to transfer a particle from box I to II, an 50\% visa versa).
+\item{TranslationProbability [real]}\\
+The relative probability to attempt a translation move for the current component. A random displacement is chosen in the allowed directions (see `TranslationDirection').
+Note that the internal configuration of the molecule is unchanged by this move. The maximum displacement is scaled during the simulation to achieve an acceptance
+ratio of 50\%.
+\item{TranslationDirection 
+      \begin{small}
+       [X$|$Y$|$Z$|$XY$|$XZ$|$YZ$|$XYZ$|$A$|$B$|$C$|$AB$|$AC$|$BC$|$ABC$|$\\
+      \hspace*{2cm}ORTHOGONAL\_TO\_AB\_DIR$|$ORTHOGONAL\_TO\_AC\_DIR$|$ORTHOGONAL\_TO\_BC\_DIR$|$\\
+      \hspace*{2cm}ORTHOGONAL\_TO\_O\_AB\_DIR$|$ORTHOGONAL\_TO\_O\_AC\_DIR$|$ORTHOGONAL\_TO\_O\_BC\_DIR$|$\\
+      \hspace*{2cm}ORTHOGONAL\_TO\_A\_BC\_DIR$|$ORTHOGONAL\_TO\_B\_AC\_DIR$|$ORTHOGONAL\_TO\_C\_AB\_DIR$|$\\
+      \hspace*{2cm}ORTHOGONAL\_TO\_O\_ABC\_DIR]
+     \end{small}}\\
+Specifies the allowed translation direction for the current component. Useful to sampling configuration with the starting bead restricted to a plane, i.e. see dcTST.
+Default: XYZ.
+\item{RandomTranslationProbability [real]}\\
+The relative probability to attempt a random translation move for the current component. The displacement is chosen such that any position in the box can reached. It is therefore
+similar as reinsertion, but `reinsertion' changes the internal conformation of a molecule and uses biasing.
+\item{RotationProbability [real]}\\ 
+The relative probability to attempt a random rotation move for the current component. The rotation is around the starting bead. A random vector on a sphere
+is generated, and the rotation is random around this vector.
+\item{CBMCProbability [real]}\\
+The relative probability to attempt a partial reinsertion move for the current component. Part of the molecule is regrown, while part of the molecule can remain fixed.
+The list of partial reinsertion moves is specified in the `molecule.def' file.
+\item{ReinsertionProbability [real]}\\
+The relative probability to attempt a full reinsertion move for the current component. Multiple first beads are chosen, and one of these is selected according to its Boltzmann weight.
+The remaining part of the molecule is grown using biasing. This move is very useful, and often necessary, to change the internal configuration of flexible molecules.
+\item{SwapProbability [real]}\\
+The relative probability to attempt a insertion or deletion move. Whether to insert or delete is decided randomly with a probability of 50\% for each.
+The swap move imposes a chemical equilibrium between the system and an imaginary particle reservoir for the current component. The move starts with multiple first bead, and
+grows the remainder of the molecule using biasing.
+\item{WidomProbability [real]}\\
+The relative probability to attempt a Widom particle insertion move for the current component. The Widom particle insertion moves measure the chemical potential
+and can be directly related to Henry coefficients and heats of adsorption.
+\item{SurfaceAreaProbability [real]}\\
+The relative probability to attempt a surface-area move for the current component.
+\item{ReinsertionInPlaceProbability [real]}\\
+The relative probability to attempt a reinsertion-in-place move for the current component. The reinsertion position is the current position of the starting bead of the randomly selected
+molecule. Alternatively, one can use the partial reinsertion move leaving one bead fixed. The move is very useful to sample configuration on a plane for dcTST to change
+the internal configuration, e.g. bonds, bends, torsions, etc.
+\item{IdentityChangeProbability [real]}\\
+The relative probability to attempt an identity-change move for the current component. A molecule of type $A$ is reinsertion, in the same place as the starting bead of $A$, as type $B$ using
+the starting bead of component $B$. The $A-B$ list is defined using `IdentityChangesList' defining $B$ for each component $A$, i.e. the current component can be reinserted into
+any component defined in the `IdentityChangesList' list, and from that list the component is chosen randomly.
+\item{NumberOfIdentityChanges [int]}\\
+The number of `IdentityChangesList' elements for the current component.
+\item{IdentityChangesList [list-of-int]}\\
+The list of components that the current component can be changed into. The identity-change move will randomly choose the new component from this list.
+\item{GibbsIdentityChangeProbability [real]}\\
+The relative probability to attempt an identity change for the current component in the Gibbs ensemble.
+It is a very useful move to for mixture of $n$ components. Out of the $n$ components, two components $i\not=j$ are selected at random.
+At random, it is selected to switch the identity of component $i$
+in box $I$ or in box $II$, and the identity of the component $j$ in the other box.
+In each box, a particle is selected at random which matches the desired identity.
+\item{NumberOfGibbsIdentityChanges [int]}\\
+The number of `GibbsIdentityChangesList' elements for the current component.
+\item{GibbsIdentityChangesList [list-of-int]}\\
+The list of components that the current component can be changed into. The Gibbs-identity-change move will randomly choose the new component from this list.
+\item{ExtraFrameworkMolecule [yes$|$no]}\\
+There are two major types of molecules, `Adsorbates' and `Cations'. The `ExtraFrameworkMolecule' keyword sets whether the current component is a `Cation' (yes) or a `Adsorbate' (no).
+Energies in the output as splitted in Host-Host, Host-Adsorbate, Host-Cation, Adsorbate-Adsorbate, Cation-Cation, and Adsorbate-Cation. The distinction in two types of molecule
+is sometimes necessary. For example, consider a mixture of components, where polarization needs to be neglected between certain components (because they are parameterized without).
+The water model `rpol' is defined including polarization, but CO2 using TraPPE is not. One can define water as `Adsorbate', CO2 as `Cation' and neglect polarization between cations.
+\item{RestrictEnantionface [yes$|$no]}\\
+Restricts all MC-moves to the enantioface defined by `Enantioface'. Moves that result in an opposite enantioface are rejected.
+\item{Enantioface [Re$|$Si]}\\
+The enantioface of the component, either `Re' or `Si'.
+\item{EnantiofaceAtoms \begin{footnotesize}[F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]
+ [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]\end{footnotesize}}\\
+The definition of the enantioface based on 5 atoms. The first 4 form a torsion, as well as the first 3 and the last atom. These two torsions form the definition
+of the enantioface.
+\item{CreateNumberOfMolecules [int]}\\
+The number of molecule to create for the current component. Note these molecules are \emph{in addition} to anything read in by using a restart-file. Usually, when the restart-file
+is used the amount here should be put back to zero. A warning, putting this value unreasonably high results in an infinite loop. The routine accepts molecules that are grown causing
+no overlap (energy smaller than `EnergyOverlapCriteria'). Also the initial starting configurations are far from optimal and substantial equilibration is needed to reduce the energy.
+However, the CBMC growth is able to reach very high densities.
+\end{itemize}
+
+
+\subsection*{Options to measure properties}
+\begin{itemize}
+
+\item{ComputeNumberOfMoleculesHistogram [yes$|$no]}\\
+Sets whether or not to compute the histograms of the number of molecules for the current system.
+In open ensembles the number of molecules fluctuates.
+\begin{itemize}
+\item{WriteNumberOfMoleculesHistogramEvery [int]}\\
+Output the histogram every [int] cycles.
+\item{NumberOfMoleculesRange [real]}\\
+The range of the histograms.
+\item{NumberOfMoleculesHistogramSize [int]}\\
+The number of elements of the histograms.
+\end{itemize}
+
+\item{ComputeDistanceHistograms [yes$|$no]}\\
+Sets whether or not to compute the histograms of specified distance pairs for the current system.
+A directory `DistanceHistograms' is created containing the histograms for each system.
+\begin{itemize}
+\item{WriteDistanceHistogramEvery [int]}\\
+Output the distance histograms every [int] cycles.
+\item{MaxRangeDistanceHistogram [real]}\\
+The range of the histograms.
+\item{NumberOfElementsDistanceHistogram [int]}\\
+The number of elements of the histograms.
+\item{DistanceHistogramDefinition [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]}\\
+Define a distance histogram between two atoms.
+\end{itemize}
+
+\item{ComputeBendAngleHistograms [yes$|$no]}\\
+Sets whether or not to compute the bend-angle histograms of specified trimers of atoms for the current system.
+A directory `BendAngleHistograms' is created containing the histograms for each system.
+\begin{itemize}
+\item{WriteBendAngleHistogramEvery [int]}\\
+Output the distance histograms every [int] cycles.
+\item{MaxRangeBendAngleHistogram [real]}\\
+\item{NumberOfElementsBendAngleHistogram [int]}\\
+\item{BendAngleHistogramDefinition [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]}\\
+\end{itemize}
+
+\item{ComputeDihedralAngleHistograms [yes$|$no]}\\
+Sets whether or not to compute the dihedral-angle histograms of specified quads of atoms for the current system.
+A directory `DihedralAngleHistograms' is created containing the histograms for each system.
+\begin{itemize}
+\item{WriteDihedralAngleHistogramEvery [int]}\\
+Output the distance histograms every [int] cycles.
+\item{MaxRangeDihedralAngleHistogram [real]}\\
+\item{NumberOfElementsDihedralAngleHistogram [int]}\\
+\item{DihedralAngleHistogramDefinition \small{[F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]}}\\
+\end{itemize}
+
+\item{ComputeAngleBetweenPlanesHistograms [yes$|$no]}\\
+Sets whether or not to compute the histograms of angles between specified planes for the current system.
+A directory `AngleBetweenPlanesHistograms' is created containing the histograms for each system.
+\begin{itemize}
+\item{WriteAngleBetweenPlanesHistogramEvery [int]}\\
+Output the distance histograms every [int] cycles.
+\item{MaxRangeAngleBetweenPlanesHistogram [real]}\\
+\item{NumberOfElementsAngleBetweenPlanesHistogram [int]}\\
+\item{AngleBetweenPlanesHistogramDefinition [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]
+        [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]}\\
+\end{itemize}
+
+
+\item{ComputePSD [yes$|$no]}\\
+Sets whether or not to compute the pore-size distribution (PSD) for the current system.
+A directory `PoreSizeDistributionHistogram' is created containing the output 
+`HistogramPoreSizeDistribution.dat' per system.
+\begin{itemize}
+\item{WritePSDEvery [int]}\\
+Output the PSD every [int] cycles.
+\item{PSDProbeDistance [Minimum$|$Sigma]}\\
+Sets whether to use the minimum of the potential $\sigma^{1/6}$ as the probe distance or whether to use $\sigma$.
+\item{HistogramSizePoreSizeDistribution [int]}\\
+default: 100.
+\item{MaxRangePoreSizeDistribution [real]}\\
+default: 10.
+\end{itemize}
+
+
+\item{ComputeRDF [yes$|$no]}\\
+Sets whether or not to compute the radial distribution function (RDF) for the current system.
+A directory `RadialDistributionFunctions' is created containing the output per system.
+The RDF is computed for each atom type pair unless the option `print' flag in `pseudo\_atoms.def'
+is `no'.
+\begin{itemize}
+\item{WriteRDFEvery [int]}\\
+Output the RDF every [int] cycles.
+\end{itemize}
+
+\item{ComputeMSD [yes$|$no]}\\
+Sets whether or not to compute the mean-squared displacement (MSD) for the current system using a modified order-N algorithm.
+A directory `MSDOrderN' is created containing the output per system. The output consists of files containing self-msd data per
+component, the total self-msd, the Onsager msd for each component pair, and the the total Onsager msd.
+The units in the files are \AA$^2$ for the msd, and ps for time.
+  \begin{itemize}
+    \item{WriteMSDEvery [int]}\\
+     Output the MSD every [int] cycles.
+    \item{SampleMSDEvery [int]}\\
+    Samples every [int] integration steps. Default: 1.
+    \item{ComputeIndividualMSD [yes$|$no]}\\
+    Computes the msd, not only per component, but also per molecule.
+    \item{NumberOfBlocksMSD [int]}\\
+    The  number of blocks for the order-$n$ correlation measurement. Each block represent a different time-scale of sampling. Default: 25.
+    \item{NumberOfBlockElementsMSD [int]}\\
+    The number of elements in each block. For example, if the number is 10, then the first block samples: $1,2,3,\dots,10$, the second block
+    $10,20,30,\dots,100$, the third block $100,200,300,\dots,1000$, etc. Default: 25.
+   \end{itemize}
+
+\item{ComputeVACF [yes$|$no]}\\
+Sets whether or not to compute the velocity autocorrelation function (VACF) for the current system using a modified order-N algorithm.
+A directory `VACFOrderN' is created containing the output per system. The output consists of files containing self-vacf data per
+component, the total self-vacf, the Onsager vacf for each component pair, and the the total Onsager vacf.
+The files start with the integration diffusivity-values, computed using a generalization of the Simpson's rule 
+(in the sense that it is exact for cubic polynomials and is valid for an odd as well as even number of intervals).
+The units in the files are \AA$^2$/ps for velocity, and ps for time.
+  \begin{itemize}
+    \item{WriteVACFEvery [int]}\\
+     Output the VACF every [int] cycles.
+    \item{SampleVACFEvery [int]}\\
+    Samples every [int] integration steps. Default: 5.
+    \item{ComputeIndividualVACF [yes$|$no]}\\
+    Computes the vacf, not only per component, but also per molecule.
+    \item{NumberOfBlocksVACF [int]}\\
+    The  number of blocks for the order-$n$ correlation measurement. Each block represent a different time-scale of sampling. Default: 10.
+    \item{NumberOfBlockElementsVACF [int]}\\
+    The number of elements in each block. For example, if the number is 10, then the first block samples: $1,2,3,\dots,10$, the second block
+    $10,20,30,\dots,100$, the third block $100,200,300,\dots,1000$, etc. Default: 5000.
+   \end{itemize}
+
+\item{ComputeRVACF [yes$|$no]}\\
+Sets whether or not to compute the rotational velocity autocorrelation function 
+(RVACF) for the current system using a modified order-N algorithm.
+A directory `RVACFOrderN' is created containing the output per system. The output consists of files containing self-rvacf data per
+component, the total self-rvacf, the Onsager rvacf for each component pair, and the the total Onsager rvacf.
+The files start with the integration diffusivity-values, computed using a generalization of the Simpson's rule
+(in the sense that it is exact for cubic polynomials and is valid for an odd as well as even number of intervals).
+The units in the files are \AA$^2$/ps for velocity, and ps for time.
+  \begin{itemize}
+    \item{WriteRVACFEvery [int]}\\
+     Output the RVACF every [int] cycles.
+    \item{SampleRVACFEvery [int]}\\
+    Samples every [int] integration steps. Default: 5.
+    \item{ComputeIndividualRVACF [yes$|$no]}\\
+    Computes the vacf, not only per component, but also per molecule.
+    \item{NumberOfBlocksRVACF [int]}\\
+    The  number of blocks for the order-$n$ correlation measurement. Each block represent a different time-scale of sampling. Default: 10.
+    \item{NumberOfBlockElementsRVACF [int]}\\
+    The number of elements in each block. For example, if the number is 10, then the first block samples: $1,2,3,\dots,10$, the second block
+    $10,20,30,\dots,100$, the third block $100,200,300,\dots,1000$, etc. Default: 5000.
+   \end{itemize}
+
+\item{ComputeMOACF [yes$|$no]}\\
+Sets whether or not to compute the molecular orientation velocity autocorrelation function
+(MOACF) for the current system using a modified order-N algorithm.
+A directory `MOACFOrderN' is created containing the output per system. The output consists of files containing self-moacf data per
+component and the total self-rvacf.
+The units in the files are rad$^2$/ps for velocity, and ps for time.
+  \begin{itemize}
+    \item{WriteMOACFEvery [int]}\\
+     Output the MOACF every [int] cycles.
+    \item{SampleMOACFEvery [int]}\\
+    Samples every [int] integration steps. Default: 5.
+    \item{ComputeIndividualMOACF [yes$|$no]}\\
+    Computes the moacf, not only per component, but also per molecule.
+    \item{NumberOfBlocksMOACF [int]}\\
+    The  number of blocks for the order-$n$ correlation measurement. Each block represent a different time-scale of sampling. Default: 10.
+    \item{NumberOfBlockElementsMOACF [int]}\\
+    The number of elements in each block. For example, if the number is 10, then the first block samples: $1,2,3,\dots,10$, the second block
+    $10,20,30,\dots,100$, the third block $100,200,300,\dots,1000$, etc. Default: 5000.
+   \end{itemize}
+
+
+\item{ComputeMSDConventional [yes$|$no]}\\
+Sets whether or not to compute the mean-squared displacement (MSD) for the current system using the conventional algorithm.
+A directory `MSD' is created containing the output per system. The routine is available for legacy reasons,
+the same results can be obtained using the order-N method and 1 block of size `BufferLengthMSD'.
+The units in the files are \AA$^2$ for the msd, and ps for time.
+  \begin{itemize}
+    \item{WriteMSDConventionalEvery [int]}\\
+     Output the MSD every [int] cycles. Default: 5000.
+    \item{SampleMSDConventionalEvery [int]}\\
+    Samples every [int] integration steps. Default: 1.
+    \item{NumberOfBuffersMSDConventional [int]}\\
+    The number of (overlapping) buffers with a different offset in time. Default: 20.
+    \item{BufferLengthMSDConventional [int]}\\
+    The length of the buffers. Default: 5000.
+   \end{itemize}
+
+
+\item{ComputeVACFConventional [yes$|$no]}\\
+Sets whether or not to compute the velocity autocorrelation function (VACF) for the current system using the conventional algorithm.
+A directory `VACF' is created containing the output per system. The routine is available for legacy reasons, 
+the same results can be obtained using the order-N method and 1 block of size `BufferLengthVACF'.
+The units in the files are \AA$^2$/ps for velocity, and ps for time.
+  \begin{itemize}
+    \item{WriteVACFConventionalEvery [int]}\\
+     Output the VACF every [int] cycles. Default: 5000.
+    \item{SampleVACFConventionalEvery [int]}\\
+    Samples every [int] integration steps. Default: 1.
+    \item{NumberOfBuffersVACFConventional [int]}\\
+    The number of (overlapping) buffers with a different offset in time. Default: 20.
+    \item{BufferLengthVACFConventional [int]}\\
+    The length of the buffers. Default: 5000.
+   \end{itemize}
+
+\item{ComputeDensityHistograms [yes$|$no]}\\
+Sets whether or not to compute a density histogram for the current system. For example, during adsorption it keeps track of the amount of molecules.
+
+\item{ComputeEnergyHistogram [yes$|$no]}\\
+Sets whether or not to compute a histogram of the energy for the current system. 
+For example, during adsorption it keeps track of the total energy, the VDW energy,
+the Coulombic energy, and the polarization energy. Output is written to  the directory
+`EnergyHistograms'.
+\begin{itemize}
+\item{WriteEnergyHistogramEvery [int]}\\
+Sets to print the energy histogram of the system every [int] cycles.
+\item{EnergyHistogramSize [int]}\\
+Sets the number of elements of the histogram. Default: 1000.
+\item{EnergyHistogramLowerLimit [real]}\\
+Sets the lower limit of the histogram. Default: -10000.
+\item{EnergyHistogramUpperLimit [real]}\\
+Sets the upper limit of the histogram. Default: 0.
+\end{itemize}
+
+\item{ComputeThermoDynamicFactor [yes$|$no]}\\
+Sets whether or not to compute the thermodynamic factors of the energy for the current system. 
+The output is written to the directory `ThermoDynamicFactor'.
+\begin{itemize}
+\item{WriteThermoDynamicFactorEvery [int]}\\
+Sets to print the thermodynamic factors every [int] cycles.
+\end{itemize}
+
+\item{ComputeEndToEndDistanceHistograms [yes$|$no]}\\
+Sets whether or not to compute a histogram for end-to-end distances of molecules for the current system.
+
+\item{ComputePrincipleMomentsOfInertia [yes$|$no]}\\
+Sets whether or not to compute the average principle moments of inertia of molecules for the current system.
+
+\item{ComputeSpectra [yes$|$no]}\\
+Sets whether or not to compute the Infra-Red (IR) spectra of molecules for the current system.
+\begin{itemize}
+\item{WriteSpectraEvery [int]}\\
+Sets to print the spectra of molecules every [int] cycles.
+\end{itemize}
+\item{ComputeMoleculeProperties [yes$|$no]}\\
+Sets whether or not to compute properties of molecules like average bond-lengths, average bend-angles etc. for the current system.
+\item{PrintMoleculePropertiesEvery [int]}\\
+Sets to print the properties of molecules every [int] cycles.
+\item{ComputeSurfaceArea [yes$|$no]}\\
+Sets whether or not to compute the surface.
+\begin{itemize}
+\item{SurfaceAreaProbeAtom [string]}\\
+\item{SurfaceAreaSamplingPointsPerSphere [int]}\\
+Sets the number of points to sampling a sphere per iteration.
+\item{SurfaceAreaProbeDistance [Minimum$|$Sigma]}\\
+Sets whether to use the minimum of the potential $\sigma^{1/6}$ as the probe distance or whether to use $\sigma$.
+\end{itemize}
+\item{DensityProfile [yes$|$no]}\\
+\item{DensityProfileGridPoints [int] [int] [int]}\\
+\item{ComputeElasticConstants [yes$|$no]}\\
+Sets whether to compute elastic constants.
+\item{ComputePowderDiffractionPattern [yes$|$no]}\\
+Sets whether to compute the powder diffraction pattern for the framework.
+\begin{itemize}
+\item{DiffractionType [Xray$|$Neutron$|$Electron]}\\
+Sets the diffraction type as xray-scattering, neutron-scattering, or electron-scattering, respectively.
+\item{DiffractionRadiationType [chromium$|$iron$|$copper$|$molybdenum$|$silver$|$synchrotron]}\\
+Sets the type of the diffraction radiation as chromium, iron, copper, molybdenum, silver, or synchrotron, respectively.
+\item{WaveLengthType [Single$|$Double]}\\
+Set the type of the beam as single or as a doublet.
+\item{PeakShape [Gaussian$|$Lorentzian$|$PseudoVoigt]}\\
+Sets the shape of the peaks as Gaussian, Lorentzian, or Pseudo-Voigt, respectively.
+\item{WaveLength [real]}\\
+Sets the wavelength of the diffraction beam.
+\item{TwoThetaMin [real]}\\
+Sets the minimum value of $2\theta$.
+\item{TwoThetaMax [real]}\\
+Sets the maximum value of $2\theta$.
+\item{TwoThetaStep [real]}\\
+Sets the step size of $2\theta$.
+\item{PeakWidthModifierU [real]}\\
+\item{PeakWidthModifierV [real]}\\
+\item{PeakWidthModifierW [real]}\\
+\end{itemize}
+\item{ComputerNormalModes [yes$|$no]}\\
+Sets whether to compute normal modes.
+\begin{itemize}
+\item{MinimumMode [int]}\\
+Sets the minimum normal to compute.
+\item{MaximumMode [int]}\\
+Sets the maximum normal to compute.
+\item{ModeResolution [int]}\\
+\end{itemize}
+\end{itemize}
+
+\subsection*{Energy/force grid options}
+\begin{itemize}
+\item{UseTabularGrid [yes$|$no]}\\
+Use a pre-tabulated grid for the energy and forces. Default: no.
+\item{SpacingVDWGrid [real]}\\
+The grid spacing of the Van der Waals potentials. Default: 0.15 Angstrom.
+\item{SpacingCoulombGrid [real]}\\
+The grid spacing of the Coulomb potential. Default: 0.15 Angstrom.
+\item{GridTypes [list-of-strings]}\\
+A list of atom-types for each of the used grids.
+\end{itemize}
+
+\subsection*{Minimization/Saddle point search}
+\begin{itemize}
+\item{MinimizationMethod [Baker]}\\
+The Baker minimization method uses the eigenvalues/vectors to find a true minimum where all eigenvalues are positive. Newton-Raphson
+uses the first and second derivatives, but not the eigenvalues/vectors.
+The saddle point search can best be started from a minimum energy configuration. The algorithm walks up hill along the softest eigen mode
+to find a first order saddle point.
+\item{MinimizationVariables [Cartesian$|$Fractional]}\\
+Whether the minimization is performed in Cartesian or fractional positions. For some crystal minimizations it might be more convenient
+to choose fractional positions. An example is when one wants to keep a particular fractional position fixed during the minimization.
+\item{MaximumNumberOfMinimizationSteps [int]}\\
+The maximum number of minimization steps after which the minimization is stopped. Default: 10000.
+\item{RMSGradientTolerance [real]}\\
+Stopping criteria: the maximum allowed RMS gradient. Default: $10^{-6}$.
+\item{MaxGradientTolerance [real]}\\
+Stopping criteria: the maximum allowed gradient for each and every atom (and the strain elements for cell minimizations). Default: $10^{-6}$.
+\item{MaximumStepLength [real]}\\
+The maximum length of a minimization step. The length is dependent on the problem at hand.
+A too low value converges slowly (i.e. the minimization takes more steps),
+while a too high value might not converge at all. Default value: 0.3.
+\item{FrameworkFixedInitialization [free$|$fixed]}\\
+Sets all framework atoms as `free' or `fixed'. This command must preceed individual overwrites
+and applies to the current system.
+\item{AdsorbateFixedInitialization [free$|$fixed]}\\
+Sets all adsorbate groups and atoms as `free' or `fixed'. This command must preceed individual overwrites
+and applies to the current system.
+\item{CationFixedInitialization [free$|$fixed]}\\
+Sets all cation groups and atoms as `free' or `fixed'. This command must preceed individual overwrites
+and applies to the current system.
+\item{ActiveFrameworkAtom [int]}\\
+Sets the atom of the current framework and system as `active'.
+\item{ActiveFrameworkAtoms [int] [list-of-ints]}\\
+Sets the [int] atoms listed in [list-of-ints] of the current framework and system as `active'.
+\item{FixedFrameworkAtom [int]}\\
+Sets the atom of the current framework and system as `fixed'.
+\item{FixedFrameworkAtoms [int] [list-of-ints]}\\
+Sets the [int] atoms listed in [list-of-ints] of the current framework and system as `fixed'.
+
+\item{ActiveAdsorbateMolecule [int]}\\
+Sets all atom and groups of the adsorbate molecule [int] as `active'. Applies to the current system.
+\item{FixedAdsorbateMolecule [int]}\\
+Sets all atom and groups of the adsorbate molecule [int] as `fixed'. Applies to the current system.
+\item{ActiveAdsorbateAtom [int] [int]}\\
+Sets an atom (second argument) of an adsorbate molecule (first argument) as `active'. Applies to the current system.
+\item{FixedAdsorbateAtom [int] [int]}\\
+Sets an atom (second argument) of an adsorbate molecule (first argument) as `fixed'. Applies to the current system.
+\item{ActiveAdsorbateGroup [int] [int]}\\
+Sets a group (second argument) of an adsorbate molecule (first argument) as `active'. Applies to the current system
+and both center of mass and the orientation are set as `active'.
+\item{FixedAdsorbateGroup [int] [int]}\\
+Sets a group (second argument) of an adsorbate molecule (first argument) as `fixed'. Applies to the current system
+and both center of mass and the orientation are set as`fixed'.
+\item{ActiveAdsorbateGroupCenterOfMass [int] [int]}\\
+Sets a group (second argument) of an adsorbate molecule (first argument) as `active'. Applies to the current system
+and only the center of mass is set as `active'.
+\item{FixedAdsorbateGroupCenterOfMass [int] [int]}\\
+Sets a group (second argument) of an adsorbate molecule (first argument) as `fixed'. Applies to the current system
+and only the center of mass is set as `fixed'.
+\item{ActiveAdsorbateGroupOrientation [int] [int]}\\
+Sets a group (second argument) of an adsorbate molecule (first argument) as `active'. Applies to the current system
+and only the orientation is set as `active'.
+\item{FixedAdsorbateGroupOrientation [int] [int]}\\
+Sets a group (second argument) of an adsorbate molecule (first argument) as `fixed'. Applies to the current system
+and only the orientation is set as `fixed'.
+
+\item{ActiveCationMolecule [int]}\\
+Sets all atom and groups of the cation molecule [int] as `active'. Applies to the current system.
+\item{FixedCationMolecule [int]}\\
+Sets all atom and groups of the cation molecule [int] as `fixed'. Applies to the current system.
+\item{ActiveCationAtom [int] [int]}\\
+Sets an atom (second argument) of an cation molecule (first argument) as `active'. Applies to the current system.
+\item{FixedCationAtom [int] [int]}\\
+Sets an atom (second argument) of an cation molecule (first argument) as `fixed'. Applies to the current system.
+\item{ActiveCationGroup [int] [int]}\\
+Sets a group (second argument) of an cation molecule (first argument) as `active'. Applies to the current system
+and both center of mass and the orientation are set as `active'.
+\item{FixedCationGroup [int] [int]}\\
+Sets a group (second argument) of an cation molecule (first argument) as `fixed'. Applies to the current system
+and both center of mass and the orientation are set as `fixed'.
+\item{ActiveCationGroupCenterOfMass [int] [int]}\\
+Sets a group (second argument) of an cation molecule (first argument) as `active'. Applies to the current system
+and only the center of mass is set as `active'.
+\item{FixedCationGroupCenterOfMass [int] [int]}\\
+Sets a group (second argument) of an cation molecule (first argument) as `fixed'. Applies to the current system
+and only the center of mass is set as `fixed'.
+\item{ActiveCationGroupOrientation [int] [int]}\\
+Sets a group (second argument) of an cation molecule (first argument) as `active'. Applies to the current system
+and only the orientation is set as `active'.
+\item{FixedCationGroupOrientation [int] [int]}\\
+Sets a group (second argument) of an cation molecule (first argument) as `fixed'. Applies to the current system
+and only the orientation is set as `fixed'.
+
+
+
+
+\item{$\begin{array}{l}\text{FixAtomType [string]}\\\text{FixAtomTypes [int] [list-of-strings]}\end{array}$}\\
+The atom-types that are considered fixed during the minimization. All other atoms/groups will be optimized.
+If the atom-type is contained in a rigid unit, the entire unit will be frozen.
+\item{DistanceConstraint [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [real]}\\
+Defines a `hard' distance constraint between two atoms and/or groups, and the distance.
+\item{AngleConstraint [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [real]}\\
+Defines a `hard' angular constraint between three atoms and/or groups, and the constraint angle.
+\item{DihedralConstraint [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]
+    [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [real]}\\
+Defines a `hard' dihedral constraint between four atoms and/or groups, and constraint dihedral.
+\item{HarmonicDistanceConstraint [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [real] [real]}\\
+Defines a `hard' distance constraint between two atoms and/or groups, and the distance.
+\item{HarmonicAngleConstraint \begin{small}[F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] 
+  [F$|$A$|$C] [int] [int]  [real] [real]\end{small}}\\
+Defines a `hard' angular constraint between three atoms and/or groups, and the constraint angle.
+\item{HarmonicDihedralConstraint \begin{footnotesize}[F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int]
+ [F$|$A$|$C] [int] [int] [F$|$A$|$C] [int] [int] [real] [real]\end{footnotesize}}\\
+Defines a `hard' dihedral constraint between four atoms and/or groups, and constraint dihedral.
+\end{itemize}
+
+\subsection*{Monte Carlo settings}
+\begin{itemize}
+\item{MinimumInnerCycles [int]}\\
+The minimum number of inner cycles for each cycle. Default: 20.
+\item{NumberOfTrialPositions [int]}\\
+The number of trial positions during the growth of a molecule. Default: 10.
+\item{NumberOfTrialPositionsForTheFirstBead [int]}\\
+The number of trial positions for the first bead. Default: 10.
+\item{NumberOfTrialPositionsTorsion [int]}\\
+The number of trial positions for torsions over a single bond. Default: 100.
+\item{NumberOfTrialMovesPerOpenBead [int]}\\
+The number of trial moves per open bead during CBMC. Default: 200.
+\item{TargetAccRatioSmallMCScheme [real]}\\
+\item{TargetAccRatioTranslation [real]}\\
+\item{EnergyOverlapCriteria [real]}\\
+The energy criteria to consider an energy as `overlap'. Default: $10^5$ K.
+\item{MinimumRosenbluthFactor [real]}\\
+The minimum Rosenbluth weight, values lower are consider to be `overlapping'. Default: $10^{-150}$.
+\end{itemize}
+
+\subsection*{Biasing options}
+\begin{itemize}
+\item{BiasingDirection [A$|$B$|$C$|$AB\_DIAGONAL$|$AC\_DIAGONAL$|$BC\_DIAGONAL$|$\\
+              \hspace*{2.65cm} A\_BC\_DIAGONAL$|$B\_AC\_DIAGONAL$|$C\_AB\_DIAGONAL$|$\\
+              \hspace*{2.65cm} O\_ABC\_DIAGONAL]}\\
+\item{BiasingMethod [UMBRELLA$|$RUIZMONTERO]}\\
+\item{BiasingProfile [string]}\\
+The name of the file containing the biasing profile.
+\item{RuizMonteroFactor [real]}
+\item{UmbrellaFactor [real]}\\
+The biasing free energy is multiplied by the UmbrellaFactor. This is useful when the biasing free energy goes to infity in certain regions. if the
+exact free energy would be used to biased, then the histogram would be flat, even very close to atoms. To keep the repulsion one can lower the used free
+energy biasing by e.g.\ multiplying by 0.9.
+\item{RestrictMovesToUnitCell [yes$|$no]}\\
+Restrict the Monte-Carlo moves to the first unitcell for this component.
+\item{BoxAxisABC\_Min [real]}\\
+When a particle is restricted in all Monte-Carlo moves (RestrictMovesToUnitCell or RestrictMovesToBox) then do not allow trial moves with a fractional position smaller than BoxAxisABC\_Min.
+\item{BoxAxisABC\_Max [real]}\\
+When a particle is restricted in all Monte-Carlo moves (RestrictMovesToUnitCell or RestrictMovesToBox) then do not allow trial moves with a fractional position greater than BoxAxisABC\_Max.
+\end{itemize}
+
+\subsection*{Transition State Theory settings}
+\begin{itemize}
+\item{\begin{minipage}{\textwidth}
+      FreeEnergyMappingType  [A\_MAPPING$|$B\_MAPPING$|$C\_MAPPING$|$ABC\_MAPPING$|$\\
+        \hspace*{4cm}MAP\_AB\_DIAGONAL$|$MAP\_AC\_DIAGONAL$|$MAP\_BC\_DIAGONAL$|$\\
+        \hspace*{4cm}MAP\_A\_BC\_DIAGONAL$|$MAP\_B\_AC\_DIAGONAL$|$MAP\_C\_AB\_DIAGONAL$|$\\
+        \hspace*{4cm}MAP\_O\_ABC\_DIAGONAL]
+      \end{minipage}
+      }
+Determines how the free energy profile is constructed from the contributions of points in the unit cell.
+The free energy is computed using Widom insertion by inserting probe molecules
+at many random position inside the unit cell. The `FreeEnergyMappingType' maps a Cartesian position on a reaction coordinate `q'.
+The mappings `A\_MAPPING', `B\_MAPPING', `C\_MAPPING' map the Cartesian position onto the `a', `b', `c' lattice vectors.
+The diagonal mapping maps onto diagonal, either in 2D or in 3D. For example, `MAP\_A\_BC\_DIAGONAL' maps onto the line from `A' to `B+C' where
+`A',`B', and `C' are the end points of the lattive vectors; and `MAP\_O\_ABC\_DIAGONAL' maps onto the line from the origin to the opposite point `A+B+C' on the diagonal.
+\item{\begin{minipage}{\textwidth}
+      PositionHistogramMappingType  [A\_MAPPING$|$B\_MAPPING$|$C\_MAPPING$|$ABC\_MAPPING$|$\\
+        \hspace*{4cm}MAP\_AB\_DIAGONAL$|$MAP\_AC\_DIAGONAL$|$MAP\_BC\_DIAGONAL$|$\\
+        \hspace*{4cm}MAP\_A\_BC\_DIAGONAL$|$MAP\_B\_AC\_DIAGONAL$|$MAP\_C\_AB\_DIAGONAL$|$\\
+        \hspace*{4cm}MAP\_O\_ABC\_DIAGONAL]
+      \end{minipage}
+      }
+Determines how the position histogram is constructed from the contributions of points in the unit cell.
+The free energy is computed from the histogram by using $F(q)=-\log\left[P\left(q\right)\right]$.
+The `PositionHistogramMappingType' maps a Cartesian position on a reaction coordinate `q'.
+The mappings `A\_MAPPING', `B\_MAPPING', `C\_MAPPING' map the Cartesian position onto the `a', `b', `c' lattice vectors.
+The diagonal mapping maps onto diagonal, either in 2D or in 3D. For example, `MAP\_A\_BC\_DIAGONAL' maps onto the line from `A' to `B+C' where
+`A',`B', and `C' are the end points of the lattive vectors; and `MAP\_O\_ABC\_DIAGONAL' maps onto the line from the origin to the opposite point `A+B+C' on the diagonal.
+\item{PutMoleculeOnBarrier [yes$|$no]}\\
+Places the first molecule of component 0 at the position given by `BarrierPosition'. This is used e.g. to start sampling configuration on top of a free energy barrier.
+\item{BarrierPosition [real] [real] [real]}\\
+The location of the free energy barrier in fractional units of the first unit cell.
+\item{MaxBarrierDistance [real]}\\
+The maximum distance in \AA ngstrom of the dcTST trajectory.
+\item{MaxBarrierTime [real]}\\
+The maximum time of the dcTST trajetory in picoseconds.
+\item{NumberOfVelocities [int]}\\
+The number of times the same initial position of the sampled dcTST starting configurations is used with different initial velocities.
+\item{WritedcTSTSnapShotsToFile [yes$|$no]}\\
+Whether to write out sampled configuration to a file. The file is stored in the directory `dcTST\_starting\_configurations' and used
+as the tarting point to compute the transmission coefficient in dcTST.
+\item{WritedcTSTSnapShotsEvery [int]}\\
+The frequency in MC cycles of writing out the sampled configurations. Default: 1000.
+\end{itemize}
