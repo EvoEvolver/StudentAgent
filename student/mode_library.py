@@ -1,6 +1,6 @@
 from student.io_interface import echo, echo_box
 from student.memory import generate_non_stop_words, Memory
-from student.iraspa import get_raspa_memory
+from student.latex_parsing import get_raspa_memory
 
 
 def run_library_mode(user_input, memory: Memory):

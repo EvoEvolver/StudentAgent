@@ -151,16 +151,16 @@ def detect_square_brackets(input_text: str) -> bool:
 6.    Please provide simulation files for running a adsorption simulation of methane in IFMOF-1
 7.    Provide simulation input files to find the Henry law coefficient of methane in NU-1000
 8.    Provide Input files for running GEMC for methane in NU-1000
-9.    Provide input files to study the dynamic behaviour(maybe diffusion) of hexane in MFI zeolite
+9.    simulate dynamic behaviour of hexane in MFI zeolite
 10.   Run simulation to find the critical temperature of heptane
 """
-
+# if you need to simulate dynamic behaviour, run molecular dynamics
 
 
 def init_raspa_memory():
     from student.memory import MemoryNode, Memory
     this_path = os.path.dirname(os.path.abspath(__file__))
-    with open(this_path+"/../data/input_files.tex") as f:
+    with open(this_path+"/data/input_files.tex") as f:
         latex_text = f.read()
 
     root = Node(title="RASPA")

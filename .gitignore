@@ -1,0 +1,10 @@
+tests.ipynb
+test_raspa.ipynb
+test_chatmof.ipynb
+test/
+
+student/__pycache__/
+CoRE-MOF/
+student/.llm_cache/
+
+.env

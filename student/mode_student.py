@@ -1,6 +1,6 @@
 from mllm import Chat
 from student.io_interface import echo, echo_box
-from student.iraspa import get_raspa_memory
+from student.latex_parsing import get_raspa_memory
 from student.memory import Memory, MemoryNode
 
 
@@ -12,15 +12,16 @@ def add_knowledge_by_instruction(memory: Memory, instruction: str):
     The source of the instruction is the situation when you need to recall the target.
     </task>
     <example>
-    Instruction: "Do not drink water when you are thirsty."
-    Source: "you are thirsty."
-    Target: "Do not drink water."
+    Instruction: "Do not do something when XXX."
+    Source: "XXX"
     </example>
     <example>
-    Instruction: "A means B"
-    Source: "A"
-    Target: "A means B"
+    Instruction: "XXX means Something"
+    Source: "XXX"
     </example>
+    <example>
+    Instruction: "If you need to do XXX, then do B"
+    Source: "XXX"
     <instruction>
     {instruction}
     </instruction>
@@ -28,7 +29,6 @@ def add_knowledge_by_instruction(memory: Memory, instruction: str):
     You are required to output a JSON object with the following
     "analysis" (str): the analysis of the instruction.
     "source" (str): the source of the instruction.
-    "target" (str): the target of the instruction.
     """
     chat = Chat(dedent=True)
     chat += prompt
@@ -37,6 +37,9 @@ def add_knowledge_by_instruction(memory: Memory, instruction: str):
     new_memory_node = MemoryNode()
     new_memory_node.content = instruction
     new_memory_node.src.append(res["source"])
+    new_memory_node.abstract = instruction
+    new_memory_node.terminal = False
+
 
     print(len(memory.memory))
 

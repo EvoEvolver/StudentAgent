@@ -12,5 +12,5 @@ pip install -e .
 ## Usage
 
 ```bash
-python -m streamlit run student/gui.py
+python -m streamlit run student/app.py
 ```

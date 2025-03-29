@@ -1,3 +1,6 @@
 MinimalLLM
 fibers @ git+https://github.com/EvoEvolver/Fibers.git
 streamlit
+nltk
+rank_bm25
+scipy
