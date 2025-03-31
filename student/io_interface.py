@@ -10,34 +10,37 @@ def set_streamlit_output_interface(message_component):
     message_list = st.session_state.get("message_list", [])
     global output_component
     output_component = message_component
-
+    update_chat(message_list)
+    
+    
+def update_chat(message_list):
     for message in message_list:
-        if message["role"] == "user":
-            st.chat_message("user").write(message["content"])
-        else:
-            st.chat_message("assistant").write(message["content"])
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+    
 
-
-def echo_with_type(message_type, message):
+def echo_with_type(message_type, message, role):
+    
     global output_component
     #print("echo_with_type", message_type, message)
     #message_list.append((message_type, message))
-    if message_type == "echo":
-        st.write(message)
-    elif message_type.startswith("code"):
-        code_type = message_type.split("_")[1]
-        st.code(message, language=code_type)
-    elif message_type == "html":
-        st.html(message)
-    
-    st.session_state["message_list"].append({"role": "assistant", "content": message})
+    with st.chat_message(role):
+        if message_type == "echo":
+            st.write(message)
+        elif message_type.startswith("code"):
+            code_type = message_type.split("_")[1]
+            st.code(message, language=code_type)
+        elif message_type == "html":
+            st.html(message)
+        
+    st.session_state["message_list"].append({"role": role, "content": message})
 
 
-def echo(args):
+def echo(args, role="assistant"):
     if output_component is None:
         print(args)
         return
-    echo_with_type("echo", args)
+    echo_with_type("echo", args, role)
 
 
 def echo_code(code, language="python"):

@@ -27,17 +27,18 @@ def assistant_decompose_instructions(user_input):
         echo("Please specify the system where the simulation is performed (e.g., a MOF).")
         return None
 
-    echo(f"Instruction: {user_input}")
-    echo("Decomposed instruction:")
-    echo(f"Simulation: {decomposed_instruction['simulation']}")
-    echo(f"Molecule: {decomposed_instruction['molecule']}")
-    echo(f"System: {decomposed_instruction['system']}")
+    echo(f"""Instruction: {3}
+        Decomposed instruction:
+        Simulation: {decomposed_instruction['simulation']}
+        Molecule: {decomposed_instruction['molecule']}
+        System: {decomposed_instruction['system']}
+    """)
 
     return decomposed_instruction
 
 
 def assistant_search_memory(memory: Memory, user_input, query):
-    echo("Searching memory for relevant information...")
+    st.write("Searching memory for relevant information...")
     top_excited_nodes = memory.self_consistent_search(user_input, [user_input, query], top_k=3)
     echo("Memory found:")
     for node in top_excited_nodes:
@@ -59,9 +60,8 @@ def assistant_find_molecule(molecule):
     node = res[0]
     name = node.content
     #path = f"{TEMP_PATH}{name}.def"
-    path = f"{TEMP_PATH}molecule.def"
     try:
-        generate_molecule_def(molecule_id=node.data['molecule_ID'], name=name, family=node.data['family'], output_file=path)
+        generate_molecule_def(molecule_id=node.data['molecule_ID'], name=name, output_dir=TEMP_PATH)
         echo(f"Generated molecule.def file for '{name}' from Trappe Data")
     except Exception as e:
         echo(f"There was some error with the molecule file generation: {e}")

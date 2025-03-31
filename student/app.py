@@ -2,17 +2,19 @@ import os
 
 import litellm
 import mllm.config
+import subprocess
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
 
 from student.agent_input_file import get_input_file_memory, add_feedback_to_instructions
-from student.io_interface import set_streamlit_output_interface, echo_with_type
+from student.io_interface import set_streamlit_output_interface, echo_with_type, update_chat
 from student.mode_assistant import *
 from student.mode_library import run_library_mode
 from student.mode_student import run_student_mode
 
 mllm.config.default_models.expensive = "openai/gpt-4o"
+
 
 
 this_path = os.path.dirname(os.path.realpath(__file__))
@@ -61,9 +63,9 @@ with st.sidebar:
         st.write("Memory saved to", memory_path)
     #openai_api_key = st.text_input("OpenAI API key")
 
-# monte carlo of methane in a box
-for message in st.session_state.get("message_list", []):
-    echo_with_type(*message)
+
+
+
 
 def add_feedback(success):
     if success:
@@ -71,9 +73,11 @@ def add_feedback(success):
     else:
         feedback = st.chat_input("Feedback:")
         if feedback:
-            st.session_state["message_list"].append({"role": "user", "content": feedback})
+            message = {"role": "user", "content": feedback}
+            st.session_state["message_list"].append(message)
             st.session_state["feedback"].append(feedback)
             st.session_state["stage"]= 1
+            update_chat([message])
 
 def reset(process=None):
     if process is not None:
@@ -101,10 +105,10 @@ if st.session_state.mode == "assistant":
     5. Ask for feedback
     '''
     
-    #echo(st.session_state["stage"])
+    # echo(st.session_state["stage"])
 
     if st.session_state["stage"] == 0:
-        user_input = st.chat_input("Your instructions:")
+        user_input = st.chat_input("Your instructions:", key=input)
         if user_input:   
             st.session_state["message_list"].append({"role": "user", "content": user_input}) 
             st.session_state["user_input"] = user_input
@@ -122,7 +126,6 @@ if st.session_state.mode == "assistant":
             add_feedback(False)
         else:
             st.session_state["instructions"] = instructions
-            # st.session_state["user_input"] = user_input
             
             # b)
             top_excited_nodes = assistant_search_memory(memory, user_input, query=instructions['simulation'])
@@ -190,5 +193,4 @@ elif st.session_state.mode == "library":
     user_input = st.chat_input("You stimuli for search")
     if user_input:
         run_library_mode(user_input, memory)
-
 
