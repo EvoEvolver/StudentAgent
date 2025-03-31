@@ -16,17 +16,14 @@ def set_streamlit_output_interface(message_component):
 def update_chat(message_list):
     for message in message_list:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            st.write(message["content"])
     
 
 def echo_with_type(message_type, message, role):
     
-    global output_component
-    #print("echo_with_type", message_type, message)
-    #message_list.append((message_type, message))
     with st.chat_message(role):
         if message_type == "echo":
-            st.write(message)
+            st.markdown(message)
         elif message_type.startswith("code"):
             code_type = message_type.split("_")[1]
             st.code(message, language=code_type)

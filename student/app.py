@@ -19,7 +19,7 @@ mllm.config.default_models.expensive = "openai/gpt-4o"
 
 this_path = os.path.dirname(os.path.realpath(__file__))
 memory = get_input_file_memory()
-memory_path = this_path + "/input_file_memory.json"
+memory_path = os.path.join(this_path, "input_file_memory.json")
 
 
 if "mode" not in st.session_state:
@@ -61,23 +61,18 @@ with st.sidebar:
     if save_memory_button:
         memory.save(memory_path)
         st.write("Memory saved to", memory_path)
+    
+    reset_button = st.button("Reset", on_click=st.session_state.clear)
+        
     #openai_api_key = st.text_input("OpenAI API key")
-
-
 
 
 
 def add_feedback(success):
     if success:
-        st.session_state["stage"] += 1
+        st.session_state.stage += 1
     else:
-        feedback = st.chat_input("Feedback:")
-        if feedback:
-            message = {"role": "user", "content": feedback}
-            st.session_state["message_list"].append(message)
-            st.session_state["feedback"].append(feedback)
-            st.session_state["stage"]= 1
-            update_chat([message])
+        st.session_state.stage = "feedback"
 
 def reset(process=None):
     if process is not None:
@@ -107,15 +102,24 @@ if st.session_state.mode == "assistant":
     
     # echo(st.session_state["stage"])
 
-    if st.session_state["stage"] == 0:
-        user_input = st.chat_input("Your instructions:", key=input)
-        if user_input:   
-            st.session_state["message_list"].append({"role": "user", "content": user_input}) 
-            st.session_state["user_input"] = user_input
-            st.session_state["stage"] = 1
+    input_label = "Your instructions:" if st.session_state.stage == 0 else "Feedback:"
+    user_input = st.chat_input(input_label, key="chat_input")
+    
+    if st.session_state.stage in [0, "feedback"]:
+        if user_input:
+            message = {"role": "user", "content": user_input}
+            #st.session_state.message_list.append(message)
+            #update_chat([message])
+            echo(user_input, role="user")
+
+            if st.session_state.stage == 0:
+                st.session_state.user_input = user_input
+            else: 
+                st.session_state.feedback.append(user_input)
+            st.session_state.stage = 1
 
 
-    if st.session_state["stage"] == 1:
+    if st.session_state.stage == 1:
         user_input = st.session_state["user_input"]
         feedback = st.session_state["feedback"]
 
@@ -135,7 +139,7 @@ if st.session_state.mode == "assistant":
             st.button("Good", key="input_good", on_click=lambda: add_feedback(True))
             st.button("Bad", key="input_bad", on_click=lambda: add_feedback(False))
 
-    elif st.session_state["stage"] == 2:
+    elif st.session_state.stage == 2:
         # a)
         molecule_name = assistant_find_molecule(st.session_state["instructions"]["molecule"])
         st.session_state["instructions"]["other"] += " Remove the MoleculeDefinition row and make sure that the MoleculeName is molecule."
@@ -153,19 +157,19 @@ if st.session_state.mode == "assistant":
 
     
 
-    elif st.session_state["stage"] == 3:
+    elif st.session_state.stage == 3:
         input = st.session_state["user_input"] + st.session_state["instructions"]["other"]
         assistant_simulation_file(input=input, top_excited_nodes=st.session_state["top_excited_nodes"])
         st.button("Good", key="simulation_good", on_click=lambda: add_feedback(True))
         st.button("Bad", key="simulation_bad", on_click=lambda: add_feedback(False))
 
 
-    elif st.session_state["stage"] == 4:
+    elif st.session_state.stage == 4:
         execute = st.button("Execute")
         process = None
 
         if execute:
-            echo_with_type("echo", "Executing... (not finished)")
+            echo("Executing... (not finished)")
 
             process = subprocess.Popen(['bash', 'run.sh'], cwd=TEMP_PATH, text=True)
             stdout, stderr = process.communicate()
@@ -176,14 +180,16 @@ if st.session_state.mode == "assistant":
 
 
         else:
-            echo_with_type("echo", "Tell us what went wrong:")
+            echo("Tell us what went wrong:")
             user_input = st.chat_input("Your feedback")
             if user_input:
-                echo_with_type("echo", "Feedback received. Generating new input file...(not finished)")
+                echo("Feedback received. Generating new input file...(not finished)")
 
         
-
         st.button("Stop Execution", key="stop", on_click=lambda: reset(process))
+
+
+
 
 elif st.session_state.mode == "student":
     user_input = st.chat_input("You teaching instruction")

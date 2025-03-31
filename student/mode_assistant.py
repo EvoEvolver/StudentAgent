@@ -40,10 +40,11 @@ def assistant_decompose_instructions(user_input):
 def assistant_search_memory(memory: Memory, user_input, query):
     st.write("Searching memory for relevant information...")
     top_excited_nodes = memory.self_consistent_search(user_input, [user_input, query], top_k=3)
-    echo("Memory found:")
-    for node in top_excited_nodes:
-        echo_code(node.content)
-    if not top_excited_nodes:
+    if top_excited_nodes:
+        echo("Memory found:")
+        for node in top_excited_nodes:
+            echo_code(node.content)
+    else:
         echo("No memory found.")
 
     return top_excited_nodes
