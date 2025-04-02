@@ -1,3 +1,5 @@
+import os
+import shutil
 import streamlit as st
 import subprocess
 
@@ -11,7 +13,30 @@ from student.memory import Memory
 from input_gen.memory_molecule import init_molecule_name_memory
 from input_gen.memory_framework import init_framework_memory, generate_framework_file
 
-TEMP_PATH = "test/"
+
+def set_path(path="test/"):
+    global TEMP_PATH 
+    TEMP_PATH = path
+    return path
+
+def get_path():
+    return TEMP_PATH
+
+def setup_folder(path):
+    existing_folders = [
+        d for d in os.listdir(path)
+        if os.path.isdir(os.path.join(path, d)) and d.isdigit()
+    ]
+    if existing_folders:
+        next_num = max(int(folder) for folder in existing_folders) + 1
+    else:
+        next_num = 1
+    new_path = os.path.join(path, str(next_num))
+    os.makedirs(new_path, exist_ok=True)
+    shutil.copy(os.path.join(path,"run.sh"), new_path)
+
+    return set_path(new_path)
+    
 
 
     
@@ -27,7 +52,7 @@ def assistant_decompose_instructions(user_input):
         echo("Please specify the system where the simulation is performed (e.g., a MOF).")
         return None
 
-    echo(f"""Instruction: {3}
+    echo(f"""Instruction:
         Decomposed instruction:
         Simulation: {decomposed_instruction['simulation']}
         Molecule: {decomposed_instruction['molecule']}
@@ -74,11 +99,14 @@ def assistant_find_molecule(molecule):
 def assistant_find_framework(framework):
     
     coremof_memory = init_framework_memory()
+    
     res = coremof_memory.search([framework], top_k=1)
 
     if len(res) ==  0:
         echo("No corresponding molecule found in the coremof database.")
-        return
+        return None
+    elif res[0].data['name'] == "box":
+        return "box"
     
     try:
         path = f"{TEMP_PATH}framework.cif"

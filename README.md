@@ -8,6 +8,7 @@ The agent who can learn
 pip install -r requirements.txt
 pip install -e .
 ```
+Git clone CoRE-MOF/ repository and install with pip.
 
 ## Usage
 

@@ -146,7 +146,7 @@ class PseudoAtoms:
 
         lines = []
         lines.append("#number of pseudo atoms")
-        lines.append(n)
+        lines.append(f"{n}")
         lines.append("#type      print   as    chem  oxidation   mass        charge   polarization B-factor radii  connectivity anisotropic anisotropic-type   tinker-type")
 
         for atom in atoms:
@@ -236,9 +236,9 @@ class PseudoAtoms:
             )     
             line = flag_format.format(*fields)
             lines.append(line)
-            lines.append("# general mixing rule for Lennard-Jones")
-            lines.append("Lorentz-Berthelot")
-            
+        lines.append("# general mixing rule for Lennard-Jones")
+        lines.append("Lorentz-Berthelot")
+        
         return "\n".join(lines)
 
     def generate_ff_file(self, output_dir=None):

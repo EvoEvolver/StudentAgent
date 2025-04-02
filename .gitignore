@@ -1,9 +1,10 @@
 tests.ipynb
 test_raspa.ipynb
 test_chatmof.ipynb
-test/
+test*/
+test_streamlit_app.py
 
-student/__pycache__/
+__pycache__/
 CoRE-MOF/
 student/.llm_cache/
 

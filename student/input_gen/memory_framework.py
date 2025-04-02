@@ -29,7 +29,7 @@ def init_framework_memory():
     for name, dataset in structures.items():
 
         new_node = MemoryNode()
-        #name = molecule["name"].replace("<em>", "").replace("</em>", "")
+        # name = molecule["name"].replace("<em>", "").replace("</em>", "")
         new_node.content = name
         new_node.abstract = name
         new_node.data = {
@@ -38,9 +38,18 @@ def init_framework_memory():
         }
         new_node.src.append(name)
         memory.memory.append(new_node)
+    
+    box_node = MemoryNode()
+    box_node.content = "box"
+    box_node.abstract = "box"
+    box_node.data = {
+        "name": "box",
+        "dataset" : ""
+    }
+    box_node.src.append("box")
+    memory.memory.append(box_node)
+
     return memory
-
-
 
 
 if __name__ == '__main__':

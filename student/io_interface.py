@@ -15,39 +15,39 @@ def set_streamlit_output_interface(message_component):
     
 def update_chat(message_list):
     for message in message_list:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
+        echo_with_type(message['type'], message['content'], message['role'])
+        #with st.chat_message(message["role"]):
+        #st.write(message["content"])
     
 
 def echo_with_type(message_type, message, role):
     
     with st.chat_message(role):
-        if message_type == "echo":
-            st.markdown(message)
+        if message_type == "text":
+            st.text(message)
         elif message_type.startswith("code"):
             code_type = message_type.split("_")[1]
             st.code(message, language=code_type)
         elif message_type == "html":
             st.html(message)
-        
-    st.session_state["message_list"].append({"role": role, "content": message})
 
 
-def echo(args, role="assistant"):
-    if output_component is None:
-        print(args)
-        return
-    echo_with_type("echo", args, role)
+def echo(text, role="assistant"):
+    echo_with_type("text", text, role)
+    st.session_state["message_list"].append({"role": role, "content": text, "type": "text"})
 
 
-def echo_code(code, language="python"):
+def echo_code(code, language="python", role="assistant"):
     if output_component is None:
         print(code)
         return
-    echo_with_type(f"code_{language}", code)
+    code_type = f"code_{language}"
+    echo_with_type(code_type, code, role)
+    
+    st.session_state["message_list"].append({"role": role, "content": code, "type": code_type})
 
 
-def echo_box(content: str, title: str, background_color: str="light_blue", html_content: bool=False):
+def echo_box(content: str, title: str, background_color: str="light_blue", html_content: bool=False, role="assistant"):
     """
     Display a chat message formatted with the given parameters.
 
@@ -97,4 +97,5 @@ def echo_box(content: str, title: str, background_color: str="light_blue", html_
         {content}
     </p>
     '''
-    echo_with_type("html", output_html)
+    echo_with_type("html", output_html, role)
+    st.session_state["message_list"].append({"role": role, "content": output_html, "type": "html"})

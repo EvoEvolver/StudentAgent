@@ -1,5 +1,5 @@
 from mllm import Chat
-
+import os
 
 def input_generation(instruction, retrieved_memory):
 
@@ -31,6 +31,6 @@ def input_generation(instruction, retrieved_memory):
 
 
 def generate_simulation_input(input_string, output_dir):
-    with open(f"{output_dir}simulation.input", "w") as f:
+    with open(os.path.join(output_dir, "simulation.input"), "w") as f:
         f.write(input_string)
     

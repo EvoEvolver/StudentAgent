@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import litellm
 import mllm.config
@@ -45,6 +46,9 @@ if "instruction" not in st.session_state:
 
 if "input_file_feedback" not in st.session_state:
     st.session_state.input_file_feedback = None
+
+if "temp_path" not in st.session_state:
+    st.session_state.temp_path = set_path("test/")
 
 set_streamlit_output_interface(st)
 
@@ -140,20 +144,21 @@ if st.session_state.mode == "assistant":
             st.button("Bad", key="input_bad", on_click=lambda: add_feedback(False))
 
     elif st.session_state.stage == 2:
+        st.session_state.temp_path = setup_folder(st.session_state.temp_path)
         # a)
         molecule_name = assistant_find_molecule(st.session_state["instructions"]["molecule"])
         st.session_state["instructions"]["other"] += " Remove the MoleculeDefinition row and make sure that the MoleculeName is molecule."
         st.session_state["instructions"]["other"] += "Use 1000 cycles and 100 initializations."
         
         framework = assistant_find_framework(st.session_state["instructions"]["system"])
-        st.session_state["instructions"]["other"] += " If a MOF framework is specified, use the FrameworkName 'mof'. "
+        st.session_state["instructions"]["other"] += " If a MOF framework is specified (and not 'box'), use the FrameworkName 'mof'. "
 
         if molecule_name is None or framework is None:
             add_feedback(False)
-
-        # c)
-        st.button("Good", key="select_good", on_click=lambda: add_feedback(True))
-        st.button("Bad", key="select_bad", on_click=lambda: add_feedback(False))
+        else:
+            # c)
+            st.button("Good", key="select_good", on_click=lambda: add_feedback(True))
+            st.button("Bad", key="select_bad", on_click=lambda: add_feedback(False))
 
     
 
@@ -166,6 +171,8 @@ if st.session_state.mode == "assistant":
 
     elif st.session_state.stage == 4:
         execute = st.button("Execute")
+        feedback = st.button("Add feedback")
+
         process = None
 
         if execute:
@@ -178,15 +185,8 @@ if st.session_state.mode == "assistant":
             if process.returncode != 0:
                 echo(f"Script failed: {stderr}")
 
-
-        else:
-            echo("Tell us what went wrong:")
-            user_input = st.chat_input("Your feedback")
-            if user_input:
-                echo("Feedback received. Generating new input file...(not finished)")
-
-        
-        st.button("Stop Execution", key="stop", on_click=lambda: reset(process))
+        if process is not None:
+            st.button("Stop Execution", key="stop", on_click=lambda: reset(process))
 
 
 
