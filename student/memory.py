@@ -28,7 +28,7 @@ class MemoryNode:
         embedding = np.array(self.embedding)
         embed_similarity = np.dot(embedding, input_src_embeddings.T)
         # remove similarity below 0.6
-        embed_similarity = embed_similarity * (embed_similarity > 0.6)
+        embed_similarity = embed_similarity * (embed_similarity > 0.2)
         # add up the similarity
         embed_similarity = np.sum(embed_similarity, axis=0)
         bm25__similarity = get_bm25_score(self.src, input_src_list)
@@ -80,7 +80,7 @@ class AssociateNode(MemoryNode):
 
 class Memory:
     def __init__(self):
-        self.memory = []
+        self.memory : list[MemoryNode] = []
     
     def __size__(self):
         return len(self.memory)

@@ -23,7 +23,7 @@ def molecule_name_to_smiles(name: str):
         else:
             smiles = None
     except Exception as e:
-        return None, None
+        return None
     return smiles
 
 def mol_from_smiles(smiles: str):

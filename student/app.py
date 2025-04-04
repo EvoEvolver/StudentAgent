@@ -16,7 +16,7 @@ from student.mode_student import run_student_mode
 
 mllm.config.default_models.expensive = "openai/gpt-4o"
 
-
+TEMP_PATH = "test/"
 
 this_path = os.path.dirname(os.path.realpath(__file__))
 memory = get_input_file_memory()
@@ -48,7 +48,7 @@ if "input_file_feedback" not in st.session_state:
     st.session_state.input_file_feedback = None
 
 if "temp_path" not in st.session_state:
-    st.session_state.temp_path = set_path("test/")
+    st.session_state.temp_path = set_path(TEMP_PATH)
 
 set_streamlit_output_interface(st)
 
@@ -124,8 +124,8 @@ if st.session_state.mode == "assistant":
 
 
     if st.session_state.stage == 1:
-        user_input = st.session_state["user_input"]
-        feedback = st.session_state["feedback"]
+        user_input = st.session_state.user_input
+        feedback = st.session_state.feedback
 
         instructions_prompt = add_feedback_to_instructions(user_input, feedback)
         # a)
@@ -136,7 +136,7 @@ if st.session_state.mode == "assistant":
             st.session_state["instructions"] = instructions
             
             # b)
-            top_excited_nodes = assistant_search_memory(memory, user_input, query=instructions['simulation'])
+            top_excited_nodes = assistant_search_memory(memory, instructions_prompt, query=instructions['simulation'])
             st.session_state["top_excited_nodes"] = top_excited_nodes
 
             # c)
@@ -144,16 +144,20 @@ if st.session_state.mode == "assistant":
             st.button("Bad", key="input_bad", on_click=lambda: add_feedback(False))
 
     elif st.session_state.stage == 2:
-        st.session_state.temp_path = setup_folder(st.session_state.temp_path)
+        if st.session_state.temp_path == TEMP_PATH:
+            st.session_state.temp_path = setup_folder(st.session_state.temp_path)
+            
         # a)
-        molecule_name = assistant_find_molecule(st.session_state["instructions"]["molecule"])
-        st.session_state["instructions"]["other"] += " Remove the MoleculeDefinition row and make sure that the MoleculeName is molecule."
-        st.session_state["instructions"]["other"] += "Use 1000 cycles and 100 initializations."
+        molecules = st.session_state["instructions"]["molecule"].split(".")
+        molecule_names = assistant_find_molecule(molecules)
+        
+        st.session_state["instructions"]["other"] += f"\n Remove the MoleculeDefinition row and make sure that the MoleculeName fields strictly correspond to the names inside this list: {molecule_names}."
+        st.session_state["instructions"]["other"] += "Use 100000 cycles and 1000 initializations."
         
         framework = assistant_find_framework(st.session_state["instructions"]["system"])
-        st.session_state["instructions"]["other"] += " If a MOF framework is specified (and not 'box'), use the FrameworkName 'mof'. "
+        st.session_state["instructions"]["other"] += " If a MOF framework is specified (and not 'box'), use the FrameworkName 'framework'. "
 
-        if molecule_name is None or framework is None:
+        if molecule_names is None or framework is None:
             add_feedback(False)
         else:
             # c)
@@ -178,9 +182,23 @@ if st.session_state.mode == "assistant":
         if execute:
             echo("Executing... (not finished)")
 
-            process = subprocess.Popen(['bash', 'run.sh'], cwd=TEMP_PATH, text=True)
-            stdout, stderr = process.communicate()
+            with st.spinner("Processing..."):
+                process = subprocess.Popen(
+                    ['bash', 'run.sh'],
+                    cwd=st.session_state.temp_path,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+                stdout, stderr = process.communicate()
+            
             echo(stdout)
+
+            '''
+            process = subprocess.Popen(['bash', 'run.sh'], cwd=st.session_state.temp_path, text=True)
+            stdout, stderr = process.communicate()
+            echo(stdout)'
+            '''
 
             if process.returncode != 0:
                 echo(f"Script failed: {stderr}")

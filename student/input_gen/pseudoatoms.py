@@ -1,5 +1,6 @@
 import os
 import re
+import copy
 
 class Atom:
     def __init__(self, id, atom_type: str, type_val, epsilon, sigma, charge):
@@ -77,7 +78,25 @@ class PseudoAtoms:
         self.atoms = {} # id -> Atom
         self.atom_types = {} # atom_type -> [ids]
 
-    def parse(self, sections: list[list[str]]) -> None:
+
+    def __add__(self, other):
+        new_ps = copy.deepcopy(self)
+
+        for id in other.atoms.keys():
+            if id not in new_ps.atoms.keys():
+                new_ps.atoms[id] = copy.deepcopy(other.atoms[id])    
+            else:
+                print("Error with Pseudoatom additions: IDs not unique!")
+                return None
+        for atom_type in other.atom_types.keys():
+            if atom_type in new_ps.atom_types.keys():
+                new_ps.atom_types[atom_type].extend(copy.deepcopy(other.atom_types[atom_type]))
+            else:
+                new_ps.atom_types[atom_type] = copy.deepcopy(other.atom_types[atom_type])
+
+        return new_ps
+
+    def parse(self, sections: list[list[str]], ps_id: str = "x") -> None:
         """
         Parses a list of pseudoatom sections (each section as a multiline string)
         and updates the object in place by populating its dictionary of PseudoAtom objects.
@@ -89,7 +108,7 @@ class PseudoAtoms:
         for section in sections:
             for parts in section:
                 try:
-                    id = int(parts[0])-1
+                    id = f"{int(parts[0])-1}_{ps_id}"
                     main_atom = parts[1]
                     type_val = parts[2]
                     epsilon = float(parts[3])

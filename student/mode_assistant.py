@@ -75,25 +75,31 @@ def assistant_search_memory(memory: Memory, user_input, query):
     return top_excited_nodes
 
 
-def assistant_find_molecule(molecule):
+def assistant_find_molecule(names):
+    molecule_names = [name.replace(" ", "_") for name in names]
+
     mol_memory = init_molecule_name_memory()       # this should be done placed somewhere so that the initialization is not repeated
-    res = mol_memory.search([molecule], top_k=1)
+    res = mol_memory.search(molecule_names, top_k=len(molecule_names))
 
     if len(res) ==  0:
         echo("No corresponding molecule found in the Trappe database.")
         return
 
-    node = res[0]
-    name = node.content
+    # node = res[0]
+    # name = node.content
     #path = f"{TEMP_PATH}{name}.def"
+    names_i = [i.content for i in res]
+    names = [name.replace(" ", "_") for name in names_i]
+
+    ids = [i.data['molecule_ID'] for i in res]
     try:
-        generate_molecule_def(molecule_id=node.data['molecule_ID'], name=name, output_dir=TEMP_PATH)
-        echo(f"Generated molecule.def file for '{name}' from Trappe Data")
+        generate_molecule_def(molecule_ids=ids, names=names, output_dir=TEMP_PATH)
+        echo(f"Generated molecule.def file for '{', '.join(names)}' from Trappe Data")
     except Exception as e:
         echo(f"There was some error with the molecule file generation: {e}")
         return None 
     
-    return name
+    return names
 
 
 def assistant_find_framework(framework):
@@ -109,12 +115,12 @@ def assistant_find_framework(framework):
         return "box"
     
     try:
-        path = f"{TEMP_PATH}framework.cif"
+        path = os.path.join(TEMP_PATH, "framework.cif")
         mof_name = res[0].data['name']
         dataset = res[0].data["datasets"][-1]
 
         generate_framework_file(mof_name, dataset, output_file=path)
-        echo(f"Generated molecule.def file for '{mof_name}' from coremof data")
+        echo(f"Generated framework file for '{mof_name}' from coremof data")
     except Exception as e:
         echo(f"There was some error with the MOF file generation: {e}")
         return None 

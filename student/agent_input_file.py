@@ -15,7 +15,7 @@ def decompose_instruction(instruction: str):
     A instruction can be decomposed into 4 parts:
     - Simulation: the goal of the simulation
     - System: in what setup the simulation of molecule is performed
-    - Molecule: the molecule that is being simulated
+    - Molecule: the names of the molecule that are being simulated
     - Other parameters
     You are required to decompose the users' instruction into these 4 parts.
     </goal> 
@@ -26,11 +26,10 @@ def decompose_instruction(instruction: str):
     You are required to output a JSON object with the following keys. If the information is not available, the value should be an empty string.
     - "simulation" (str): the description of the simulation.
     - "system" (str): the system of the simulation.
-    - "molecule" (str): the molecule of the simulation.
+    - "molecule" (str): the molecules of the simulation separated with "." (e.j. "butane . carbon dioxide . nitrogen").
     - "other" (str): other parameters of the simulation.
     </output>
     """
-
     chat = Chat(dedent=True)
     chat += prompt
     res = chat.complete(parse="dict", cache=True, expensive=True)

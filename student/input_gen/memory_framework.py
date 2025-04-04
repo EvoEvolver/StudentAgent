@@ -34,7 +34,7 @@ def init_framework_memory():
         new_node.abstract = name
         new_node.data = {
             "name": name,
-            "dataset" : dataset
+            "datasets" : dataset
         }
         new_node.src.append(name)
         memory.memory.append(new_node)

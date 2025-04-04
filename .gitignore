@@ -7,5 +7,6 @@ test_streamlit_app.py
 __pycache__/
 CoRE-MOF/
 student/.llm_cache/
+student.egg-info/
 
 .env

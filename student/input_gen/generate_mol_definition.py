@@ -56,7 +56,7 @@ def get_trappe_properties(molecule_id: int):
     return Tc, float(pc), float(w)
 
 
-def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb) -> dict:
+def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb, ps_id='x') -> dict:
     """
     Retrieves TraPPE parameters for a given molecule_id and returns a dictionary.
     The returned dictionary includes pseudoatom information, bond stretching, bending,
@@ -86,7 +86,7 @@ def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb) -> dict:
     # --- Pseudoatom Section ---
     pseudoatoms = parse_section(PARAM_STRING, "#,(pseudo)atom", 6)
     ps = PseudoAtoms()
-    ps.parse([pseudoatoms])
+    ps.parse([pseudoatoms], ps_id=ps_id)
 
     num_atoms = len(pseudoatoms)
 
@@ -367,8 +367,8 @@ def build_molecule_definition_lines(ps: PseudoAtoms, Tc, pc, acentric_factor, pa
     
     # Atomic positions
     lines.append("# atomic positions")
-    for index, atom_type in ps.get_atoms():
-        lines.append(f"{index} {atom_type}")
+    for i, (index, atom_type) in enumerate(ps.get_atoms()):
+        lines.append(f"{i} {atom_type}")
     
     # Intramolecular interaction flags
     lines.append("# Chiral centers Bond  BondDipoles Bend  UrayBradley InvBend  Torsion Imp. Torsion Bond/Bond Stretch/Bend Bend/Bend Stretch/Torsion Bend/Torsion IntraVDW IntraCoulomb")
@@ -396,11 +396,12 @@ def build_molecule_definition_lines(ps: PseudoAtoms, Tc, pc, acentric_factor, pa
     
     # Intra-molecular interactions
     lines.append(get_intramol_string(n_vdw, n_coulomb, interactions))
+    lines.append("")
     
     return lines
 
 
-def generate_molecule_def(molecule_id: int, name: str, output_dir: str):
+def generate_molecule_def(molecule_ids: list[int], names: list[str], output_dir: str):
     """
     Automatically generates a molecule.def file for RASPA using TraPPE data.
     The interface of this function remains fixed.
@@ -413,19 +414,31 @@ def generate_molecule_def(molecule_id: int, name: str, output_dir: str):
     Returns:
         True if file generation succeeds.
     """
-    mol = get_mol(name)
-    n_vdw, n_coulomb, interactions = get_intramol_interactions(mol)
+    overall_ps = PseudoAtoms()
+    ps_ids = "abcdefghijklmnop"
+    i = 0    
+
+
+    from student.input_gen.utils_molecules import molecule_name_to_smiles
+    for name, molecule_id in zip(names, molecule_ids):
+        
+        mol = get_mol(name.replace("_", " "))
+        n_vdw, n_coulomb, interactions = get_intramol_interactions(mol)
+        
+        Tc, pc, acentric_factor = get_trappe_properties(molecule_id)
+        
+        params = get_trappe_parameters(molecule_id, n_vdw, n_coulomb, ps_id=ps_ids[i])
+        ps = params["pseudoatoms"]
+        overall_ps = overall_ps + ps
+
+        lines = build_molecule_definition_lines(ps, Tc, pc, acentric_factor, params, n_vdw, n_coulomb, interactions)
     
-    Tc, pc, acentric_factor = get_trappe_properties(molecule_id)
+        with open(os.path.join(output_dir, f"{name}.def"), "w") as f:
+            f.write("\n".join(lines))
+        
+        i += 1
     
-    params = get_trappe_parameters(molecule_id, n_vdw, n_coulomb)
-    ps = params["pseudoatoms"]
-    ps.generate_ps_file(output_dir=output_dir)
-    ps.generate_ff_file(output_dir=output_dir)
-    
-    lines = build_molecule_definition_lines(ps, Tc, pc, acentric_factor, params, n_vdw, n_coulomb, interactions)
-    
-    with open(os.path.join(output_dir, "molecule.def"), "w") as f:
-        f.write("\n".join(lines))
-    
+    overall_ps.generate_ps_file(output_dir=output_dir)
+    overall_ps.generate_ff_file(output_dir=output_dir)
+
     return True
