@@ -15,6 +15,14 @@ def get_trappe_properties(molecule_id: int):
     """
     Returns: critical constants: Temperature [T] in Kelvin, Pressure [Pa], and Acentric factor [-]
     """
+    # Incomplete property files for some small molecules are handled separately:
+    if molecule_id == 119: # nitrogen
+        return (126.192, 3395800.0, 0.0372)
+    if molecule_id in [120, 117]: # no trappe data available for the properties!
+        return None
+        
+
+
     df = pd.read_csv(StringIO(download_properties(molecule_id)), skiprows=1)
 
     crit_rows = df[df['T [K]'] == "crit_T [K]"]
@@ -418,8 +426,6 @@ def generate_molecule_def(molecule_ids: list[int], names: list[str], output_dir:
     ps_ids = "abcdefghijklmnop"
     i = 0    
 
-
-    from student.input_gen.utils_molecules import molecule_name_to_smiles
     for name, molecule_id in zip(names, molecule_ids):
         
         mol = get_mol(name.replace("_", " "))
