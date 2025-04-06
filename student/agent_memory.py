@@ -1,81 +1,54 @@
 import json
 import numpy as np
 from mllm import Chat, get_embeddings
+from typing import Dict, List
 
 from student.bm25_indexing import get_bm25_score
 
 
 class MemoryNode:
-    def __init__(self):
-        self.content = ""
-        self.src = []
-        self.embedding = []
-        self.data = None
-        self.abstract = None
-        self.terminal = True # whether the node can be used to recall more information
+    keys : List[str]
+    embeddings : List[str]
+    content : str
+    # assocations : list[str] # list of keys associated to this node
+    
+    def __init__(self, content:str = "", keys:List[str] = []):
+        self.content = content
+        self.keys = []
+        self.embeddings = []
+        self.update_keys(keys)
+        # self.associations = []
 
-    def get_abstract(self):
-        if self.abstract is None:
-            return self.content
-        return self.abstract
+    def update_keys(self, new_keys):
+        self.keys = new_keys
+    
+    def set_embeddings(self):
+        self.embeddings = get_embeddings(self.keys)
 
-    def set_embedding(self):
-        self.embedding = get_embeddings(self.src)
-
-    def get_score(self, input_src_list):
-        input_src_embeddings = get_embeddings(input_src_list)
-        input_src_embeddings = np.array(input_src_embeddings)
+    #def update_associations(self, new_associations):
+    #    self.assocations = new_associations
+        
+    def get_score(self, input_keys, sensitivity=0, w: int =1):
+        input_keys_embeddings = np.array(get_embeddings(input_keys))
         embedding = np.array(self.embedding)
-        embed_similarity = np.dot(embedding, input_src_embeddings.T)
-        # remove similarity below 0.6
-        embed_similarity = embed_similarity * (embed_similarity > 0.2)
-        # add up the similarity
+
+        embed_similarity = np.dot(embedding, input_keys_embeddings.T)
+        embed_similarity = embed_similarity * (embed_similarity > sensitivity)
         embed_similarity = np.sum(embed_similarity, axis=0)
-        bm25__similarity = get_bm25_score(self.src, input_src_list)
-        similarity = embed_similarity + bm25__similarity
-        return similarity
+        
+        bm25__similarity = get_bm25_score(self.src, input_keys)
+        
+        return embed_similarity + w * bm25__similarity
 
     def to_dict(self):
         return {
-            "type": self.__class__.__name__,
             "content": self.content,
-            "src": self.src,
-            "data": self.data,
-            "abstract": self.abstract,
-            "terminal": self.terminal
+            "keys": self.src,
         }
 
     def _from_dict(self, d):
         self.content = d["content"]
-        self.src = d["src"]
-        self.data = d["data"]
-        self.abstract = d["abstract"]
-        self.terminal = d["terminal"]
-
-    @staticmethod
-    def from_dict(d):
-        if d["type"] == "MemoryNode":
-            node = MemoryNode()
-        elif d["type"] == "AssociateNode":
-            node = AssociateNode()
-        else:
-            raise ValueError("Invalid type")
-        node._from_dict(d)
-        return node
-
-class AssociateNode(MemoryNode):
-    def __init__(self):
-        super().__init__()
-        self.associate: list[str] = []
-
-    def to_dict(self):
-        d = super().to_dict()
-        d["associate"] = self.associate
-        return d
-
-    def _from_dict(self, d):
-        self.content = d["content"]
-        self.src = d["src"]
+        self.src = d["keys"]
 
 
 class Memory:
@@ -84,14 +57,30 @@ class Memory:
     
     def __size__(self):
         return len(self.memory)
+    
+    def add(self, node: MemoryNode):
+        self.memory.append(node)
+    
+    def add_from_dict(self, node_dict: Dict):
+        node = MemoryNode()
+        node._from_dict(node_dict)
 
-    def search(self, src_list: list[str], top_k=10, node_to_exclude=None):
-        nodes = [node for node in self.memory if len(node.content) > 0]
-        for node in nodes:
-            node.set_embedding()
+    def get_nodes(self):
+        nodes = []
+        for node in self.memory:
+            if len(node.content) > 0:
+                nodes.append(node)
+                node.set_embeddings()
+        return nodes
+
+
+    def search(self, queries: list[str], top_k=10):
         scores = []
+        nodes = self.get_nodes()
+
         for node in nodes:
-            scores.append(node.get_score(src_list))
+            scores.append(node.get_score(queries))
+        
         scores = np.array(scores)
         score_summation_for_src = np.sum(scores, axis=0)
         # replace 0 entries by 1
@@ -100,8 +89,7 @@ class Memory:
         scores = scores / score_norm_factor_for_src
         scores = np.sum(scores, axis=1)
         top_k_indices = np.argsort(scores)
-        if node_to_exclude is None:
-            node_to_exclude = []
+        
         curr_index = len(top_k_indices) - 1
         top_excited_nodes = []
         while True:
@@ -109,8 +97,7 @@ class Memory:
             if scores[top_k_indices[curr_index]] <= 0.0001:
                 break
             index_to_add = top_k_indices[curr_index]
-            if nodes[index_to_add] not in node_to_exclude:
-                top_excited_nodes.append(nodes[index_to_add])
+            top_excited_nodes.append(nodes[index_to_add])
             if len(top_excited_nodes) == top_k:
                 break
             curr_index -= 1
@@ -120,6 +107,7 @@ class Memory:
 
 
     def search_and_filter(self, context, src_list: list[str], top_k=10, node_to_exclude=None):
+        '''
         top_excited_nodes = self.search(src_list, top_k, node_to_exclude=node_to_exclude)
         prompts = [f"""
         You are required to select the most relevant memory that is related to the following context:
@@ -131,7 +119,7 @@ class Memory:
         for i, node in enumerate(top_excited_nodes):
             prompts.append(f"""
             <memory_{i}>
-            {node.get_abstract()}
+            {node.content()}
             </memory_{i}>
             """)
         prompts.append("""
@@ -148,9 +136,12 @@ class Memory:
         for i in res["indices"]:
             filtered_nodes.append(top_excited_nodes[i])
         return filtered_nodes
+        '''
+        pass
 
 
     def self_consistent_search(self, instruction: str, src_list: list[str], top_k=10):
+        '''
         node_in_context = []
         src_list = src_list[:]
         while True:
@@ -161,7 +152,7 @@ class Memory:
             for node in node_in_context:
                 context += f"""
                 <memory>
-                {node.get_abstract()}
+                {node.content()}
                 </memory>
                 """
                 if not node.terminal:
@@ -172,6 +163,8 @@ class Memory:
             if n_non_terminal_new_nodes == 0:
                 break
         return node_in_context
+        '''
+        pass
 
     def save(self, save_path):
         # save the memory to a file
@@ -189,27 +182,4 @@ class Memory:
         for d in memory_list:
             node = MemoryNode.from_dict(d)
             self.memory.append(node)
-
-
-
-def generate_non_stop_words(content):
-    chat = Chat(dedent=True)
-    chat += """
-    <task>
-    You are required to extract concepts from the given text.
-    For example, concepts can be a character name, a technical term, a place name, etc.
-    </task>
-    """ + f"""
-    You are required to generate concepts for the following text:
-    <text>
-    {content}
-    </text>
-    <output>
-    You are required to output a JSON list of with a key
-    "concepts" (list of string): a list of strings with each string being a concept extracted from the text
-    </output>
-    """
-    res = chat.complete(cache=True, parse="dict")
-    return res["concepts"]
-
 
