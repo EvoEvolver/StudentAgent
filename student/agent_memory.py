@@ -63,7 +63,8 @@ class Memory:
     
     def add_from_dict(self, node_dict: Dict):
         node = MemoryNode()
-        node._from_dict(node_dict)
+        self.add(node._from_dict(node_dict))
+        
 
     def get_nodes(self):
         nodes = []
