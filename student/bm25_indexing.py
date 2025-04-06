@@ -29,15 +29,19 @@ def get_bm25_score(embed_src: list[str], stimuli_list: list[str]):
     tokenized_stimuli = [tokenize(stimuli) for stimuli in stimuli_list]
     # Tokenize the embed_src
     tokenized_embed_src = [tokenize(src) for src in embed_src]
-    # Initialize BM25 object
-    bm25 = BM25Okapi(tokenized_embed_src)
-    # Calculate BM25 scores
+    
     scores = []
-    for stimuli in tokenized_stimuli:
-        score = bm25.get_scores(stimuli)
-        scores.append(max(score))
+    try:
+        bm25 = BM25Okapi(tokenized_embed_src)
+        for stimuli in tokenized_stimuli:
+            score = bm25.get_scores(stimuli)
+            scores.append(max(score))
+        
+    except ZeroDivisionError as e:
+        # edge case, if both lists are identical and len=1
+        return [1]
+    
     return scores
-
 
 if __name__ == '__main__':
     documents = [

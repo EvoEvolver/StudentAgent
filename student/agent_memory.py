@@ -30,25 +30,25 @@ class MemoryNode:
         
     def get_score(self, input_keys, sensitivity=0, w: int =1):
         input_keys_embeddings = np.array(get_embeddings(input_keys))
-        embedding = np.array(self.embedding)
+        embeddings = np.array(self.embeddings)
 
-        embed_similarity = np.dot(embedding, input_keys_embeddings.T)
+        embed_similarity = np.dot(embeddings, input_keys_embeddings.T)
         embed_similarity = embed_similarity * (embed_similarity > sensitivity)
         embed_similarity = np.sum(embed_similarity, axis=0)
         
-        bm25__similarity = get_bm25_score(self.src, input_keys)
+        bm25__similarity = get_bm25_score(self.keys, input_keys)
         
         return embed_similarity + w * bm25__similarity
 
     def to_dict(self):
         return {
             "content": self.content,
-            "keys": self.src,
+            "keys": self.keys,
         }
 
     def _from_dict(self, d):
         self.content = d["content"]
-        self.src = d["keys"]
+        self.keys = d["keys"]
 
 
 class Memory:
@@ -63,7 +63,8 @@ class Memory:
     
     def add_from_dict(self, node_dict: Dict):
         node = MemoryNode()
-        self.add(node._from_dict(node_dict))
+        node._from_dict(node_dict)
+        self.add(node)
         
 
     def get_nodes(self):

@@ -99,7 +99,7 @@ class AddMemory(Tool):
         self.memory = memory
 
     def run(self, stimuli: list[str], content: str):
-        # self.memory.add_memory(stimuli, content)
+        self.memory.memory.append((stimuli, content))
         print("Add Memory: ", stimuli, content)
 
 
