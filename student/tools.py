@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from mllm import Chat
+from mllm.chat import Chat
 import inspect
 from typing import get_origin, get_args, List, Dict
 from student.agent_memory import Memory, MemoryNode
@@ -16,6 +16,9 @@ class Tool(ABC):
     @abstractmethod
     def run(self):
         pass
+
+    def get_output(self):
+        return self.name
 
     def parse(self) -> Dict:
         func = self.run
@@ -101,6 +104,7 @@ class AddMemory(Tool):
     def run(self, stimuli: list[str], content: str):
         self.memory.memory.append((stimuli, content))
         print("Add Memory: ", stimuli, content)
+        return self.get_output()
 
 
 

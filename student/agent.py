@@ -1,15 +1,17 @@
 from student.agent_memory import Memory
 from student.tools import Tool, AddMemory, ModifyMemory, RecallMemory
 from mllm import Chat
+from typing import List, Dict
+import json
 
 
 class MemoryAgent:
     memory : Memory
-    tools : list[Tool]
+    tools : Dict[str, Tool]
     system_prompt : str
     chat : Chat
 
-    def __init__(self, tools: list[Tool] = []):
+    def __init__(self, tools: Dict[str, Tool] = {}):
         self.tools = tools
         self.memory = Memory() # adjust later
         self.add_memory_tools()
@@ -20,10 +22,18 @@ class MemoryAgent:
         self.reset_chat()
 
     def add_memory_tools(self):
-        self.tools = [AddMemory(self.memory), ModifyMemory(self.memory), RecallMemory(self.memory)]
+        add = AddMemory(self.memory)
+        modify = ModifyMemory(self.memory)
+        recall = RecallMemory(self.memory)
+
+        self.tools = {
+            add.name : add,
+            modify.name : modify,
+            recall.name : recall
+        }
 
     def parse_tools(self):
-        return [tool.parse() for tool in self.tools]
+        return [tool.parse() for tool in self.tools.values()]
 
     def reset_chat(self):
         self.chat = Chat(system_message=self.system_prompt, dedent=True)
@@ -37,8 +47,21 @@ class MemoryAgent:
 
         self.chat += prompt
         res = self.chat.complete(parse=parse, cache=True, expensive=expensive, options=options)
+        self.use_tools()
         return res
 
-    def use_tool(self, tool: Tool, args=None):
-        out = tool.run(args)
-        return out
+    def use_tools(self):
+        calls = self.chat.additional_res['full_message'].tool_calls
+        outputs = []
+        for call in calls:
+            func = call.function
+            name = func.name
+            args = json.loads(func.arguments)
+        
+            tool = self.tools.get(name)
+            if tool is None:
+                continue
+            outputs.append(tool.run(**args))
+        
+        return outputs
+            
