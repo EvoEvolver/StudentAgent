@@ -170,7 +170,7 @@ class PseudoAtoms:
 
         for atom in atoms:
             ps_type = atom.__repr__()
-            alias =  re.sub(r'\d', '', ps_type)[:-1]
+            alias =  re.sub(r'\d', '', ps_type)[:-3]
             if alias[-1] == "H" and len(alias) > 1:
                 alias = alias[:-1]
             chem = alias
@@ -213,7 +213,8 @@ class PseudoAtoms:
             )     
             line = flag_format.format(*fields)
             lines.append(line)
-            
+        lines.append("")  
+
         return "\n".join(lines)
 
     def get_atoms(self):
@@ -257,6 +258,7 @@ class PseudoAtoms:
             lines.append(line)
         lines.append("# general mixing rule for Lennard-Jones")
         lines.append("Lorentz-Berthelot")
+        lines.append("")  
         
         return "\n".join(lines)
 
