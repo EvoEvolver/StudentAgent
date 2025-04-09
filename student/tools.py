@@ -83,6 +83,7 @@ class Tool(ABC):
             "function": {
                 "name": self.name,
                 "description": self.description,
+                #"strict": True,
                 "parameters": {
                     "type": "object",
                     "properties": properties,
@@ -102,7 +103,9 @@ class AddMemory(Tool):
         self.memory = memory
 
     def run(self, stimuli: list[str], content: str):
-        self.memory.memory.append((stimuli, content))
+        new_node = MemoryNode(content=content, keys=stimuli)
+        self.memory.memory[new_node.id] = new_node
+        
         print("Add Memory: ", stimuli, content)
         return self.get_output()
 
@@ -120,10 +123,10 @@ class RecallMemory(Tool):
         super().__init__(name, description)
         self.memory = memory
 
-    def run(self):
-        # TODO
-        print("Recall memory")
-
+    def run(self, stimuli: list[str], sensitivity: float = 0.01)-> Dict[str, str]:
+        res = self.memory.recall(stimuli, max_recall=3, sensitivity=sensitivity)
+        print("Recall memory: ", stimuli, "\n", res)
+        return res
 
 
 class ModifyMemory(Tool):
@@ -133,6 +136,17 @@ class ModifyMemory(Tool):
         super().__init__(name, description)
         self.memory = memory
 
-    def run(self):
-        # TODO
+    def run(self, id: str, new_stimuli: str = None, new_content: str = None) -> None:
+        node = self.memory.memory.get(id)
+        if node is None:
+            return None
+        
+        if new_stimuli is not None:
+            node.remove_keys(node.keys)
+            node.add_keys(new_stimuli)
+
+        if new_content is not None:
+            node.content = new_content
+
         print("Modify memory")
+        return

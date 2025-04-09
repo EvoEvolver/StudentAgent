@@ -1,33 +1,56 @@
 import json
+import uuid
 import numpy as np
 from mllm import Chat, get_embeddings
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from student.bm25_indexing import get_bm25_score
 
 
 class MemoryNode:
-    keys : List[str]
+    id : str
+    keys : Set[str]
     embeddings : List[str]
     content : str
     # assocations : list[str] # list of keys associated to this node
     
-    def __init__(self, content:str = "", keys:List[str] = []):
+
+    def __init__(self, content: str = "", keys: List[str] = []):
+        self.id = str(uuid.uuid4())
         self.content = content
-        self.keys = []
+        self.keys = set()
         self.embeddings = []
-        self.update_keys(keys)
+
+        self.add_keys(keys)
         # self.associations = []
 
-    def update_keys(self, new_keys):
-        self.keys = new_keys
+    def get_keys(self):
+        return list(self.keys)
+
+    def add_keys(self, new_keys: List[str]):
+        assert isinstance(new_keys, List)
+        for key in new_keys:
+            assert isinstance(key, str)
+            self.keys.add(key)
+        return self.keys
     
+
+    def remove_keys(self, rem_keys: List[str]):
+        assert isinstance(rem_keys, List)
+        for key in rem_keys:
+            assert isinstance(key, str)
+            self.keys.remove(key)
+        return self.keys
+
+
     def set_embeddings(self):
-        self.embeddings = get_embeddings(self.keys)
+        self.embeddings = get_embeddings(list(self.keys))
+
 
     #def update_associations(self, new_associations):
     #    self.assocations = new_associations
-        
+
+
     def get_score(self, input_keys, sensitivity=0, w: int =1):
         input_keys_embeddings = np.array(get_embeddings(input_keys))
         embeddings = np.array(self.embeddings)
@@ -40,8 +63,10 @@ class MemoryNode:
         
         return embed_similarity + w * bm25__similarity
 
+
     def to_dict(self):
         return {
+            "id": self.id,
             "content": self.content,
             "keys": self.keys,
         }
@@ -49,34 +74,85 @@ class MemoryNode:
     def _from_dict(self, d):
         self.content = d["content"]
         self.keys = d["keys"]
+        if "id" in d.keys():
+            self.id = d["id"]
+    
+    def from_dict(cls, d):
+        new_node = MemoryNode()  
+        new_node._from_dict(d)
+        return new_node
+
+    def __str__(self):
+        return f"{self.keys} : {self.content}"
 
 
 class Memory:
     def __init__(self):
-        self.memory : list[MemoryNode] = []
+        self.memory : Dict[str, MemoryNode] = {}
     
-    def __size__(self):
-        return len(self.memory)
+    def __size__(self) -> int:
+        return len(self.memory.keys())
     
     def add(self, node: MemoryNode):
-        self.memory.append(node)
+        self.memory[node.id] = (node)
     
-    def add_from_dict(self, node_dict: Dict):
+    def add_from_dict(self, node_dict: Dict) -> None:
         node = MemoryNode()
         node._from_dict(node_dict)
         self.add(node)
-        
 
-    def get_nodes(self):
+
+    def get_nodes(self) -> List[MemoryNode]:
         nodes = []
-        for node in self.memory:
+        for node in self.memory.values():
             if len(node.content) > 0:
                 nodes.append(node)
                 node.set_embeddings()
         return nodes
 
 
-    def search(self, queries: list[str], top_k=10):
+    def recall(self, queries: List[str], max_recall=5, sensitivity=0.01) -> Dict[str, str]:
+        '''
+        Performs a similarity search on the keys of the memory nodes (O(nodes^2)).
+
+        Returns a dict[memory_node id -> content]
+        '''
+        scores = []
+        nodes = self.get_nodes()
+        if nodes is None:
+            return []
+
+        for node in nodes:
+            scores.append(node.get_score(queries))
+
+        scores = np.array(scores)
+        score_summation_for_src = np.sum(scores, axis=0)
+        score_norm_factor_for_src = score_summation_for_src + (score_summation_for_src == 0.0)
+        scores = scores / score_norm_factor_for_src
+        scores = np.sum(scores, axis=1)
+        
+        excited_nodes = {}
+        if max_recall == 1:
+            top_index = np.argmax(scores)
+            node = nodes[top_index]
+            excited_nodes[node.id] = node.content
+
+        top_k_indices = np.argsort(-scores)
+        
+        
+        for i in range(min(max_recall, len(top_k_indices))):
+            if scores[top_k_indices[i]] <= sensitivity:
+                break
+
+            node : MemoryNode = nodes[top_k_indices[i]]
+            excited_nodes[node.id] = node.content
+        
+        return excited_nodes
+        
+    
+    
+    def search(self, queries: List[str], top_k=10) -> Dict[str, str]:
+        '''
         scores = []
         nodes = self.get_nodes()
 
@@ -106,6 +182,8 @@ class Memory:
             if curr_index < 0:
                 break
         return top_excited_nodes
+        '''
+        pass
 
 
     def search_and_filter(self, context, src_list: list[str], top_k=10, node_to_exclude=None):
@@ -171,7 +249,7 @@ class Memory:
     def save(self, save_path):
         # save the memory to a file
         memory_list = []
-        for i, node in enumerate(self.memory):
+        for node in self.memory.values():
             memory_list.append(node.to_dict())
         # save by json
         with open(save_path, "w") as f:
@@ -182,6 +260,6 @@ class Memory:
         with open(load_path) as f:
             memory_list = json.load(f)
         for d in memory_list:
-            node = MemoryNode.from_dict(d)
-            self.memory.append(node)
+            node = MemoryNode._from_dict(d)
+            self.memory[node.id] = node
 
