@@ -83,7 +83,12 @@ class MemoryNode:
         return new_node
 
     def __str__(self):
-        return f"{self.keys} : {self.content}"
+        return f"""
+        <memory id="{self.id}">
+            <stimuli>{", ".join(self.keys)}</stimuli>
+            <content>{self.content}</content>
+        </memory>
+        """
 
 
 class Memory:
@@ -111,7 +116,7 @@ class Memory:
         return nodes
 
 
-    def recall(self, queries: List[str], max_recall=5, sensitivity=0.01) -> Dict[str, str]:
+    def recall(self, queries: List[str], max_recall=5, sensitivity=0.01) -> Dict[str, Dict[str, str]]:
         '''
         Performs a similarity search on the keys of the memory nodes (O(nodes^2)).
 
@@ -131,7 +136,7 @@ class Memory:
         scores = scores / score_norm_factor_for_src
         scores = np.sum(scores, axis=1)
         
-        excited_nodes = {}
+        excited_nodes = []
         if max_recall == 1:
             top_index = np.argmax(scores)
             node = nodes[top_index]
@@ -145,8 +150,7 @@ class Memory:
                 break
 
             node : MemoryNode = nodes[top_k_indices[i]]
-            excited_nodes[node.id] = node.content
-        
+            excited_nodes.append(node.__str__())
         return excited_nodes
         
     

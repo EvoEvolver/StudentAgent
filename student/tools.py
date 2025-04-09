@@ -98,7 +98,13 @@ class AddMemory(Tool):
 
     def __init__(self, memory: Memory):
         name = "add"
-        description = "This tool can be used to add a new memory item."
+        description = """
+        Use this tool to generate and store a new memory item. 
+        You must provide a list of keywords (called 'stimuli') that describe the context or meaning of the memory, and the content of the memory itself as a string. 
+        This tool is useful when you want to save information for future retrieval. 
+        For example, if the user provides a fact, insight, or important context, you can use this tool to remember it.    
+        """
+
         super().__init__(name, description)
         self.memory = memory
 
@@ -106,33 +112,61 @@ class AddMemory(Tool):
         new_node = MemoryNode(content=content, keys=stimuli)
         self.memory.memory[new_node.id] = new_node
         
-        print("Add Memory: ", stimuli, content)
-        return self.get_output()
+        # print("Add Memory: ", stimuli, content)
+        return self.get_output(new_node)
 
+    def get_output(self, new_node):
+        out = f"""
+        <tool>Added to memory:
+            {new_node.__str__()}
+        </tool>
+        """
+        return out
 
 
 class RecallMemory(Tool):
     def __init__(self, memory: Memory):
         name = "recall"
         description = """
-        This tool can be used to recall memory items related to a list of keys. 
-        It needs the following parameters: 
-            keys : list[str]  
-            sensitivity : float # range [0, 1]
+            Use this tool to search for and retrieve previously stored memory items based on their associated keywords ('stimuli'). 
+            You must provide a list of search keywords and a sensitivity value (a float between 0 and 1) that controls how loosely related the results can be. 
+            A higher sensitivity retrieves more results even if the match is weaker. 
+            The tool returns up to 3 memory items that are most similar to the given stimuli. 
+            This is useful when trying to remember related facts or previously stored context relevant to the current conversation or task.
+            The output is a dictionary mapping a memory ID (which can be used with the modify tool) to the memory content.
         """
         super().__init__(name, description)
         self.memory = memory
 
-    def run(self, stimuli: list[str], sensitivity: float = 0.01)-> Dict[str, str]:
+    def run(self, stimuli: list[str], sensitivity: float = 0.01) -> str:
         res = self.memory.recall(stimuli, max_recall=3, sensitivity=sensitivity)
-        print("Recall memory: ", stimuli, "\n", res)
-        return res
+        return self.get_output(stimuli, res)
+    
+    def get_output(self, stimuli, res: Dict[str, Dict[str, str]]) -> str:
+        mem = ""
+        for i in res:
+            mem += i
+
+        out = f"""
+        <tool>Recalled from memory with the stimuli 
+            <stimuli>{stimuli}</stimuli>: 
+            {mem}
+        </tool>
+        """
+        return out
 
 
 class ModifyMemory(Tool):
     def __init__(self, memory: Memory):
         name = "modify"
-        description = "This tool can be used to modify memory items. It needs the following parameters: ..."
+        description = """
+          Use this tool to update an existing memory item by providing its memory ID.
+          You have access to the memory IDs via the output of the recall tool.
+          You can change its associated keywords ('stimuli'), its content, or both. 
+          This is useful when a memory item needs to be corrected, refined, or re-contextualized.
+          Only one or both of the optional parameters — new_stimuli or new_content — need to be provided. 
+          If you provide new_content="" and new_stimuli=[], then the memory node is deleted.
+        """
         super().__init__(name, description)
         self.memory = memory
 
@@ -147,6 +181,16 @@ class ModifyMemory(Tool):
 
         if new_content is not None:
             node.content = new_content
+        
+        if new_content == "" and new_stimuli == []:
+            del self.memory.memory['id']
 
-        print("Modify memory")
-        return
+        return self.get_output(node)
+
+    def get_output(self, node):
+        out = f"""
+        <tool>Modified memory according to the:
+            {node.__str__()}
+        </tool>
+        """
+        return out

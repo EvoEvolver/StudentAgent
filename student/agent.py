@@ -17,8 +17,11 @@ class MemoryAgent:
         self.add_memory_tools()
 
         self.system_prompt = """
-        You are an agent with a dynamic, long-term memory. You can retrieve, add and modify the knowlege with your tools.
+        You are an agent with a dynamic, long-term memory. 
+        You can retrieve, add and modify the knowlege with your tools. 
+        The tools will be automatically called and you will see the output as an assistant message to use it.
         """
+        # self.system_ptompt += "\n If you have conflicting knowledge that you cannot resolve on your own, you can ask the user for clarifications. Use these to modify the memory.""
         self.reset_chat()
 
     def add_memory_tools(self):
@@ -50,8 +53,8 @@ class MemoryAgent:
         if res is None:
             # self.chat.messages[-1]["content"]["text"] = ""
             self.chat.messages.pop()
-        
         self.use_tools()
+
         return res
 
 
@@ -101,4 +104,49 @@ class MemoryAgent:
             }
         }
         return message
+    
+
+    def render_chat_html(self):
+        chat = self.chat.messages
         
+        from IPython.display import HTML
+        import html
+
+        html_parts = ["<div style='font-family:Arial, sans-serif; line-height:1.6;'>"]
+
+        for turn in chat:
+            role = turn["role"].capitalize()
+            raw_message = turn["content"].get("text", "").strip()
+
+            # Escape and format message
+            message = html.escape(raw_message).replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;")
+
+            # If it's a tool response and starts with <tool>, prettify it more clearly
+            if "<tool>" in raw_message:
+                # Simple pretty formatting for visual indentation
+                message = raw_message.strip().replace("        ", "    ")
+                message = html.escape(message).replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;")
+
+            # Tool Call ID label
+            tool_call_note = ""
+            if "tool_call_id" in turn:
+                tool_id = turn["tool_call_id"]
+                tool_call_note = f" <span style='color:#666; font-size:0.85em;'>(Tool Call ID: <code>{tool_id}</code>)</span>"
+
+            # Style
+            bg_color = "#e0f7fa" if role == "Assistant" else "#f8f9fa"
+            text_color = "#111"
+            border = "1px solid #ccc"
+            border_radius = "10px"
+            padding = "10px"
+            margin = "10px 0"
+
+            html_parts.append(f"""
+            <div style="background:{bg_color}; color:{text_color}; border:{border}; border-radius:{border_radius}; padding:{padding}; margin:{margin};">
+                <strong>{role}{tool_call_note}:</strong><br>
+                <div style="margin-top:5px; font-family:monospace;">{message}</div>
+            </div>
+            """)
+
+        html_parts.append("</div>")
+        return HTML("".join(html_parts))
