@@ -94,6 +94,27 @@ class Tool(ABC):
         return tool_data
 
 
+class Thought(Tool):
+    def __init__(self):
+        name = "think"
+        description = """
+        Use this tool to generate a thought progress.
+        Use this tool to store a 'thought' as text which you can access later to follow the reasoning steps.
+        For example, if you want to use another tool, explain why you did this.
+        """
+        super().__init__(name, description)
+
+
+    def run(self, thought_content: str):
+        return self.get_output(thought_content)
+
+    def get_output(self, out):
+        return f"""
+        <thought>\n\t{out}\n</thought>
+        """
+
+
+
 class AddMemory(Tool):
 
     def __init__(self, memory: Memory):
@@ -111,15 +132,11 @@ class AddMemory(Tool):
     def run(self, stimuli: list[str], content: str):
         new_node = MemoryNode(content=content, keys=stimuli)
         self.memory.memory[new_node.id] = new_node
-        
-        # print("Add Memory: ", stimuli, content)
         return self.get_output(new_node)
 
     def get_output(self, new_node):
         out = f"""
-        <tool>Added to memory:
-            {new_node.__str__()}
-        </tool>
+        <tool>Successfully added this to memory:\n\t{new_node.__str__()}\n</tool>
         """
         return out
 
@@ -146,13 +163,9 @@ class RecallMemory(Tool):
         mem = ""
         for i in res:
             mem += i
-
-        out = f"""
-        <tool>Recalled from memory with the stimuli 
-            <stimuli>{stimuli}</stimuli>: 
-            {mem}
-        </tool>
-        """
+        if mem == "":
+            mem = "<no memory found/>"
+        out = f"<tool>Recalled from memory with the stimuli \n\t<stimuli>{stimuli}</stimuli>: \n\t{mem}\n</tool>"
         return out
 
 
@@ -173,7 +186,7 @@ class ModifyMemory(Tool):
     def run(self, id: str, new_stimuli: str = None, new_content: str = None) -> None:
         node = self.memory.memory.get(id)
         if node is None:
-            return None
+            return "<tool>No memory found to modify: Incorrect ID!</tool>"
         
         if new_stimuli is not None:
             node.remove_keys(node.keys)
@@ -188,9 +201,5 @@ class ModifyMemory(Tool):
         return self.get_output(node)
 
     def get_output(self, node):
-        out = f"""
-        <tool>Modified memory according to the:
-            {node.__str__()}
-        </tool>
-        """
+        out = f"<tool>Modified memory with the updated memory: \n\t{node.__str__()}\n</tool>"
         return out
