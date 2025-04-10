@@ -25,8 +25,9 @@ class MemoryAgent:
         
         If you opt to use a tool, it will be automatically called from your response and you are reprompted with the output as a new assistant message.
         If you use tools, you are reprompted including the output of the tools.
+        You are required to use the 'think' tool before every other tool call to store a reasoning path.
         """
-        #You are required to use the 'think' tool before every other tool call to store a reasoning path.
+        #
         # self.system_ptompt += "\n If you have conflicting knowledge that you cannot resolve on your own, you can ask the user for clarifications. Use these to modify the memory.""
         self.system_prompt += "To finish, you need to give a text answer."
 
