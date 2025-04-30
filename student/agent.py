@@ -1,5 +1,5 @@
 from student.agent_memory import Memory
-from student.tools import Tool, AddMemory, ModifyMemory, RecallMemory, Thought
+from student.tools import Tool, AddMemory, ModifyMemory, RecallMemory
 from mllm import Chat
 from typing import List, Dict, Union
 import json
@@ -10,26 +10,60 @@ class MemoryAgent:
     tools : Dict[str, Tool]
     system_prompt : str
     chat : Chat
+    id : int
 
     def __init__(self, tools: Dict[str, Tool] = {}):
         self.tools = tools
-        self.memory = Memory() # adjust later
+        self.memory = Memory()
         self.add_memory_tools()
+        self.id = 0
 
         self.system_prompt = """
         You are an agent with a dynamic, long-term memory. 
         You can autonomously retrieve, add and modify the knowlege with your tools.
-        Always try to recall relevant memory to give a response. 
-        Always analyze the user input if you should add something to your memory or modify a memory you recalled.
-        If you have conflicting knowledge that you cannot resolve on your own, you can ask the user for clarifications.
+        When using tools, leave <response/> empty. You will be automaitcally reprompted with the output of the tools and you can think or use tools again. 
+        If you did not use any tool, put your response in the <response/> field to the user.
+        You must follow these guidelines:
+        <tool use>
+        - Always try to recall relevant memory before adding or modifying memory or answering a question by the user. 
+        - Always analyze the user input for knowledge that you can add to your memory or use to modify the memory you recalled.
+        - If you have any conflicting knowledge in your memory that you cannot resolve on your own, you can ask the user for clarifications.
+        </tool use>
+        <recall>
+        - To recall general memory, choose few abstract keywords related to the information you are looking for.
+        - To recall detailed knowledge, use several less abstract keywords to reach more specific knowledge.
+        </recall>
+        <add>
+        - To add memory general knowledge, choose abstract keywords as stimuli and try to only deposite abstract knowledge into the memory content.
+        - To add detailed knowledge (like examples), you must select both abstract and specific keywords.
+        - If you have new knowledge you want to put into your memory, prefer <add/> over <modify/>.
+        - After adding memory, you get a response that reflects if you successfully added the memory.
+        </add>
+        <modify>
+        - You can modify memory based on the memory id you obtain in the response to <recall/>.
+        - To update knowledge of an existing memory entry, modify the content such that the old content is updated and no relevant knowledge is lost.
+        - If you have new information that requires to update existing memory, prefer <modify/> over <add/>.
+        - To change the stimuli of a memory entry, follow the guidelines for <add/>.
+        - To delete a memory entry, provide None as stimuli and new content.
+        </modify>
+        """
         
+        a="""
         If you opt to use a tool, it will be automatically called from your response and you are reprompted with the output as a new assistant message.
         If you use tools, you are reprompted including the output of the tools.
-        You are required to use the 'think' tool before every other tool call to store a reasoning path.
+        You are required to output a JSON object as defined by the provided JSON schema.
+        <output>
+            You are required to output a JSON object as defined by the JSON schema.
+            Your goal is to solve the task through step-by-step reasoning and actions, and return the result in this structured format.
+            You are required to explain all your steps as thoughts.
+            - react (set of thoughts and actions)
+                - thoughts: text that captures the intention of an action, a reasoning step or a reflection
+                - actions: You can respond with <actions/> to use your tools.
+            - response ()
+                - final answer to the user
+
+        </output>
         """
-        #
-        # self.system_ptompt += "\n If you have conflicting knowledge that you cannot resolve on your own, you can ask the user for clarifications. Use these to modify the memory.""
-        self.system_prompt += "To finish, you need to give a text answer."
 
         self.reset_chat()
 
@@ -38,40 +72,45 @@ class MemoryAgent:
         add = AddMemory(self.memory)
         modify = ModifyMemory(self.memory)
         recall = RecallMemory(self.memory)
-        thought = Thought()
         
         self.tools = {
             add.name : add,
             modify.name : modify,
             recall.name : recall,
-            thought.name : thought
         }
-
-
-    def parse_tools(self):
-        return [tool.parse() for tool in self.tools.values()]
-
+    
     def reset_chat(self):
-        self.chat = Chat(system_message=self.system_prompt, dedent=True)
+        self.chat = Chat(system_message=self.system_prompt, dedent=False)
+        self.id = 0
 
 
-    def run(self, prompt: str, parse: str = None, expensive=False, tool_choice: str ="auto", max_iter: int=10):
-        if parse not in ["dict", "list", "obj", "quotes", "colon"] and parse is not None:
-            raise ValueError("Invalid parse type")
-
-        options = {"tools" : self.parse_tools(), "tool_choice": tool_choice}
+    def run(self, prompt: str, cache=True, expensive=False, max_iter: int=10, schema=None):
+        if schema is None:
+            schema = self.get_output_jsonschema()
+        options = {"response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "test",
+                        "schema": schema,
+                        "strict": True
+                    },
+            }
+        }
         self.chat += prompt
 
         for i in range(max_iter):
                         
-            res = self.chat.complete(parse=parse, cache=True, expensive=expensive, options=options)
-            if res is None:
-                self.chat.messages.pop() # since mllm does not include the tool callings into the message
-                self.use_tools()         # adds the assistant messages for tool calls and responses
-            else:
-                break                    # give output to the user when no tool is called
+            res = self.chat.complete(parse=None, cache=cache, expensive=expensive, options=options)
+            res = json.loads(res)
+            done = self.use_tools(res)    
 
-        return res
+            if done:
+                break            
+        return self.response(res)
+
+    def response(self, message: Dict):
+        response = message.get("response", '')
+        return response
 
 
     def add_message(self, message: Union[Dict[str, str], List[Dict[str, str]]]):
@@ -82,72 +121,83 @@ class MemoryAgent:
         if message is None:
             return
         assert "content" in message and "role" in message, "Message must contain 'content' and 'role'"
-        if message['content'] is None:
-            calls = message['tool_calls']
-            message['content'] = {'type': 'text', 'text' : f'Tool calls: {calls}'}
-            del message['tool_calls']
-            del message['function_call']
         self.chat.messages.append(message)
 
+    def get_next_id(self):
+        self.id += 1
+        return self.id
 
-    def use_tools(self) -> None:
-        '''
-        Returns a list of messages or an empty list.
-        '''
-        msg = self.chat.additional_res['full_message']
-        calls = msg.tool_calls
-        self.add_message(msg.to_dict())
 
-        if calls is None: # This should never happen, i think.
-            raise RuntimeError("Should not end up here.")
-            # return None
-        
+    def use_tools(self, message: Dict) -> bool:
+        '''
+        Return a boolean indicating, >=1 tool call is present.
+        '''
+        done = True
         tool_messages = []
-        for call in calls:
-            func = call.function
-            name = func.name
-            args = json.loads(func.arguments)
-            message = self._use_tool(func, name, args, call['id'])
-            tool_messages.append(message)
-
+        for call in message['react']:
+            if "function" in call:
+                message, success = self._use_tool(call)
+                tool_messages.append(message)
+                if success is False:
+                    done = False
+                
+                
+                
         self.add_message(tool_messages)
-        return None
+        return done
 
     
-    def _use_tool(self, func, name, args, tool_call_id=""):
+    def _use_tool(self, call):
+        success = False
+        name = call['function']
+        args = call['parameters']['parameters']
         tool = self.tools.get(name)
-        if tool is None:
-            return None
-        out = tool.run(**args)
+        id = self.get_next_id()
+        call['tool_call_id'] = id
+
+        try:
+            out = tool.run(**args)
+        except Exception as e:
+            success = False
+            out = e
     
         message = {
             "role": "assistant",
-            "tool_call_id": tool_call_id,
             'content': {
                 'type': 'text',
-                'text': str(out)
+                'text': json.dumps({
+                    "tool_call_id": id,
+                    "tool_response": str(out)
+                })
             }
         }
-        return message
+        return message, success
 
-    def render_chat_html(self):
+
+    def render_chat_html(self, messages=None):
         from IPython.display import HTML
+        import json
         import html
+        if messages is None:
+            messages = self.chat.messages
 
-        chat = self.chat.messages
         html_parts = ["<div style='font-family:Arial, sans-serif; line-height:1.6;'>"]
 
-        for turn in chat:
-            role = turn["role"].capitalize()
-            raw_message = turn["content"].get("text", "").strip()
-
-            # Tool Call ID label
+        for message in messages:
+            try:
+                parsed = json.dumps(message)
+                parsed = json.loads(parsed)["content"]['text']
+            except (KeyError, json.JSONDecodeError):
+                continue
+            
+            
+            role = message.get("role", "Unknown").capitalize()
             tool_call_note = ""
-            if "tool_call_id" in turn:
-                tool_id = turn["tool_call_id"]
+            '''
+            if "tool_call_id" in message:
+                tool_id = message["tool_call_id"]
                 tool_call_note = f" <span style='color:#666; font-size:0.85em;'>(Tool Call ID: <code>{tool_id}</code>)</span>"
-
-            # Style
+            '''
             bg_color = "#e0f7fa" if role == "Assistant" else "#f8f9fa"
             text_color = "#111"
             border = "1px solid #ccc"
@@ -155,21 +205,129 @@ class MemoryAgent:
             padding = "10px"
             margin = "10px 0"
 
-            # Preprocess message
-            if "<tool>" in raw_message or "<thought>" in raw_message:
-                # Use <pre> for preserving indentation
-                escaped = html.escape(raw_message)
-                message = f"<pre style='margin:0;'>{escaped}</pre>"
-            else:
-                # Use <div> for normal text
-                escaped = html.escape(raw_message).replace("\n", "<br>")
-                message = f"<div style='margin-top:5px; font-family:monospace;'>{escaped}</div>"
+            inner_parts = []
 
-            # Final block
+            if type(parsed) == str and parsed[0] != "{":
+                text = parsed
+                escaped_text = html.escape(text).replace("\n", "<br>")
+                inner_parts.append(f"<div style='margin-top:5px;'>{escaped_text}</div>")
+            else:
+                if type(parsed) == str:
+                    parsed = json.loads(parsed)
+
+                if "react" in parsed:
+                    react_trace = parsed["react"]
+                    for i, item in enumerate(react_trace):
+                        
+                        if "thought" in item:
+                            inner_parts.append(f"💭 <strong>Thought:</strong> {html.escape(item['thought'])}")
+                        elif "function" in item:
+                            function = html.escape(item.get("function", "unknown"))
+                            params = item.get("parameters", {}).get("parameters", {})
+
+                            lines = [f"⚙️ <strong>Action:</strong> {function}"]
+
+                            if params:
+                                param_lines = []
+                                for key, value in params.items():
+                                    label = key.replace("_", " ").capitalize()
+
+                                    if isinstance(value, list):
+                                        formatted = ", ".join(
+                                            f"<code style='padding:2px 4px; border-radius:4px; background:none; color:inherit'>{html.escape(str(v))}</code>"
+                                            for v in value
+                                        )
+                                        value_str = f"[{formatted}]"
+                                    elif isinstance(value, (int, float)):
+                                        value_str = str(value)
+                                    else:
+                                        value_str = html.escape(str(value))
+
+                                    param_lines.append(f"<li><strong>{label}:</strong> {value_str}</li>")
+
+                                param_block = "<ul style='margin-left: 1.5em; margin-top: 0.3em'>" + "".join(param_lines) + "</ul>"
+                                lines.append(param_block)
+
+                            inner_parts.append("<br>".join(lines))
+                    
+                if "response" in parsed:
+                    text = parsed["response"].strip()
+                    if text:
+                        escaped_text = html.escape(text).replace("\n", "<br>")
+                        inner_parts.append(f"<div style='margin-top:5px;'><strong>Response:</strong>: {escaped_text}</div>")
+
+                if "tool_response" in parsed:
+                    text = parsed["tool_response"].strip()
+                    tool_id = str(parsed['tool_call_id']).strip()
+                    tool_call_note = f" <span style='color:#666; font-size:0.85em;'>(Tool Call ID: <code>{tool_id}</code>)</span>"
+
+                    if text:
+                        if text.strip().startswith("<"):
+                            formatted_text = f"<pre style='background:#f8f8f8; padding:8px; border-radius:6px; overflow:auto; font-family:monospace; font-size:0.9em'><code style='background:none; color:inherit'>{html.escape(text)}</code></pre>"
+                        else:
+                            formatted_text = html.escape(text).replace("\n", "<br>")
+                        inner_parts.append(f"<div style='margin-top:5px;'><strong>Response:</strong><br>{formatted_text}</div>")
+
+            content_block = "<br>".join(inner_parts)
             html_parts.append(
                 f"<div style='background:{bg_color}; color:{text_color}; border:{border}; border-radius:{border_radius}; padding:{padding}; margin:{margin};'>"
-                f"<strong>{role}{tool_call_note}:</strong><br>{message}</div>"
+                f"<strong>{role}{tool_call_note}:</strong><br>{content_block}</div>"
             )
 
         html_parts.append("</div>")
         return HTML("".join(html_parts))
+
+    def get_output_jsonschema(self):
+        function_branches = []
+
+        for name, tool in self.tools.items():
+            tool_name = name 
+            tool_schema = tool.parse()
+
+            function_branches.append({
+                "type": "object",
+                "properties": {
+                    "function": {
+                        "type": "string",
+                        "const": tool_name,
+                        "description": f"Calls the {tool_name} function"
+                    },
+                    "parameters": tool_schema
+                },
+                "required": ["function", "parameters"],
+                "additionalProperties": False
+            })
+
+        schema = {
+        "type": "object",
+        "properties": {
+            "react": {
+                "type": "array",
+                "description": "A sequence of reasoning steps, including thoughts and actions.",
+                "items": {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "thought": {
+                                    "type": "string",
+                                    "description": "A reasoning step or internal reflection."
+                                }
+                            },
+                            "required": ["thought"],
+                            "additionalProperties": False
+                        },
+                        *function_branches
+                    ]
+                }
+            },
+            "response": {
+                "type": "string",
+                "description": "Final response to the user. Empty string if more actions/thoughts are expected."
+            }
+        },
+        "required": ["react", "response"],
+        "additionalProperties": False
+        }
+
+        return schema

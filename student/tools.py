@@ -38,10 +38,8 @@ class Tool(ABC):
                 origin = get_origin(param.annotation)
                 args = get_args(param.annotation)
                 if origin in (list, List):
-                    # Parameter is annotated as a list type
                     param_schema["type"] = "array"
                     if args:
-                        # Map the inner type of the list to a JSON Schema type
                         inner_type = args[0]
                         if inner_type == int:
                             item_type = "integer"
@@ -76,42 +74,28 @@ class Tool(ABC):
             properties[param_name] = param_schema
 
             if param.default == inspect.Parameter.empty:
-                required.append(param_name)
-
-        tool_data = {
-            "type": "function",
-            "function": {
-                "name": self.name,
-                "description": self.description,
-                #"strict": True,
+                properties[param_name] = param_schema
+        
+        required = list(properties.keys())
+        return {
+            "type": "object",
+            "properties": {
+                "function": {
+                    "type": "string",
+                    "const": self.name,
+                    "description": f"Calls the {self.name} function"
+                },
                 "parameters": {
                     "type": "object",
                     "properties": properties,
                     "required": required,
-                },
+                    "additionalProperties": False
+                }
             },
+            "required": ["function", "parameters"],
+            "additionalProperties": False
         }
-        return tool_data
 
-
-class Thought(Tool):
-    def __init__(self):
-        name = "think"
-        description = """
-        Use this tool to generate a thought progress.
-        Use this tool to store a 'thought' as text which you can access later to follow the reasoning steps.
-        For example, if you want to use another tool, explain why you did this.
-        """
-        super().__init__(name, description)
-
-
-    def run(self, thought_content: str):
-        return self.get_output(thought_content)
-
-    def get_output(self, out):
-        return f"""
-        <thought>\n\t{out}\n</thought>
-        """
 
 
 
@@ -161,7 +145,7 @@ class RecallMemory(Tool):
     
     def get_output(self, stimuli, res: Dict[str, Dict[str, str]]) -> str:
         mem = ""
-        for i in res:
+        for id, i in res.items():
             mem += i
         if mem == "":
             mem = "<no memory found/>"
@@ -178,13 +162,13 @@ class ModifyMemory(Tool):
           You can change its associated keywords ('stimuli'), its content, or both. 
           This is useful when a memory item needs to be corrected, refined, or re-contextualized.
           Only one or both of the optional parameters — new_stimuli or new_content — need to be provided. 
-          If you provide new_content="" and new_stimuli=[], then the memory node is deleted.
+          If you provide new_content=None and new_stimuli=None, then the memory node is deleted.
         """
         super().__init__(name, description)
         self.memory = memory
 
-    def run(self, id: str, new_stimuli: str = None, new_content: str = None) -> None:
-        node = self.memory.memory.get(id)
+    def run(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
+        node : MemoryNode = self.memory.memory.get(id)
         if node is None:
             return "<tool>No memory found to modify: Incorrect ID!</tool>"
         
@@ -195,7 +179,7 @@ class ModifyMemory(Tool):
         if new_content is not None:
             node.content = new_content
         
-        if new_content == "" and new_stimuli == []:
+        if new_content is None and new_stimuli is None:
             del self.memory.memory['id']
 
         return self.get_output(node)

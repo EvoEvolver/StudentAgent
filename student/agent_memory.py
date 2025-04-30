@@ -35,9 +35,9 @@ class MemoryNode:
         return self.keys
     
 
-    def remove_keys(self, rem_keys: List[str]):
-        assert isinstance(rem_keys, List)
-        for key in rem_keys:
+    def remove_keys(self, rem_keys: Set[str]):
+        assert isinstance(rem_keys, Set)
+        for key in list(rem_keys):
             assert isinstance(key, str)
             self.keys.remove(key)
         return self.keys
@@ -110,7 +110,7 @@ class Memory:
     def get_nodes(self) -> List[MemoryNode]:
         nodes = []
         for node in self.memory.values():
-            if len(node.content) > 0:
+            if len(node.content) > 0 and len(node.keys) > 0:
                 nodes.append(node)
                 node.set_embeddings()
         return nodes
@@ -124,11 +124,17 @@ class Memory:
         '''
         scores = []
         nodes = self.get_nodes()
-        if nodes is None:
-            return []
+        if len(nodes) == 0:
+            return {}
 
         for node in nodes:
-            scores.append(node.get_score(queries))
+            node_scores = node.get_score(queries)
+            node_scores = np.array(node_scores)
+
+            if node_scores.ndim == 0:
+                node_scores = np.expand_dims(node_scores, axis=0)
+
+            scores.append(node_scores)
 
         scores = np.array(scores)
         score_summation_for_src = np.sum(scores, axis=0)
@@ -136,7 +142,7 @@ class Memory:
         scores = scores / score_norm_factor_for_src
         scores = np.sum(scores, axis=1)
         
-        excited_nodes = []
+        excited_nodes = {}
         if max_recall == 1:
             top_index = np.argmax(scores)
             node = nodes[top_index]
@@ -150,7 +156,7 @@ class Memory:
                 break
 
             node : MemoryNode = nodes[top_k_indices[i]]
-            excited_nodes.append(node.__str__())
+            excited_nodes[node.id] = node.__str__()
         return excited_nodes
         
     
