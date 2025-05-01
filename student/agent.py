@@ -5,7 +5,7 @@ from typing import List, Dict, Union
 import json
 
 
-class MemoryAgent:
+class StudentAgent:
     memory : Memory
     tools : Dict[str, Tool]
     system_prompt : str
@@ -46,23 +46,6 @@ class MemoryAgent:
         - To change the stimuli of a memory entry, follow the guidelines for <add/>.
         - To delete a memory entry, provide None as stimuli and new content.
         </modify>
-        """
-        
-        a="""
-        If you opt to use a tool, it will be automatically called from your response and you are reprompted with the output as a new assistant message.
-        If you use tools, you are reprompted including the output of the tools.
-        You are required to output a JSON object as defined by the provided JSON schema.
-        <output>
-            You are required to output a JSON object as defined by the JSON schema.
-            Your goal is to solve the task through step-by-step reasoning and actions, and return the result in this structured format.
-            You are required to explain all your steps as thoughts.
-            - react (set of thoughts and actions)
-                - thoughts: text that captures the intention of an action, a reasoning step or a reflection
-                - actions: You can respond with <actions/> to use your tools.
-            - response ()
-                - final answer to the user
-
-        </output>
         """
 
         self.reset_chat()

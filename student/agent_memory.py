@@ -89,9 +89,48 @@ class MemoryNode:
             <content>{self.content}</content>
         </memory>
         """
+    
+
+    def render_html(self) -> str:
+        """
+        Return a readable HTML representation of a MemoryNode.
+        `max_emb_len` controls how many chars of each embedding to show before adding an ellipsis.
+        """
+        from IPython.display import HTML
+        import html
+
+        keys_html = "".join(f"<li>{html.escape(k)}</li>" for k in sorted(self.keys))
+        content_html = html.escape(self.content).replace("\n", "<br>")
+
+        return HTML(f"""\
+    <style>
+    .memory-node {{
+        font-family: system-ui, sans-serif;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: .5rem 0;
+        max-width: 200px;
+    }}
+    .memory-node h3 {{ margin: 0 0 .5rem 0; font-size: 1.25rem; }}
+    .memory-node ul {{ margin: .25rem 0 .75rem 1rem; }}
+    .memory-node p {{ margin: 0; white-space: pre-wrap; }}
+    </style>
+
+    <div class="memory-node">
+    <strong>Keys</strong>
+    <ul>{keys_html}</ul>
+
+    <strong>Content</strong>
+    <p>{content_html}</p>
+    </div>
+    """)
+
 
 
 class Memory:
+    memory : Dict[str, MemoryNode]
+
     def __init__(self):
         self.memory : Dict[str, MemoryNode] = {}
     
@@ -161,41 +200,6 @@ class Memory:
         
     
     
-    def search(self, queries: List[str], top_k=10) -> Dict[str, str]:
-        '''
-        scores = []
-        nodes = self.get_nodes()
-
-        for node in nodes:
-            scores.append(node.get_score(queries))
-        
-        scores = np.array(scores)
-        score_summation_for_src = np.sum(scores, axis=0)
-        # replace 0 entries by 1
-        score_norm_factor_for_src = score_summation_for_src + (score_summation_for_src == 0.0)
-        # normalize scores by the summation of each src
-        scores = scores / score_norm_factor_for_src
-        scores = np.sum(scores, axis=1)
-        top_k_indices = np.argsort(scores)
-        
-        curr_index = len(top_k_indices) - 1
-        top_excited_nodes = []
-        while True:
-            # break if the score is too low
-            if scores[top_k_indices[curr_index]] <= 0.0001:
-                break
-            index_to_add = top_k_indices[curr_index]
-            top_excited_nodes.append(nodes[index_to_add])
-            if len(top_excited_nodes) == top_k:
-                break
-            curr_index -= 1
-            if curr_index < 0:
-                break
-        return top_excited_nodes
-        '''
-        pass
-
-
     def search_and_filter(self, context, src_list: list[str], top_k=10, node_to_exclude=None):
         '''
         top_excited_nodes = self.search(src_list, top_k, node_to_exclude=node_to_exclude)
@@ -230,31 +234,6 @@ class Memory:
         pass
 
 
-    def self_consistent_search(self, instruction: str, src_list: list[str], top_k=10):
-        '''
-        node_in_context = []
-        src_list = src_list[:]
-        while True:
-            context = f"""
-            You are search memory about `{instruction}`
-            You have recalled the following memory:
-            """
-            for node in node_in_context:
-                context += f"""
-                <memory>
-                {node.content()}
-                </memory>
-                """
-                if not node.terminal:
-                    src_list += node.src
-            new_nodes = self.search_and_filter(context, src_list, top_k=top_k, node_to_exclude=node_in_context)
-            node_in_context += new_nodes
-            n_non_terminal_new_nodes = sum([1 for node in new_nodes if not node.terminal])
-            if n_non_terminal_new_nodes == 0:
-                break
-        return node_in_context
-        '''
-        pass
 
     def save(self, save_path):
         # save the memory to a file
@@ -273,3 +252,38 @@ class Memory:
             node = MemoryNode._from_dict(d)
             self.memory[node.id] = node
 
+
+    def render_html(self, *, max_emb_len: int = 12):
+        """
+        Render an entire Memory object, laying each MemoryNode side-by-side.
+
+        Parameters
+        ----------
+        mem : Memory
+            The Memory instance whose nodes you want to visualize.
+        Returns
+        -------
+        IPython.display.HTML
+            A single HTML object showing all nodes in a flexbox container.
+        """
+        from IPython.display import HTML
+        import html
+        node_snippets = [
+            node.render_html().data
+            for node in self.memory.values()
+        ]
+
+        combined_html = f"""\
+    <style>
+    /* Flex container to place nodes side-by-side and wrap nicely. */
+    .memory-container {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }}
+    </style>
+    <div class="memory-container">
+        {''.join(node_snippets)}
+    </div>
+    """
+        return HTML(combined_html)
