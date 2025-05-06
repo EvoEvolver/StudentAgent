@@ -38,7 +38,6 @@ def setup_folder(path):
     return set_path(new_path)
     
 
-
     
 def assistant_decompose_instructions(user_input):
     decomposed_instruction = decompose_instruction(user_input)

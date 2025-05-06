@@ -1,102 +1,6 @@
-from abc import ABC, abstractmethod
-from mllm.chat import Chat
-import inspect
-from typing import get_origin, get_args, List, Dict
-from student.agent_memory import Memory, MemoryNode
-
-
-class Tool(ABC):
-    name : str
-    description : str
-
-    def __init__(self, name, description):
-        self.name = name
-        self.description = description
-
-    @abstractmethod
-    def run(self):
-        pass
-
-    def get_output(self):
-        return self.name
-
-    def parse(self) -> Dict:
-        func = self.run
-
-        sig = inspect.signature(func)
-        properties = {}
-        required = []
-        for param_name, param in sig.parameters.items():
-            if param_name == 'self':
-                continue 
-
-            param_schema = {}
-            default_json_type = "string"
-            item_schema = None
-
-            if param.annotation is not inspect.Parameter.empty:
-                origin = get_origin(param.annotation)
-                args = get_args(param.annotation)
-                if origin in (list, List):
-                    param_schema["type"] = "array"
-                    if args:
-                        inner_type = args[0]
-                        if inner_type == int:
-                            item_type = "integer"
-                        elif inner_type == float:
-                            item_type = "number"
-                        elif inner_type == bool:
-                            item_type = "boolean"
-                        elif inner_type == str:
-                            item_type = "string"
-                        else:
-                            item_type = default_json_type
-                        item_schema = {"type": item_type}
-                    else:
-                        item_schema = {}
-                elif param.annotation == int:
-                    param_schema["type"] = "integer"
-                elif param.annotation == float:
-                    param_schema["type"] = "number"
-                elif param.annotation == bool:
-                    param_schema["type"] = "boolean"
-                elif param.annotation == str:
-                    param_schema["type"] = "string"
-                else:
-                    param_schema["type"] = default_json_type
-            else:
-                param_schema["type"] = default_json_type
-
-            if param_schema.get("type") == "array" and item_schema is not None:
-                param_schema["items"] = item_schema
-
-            param_schema["description"] = f"Parameter {param_name}"
-            properties[param_name] = param_schema
-
-            if param.default == inspect.Parameter.empty:
-                properties[param_name] = param_schema
-        
-        required = list(properties.keys())
-        return {
-            "type": "object",
-            "properties": {
-                "function": {
-                    "type": "string",
-                    "const": self.name,
-                    "description": f"Calls the {self.name} function"
-                },
-                "parameters": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required,
-                    "additionalProperties": False
-                }
-            },
-            "required": ["function", "parameters"],
-            "additionalProperties": False
-        }
-
-
+from typing import List, Dict
+from .tools import Tool
+from ..agent_memory import Memory, MemoryNode
 
 
 class AddMemory(Tool):
@@ -169,6 +73,8 @@ class ModifyMemory(Tool):
 
     def run(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
         node : MemoryNode = self.memory.memory.get(id)
+        deleted=False
+
         if node is None:
             return "<tool>No memory found to modify: Incorrect ID!</tool>"
         
@@ -180,10 +86,14 @@ class ModifyMemory(Tool):
             node.content = new_content
         
         if new_content is None and new_stimuli is None:
-            del self.memory.memory['id']
+            del self.memory.memory[id]
+            deleted=True
 
-        return self.get_output(node)
+        return self.get_output(node, deleted=deleted)
 
-    def get_output(self, node):
+    def get_output(self, node, deleted=False):
+        if deleted:
+            out = f"<tool>Memory deleted.\n</tool>"
+            return out
         out = f"<tool>Modified memory with the updated memory: \n\t{node.__str__()}\n</tool>"
         return out

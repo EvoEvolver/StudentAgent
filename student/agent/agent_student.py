@@ -1,5 +1,7 @@
-from student.agent_memory import Memory
-from student.tools import Tool, AddMemory, ModifyMemory, RecallMemory
+from .agent_memory import Memory
+from .tools.tools import Tool
+from .tools.tools_memory import AddMemory, ModifyMemory, RecallMemory
+
 from mllm import Chat
 from typing import List, Dict, Union
 import json
@@ -12,7 +14,7 @@ class StudentAgent:
     chat : Chat
     id : int
 
-    def __init__(self, tools: Dict[str, Tool] = {}):
+    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None):
         self.tools = tools
         self.memory = Memory()
         self.add_memory_tools()
@@ -32,9 +34,11 @@ class StudentAgent:
         <recall>
         - To recall general memory, choose few abstract keywords related to the information you are looking for.
         - To recall detailed knowledge, use several less abstract keywords to reach more specific knowledge.
+        - You can extract new keywords from recalled knowledge by looking for xml elements containing keywords.
         </recall>
         <add>
         - To add memory general knowledge, choose abstract keywords as stimuli and try to only deposite abstract knowledge into the memory content.
+        - In the memory content you shoud highlight all major keywords that may be associated with other memory entries as empty xml elements with the keyword as element name: <keyword/>.
         - To add detailed knowledge (like examples), you must select both abstract and specific keywords.
         - If you have new knowledge you want to put into your memory, prefer <add/> over <modify/>.
         - After adding memory, you get a response that reflects if you successfully added the memory.
@@ -47,8 +51,12 @@ class StudentAgent:
         - To delete a memory entry, provide None as stimuli and new content.
         </modify>
         """
-
+        self.chat_config(cache, expensive)
         self.reset_chat()
+
+    def chat_config(self, cache=None, expensive=None):
+        self.cache = cache if cache is not None else True
+        self.expensive = expensive if expensive is not None else True
 
 
     def add_memory_tools(self):
@@ -56,20 +64,19 @@ class StudentAgent:
         modify = ModifyMemory(self.memory)
         recall = RecallMemory(self.memory)
         
-        self.tools = {
-            add.name : add,
-            modify.name : modify,
-            recall.name : recall,
-        }
+        self.tools[add.name] = add
+        self.tools[modify.name] = modify
+        self.tools[recall.name] = recall
+    
     
     def reset_chat(self):
         self.chat = Chat(system_message=self.system_prompt, dedent=False)
         self.id = 0
 
 
-    def run(self, prompt: str, cache=True, expensive=False, max_iter: int=10, schema=None):
+    def run(self, prompt: str, max_iter: int=10, schema:str=None, remove_tools:List[str]=[]):
         if schema is None:
-            schema = self.get_output_jsonschema()
+            schema = self.get_output_jsonschema(remove_tools=remove_tools)
         options = {"response_format": {
             "type": "json_schema",
             "json_schema": {
@@ -83,7 +90,7 @@ class StudentAgent:
 
         for i in range(max_iter):
                         
-            res = self.chat.complete(parse=None, cache=cache, expensive=expensive, options=options)
+            res = self.chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
             res = json.loads(res)
             done = self.use_tools(res)    
 
@@ -260,11 +267,14 @@ class StudentAgent:
         html_parts.append("</div>")
         return HTML("".join(html_parts))
 
-    def get_output_jsonschema(self):
+    def get_output_jsonschema(self, remove_tools=[]):
         function_branches = []
-
-        for name, tool in self.tools.items():
+        tools = self.tools
+        
+        for name, tool in tools.items():
             tool_name = name 
+            if name in remove_tools:
+                continue
             tool_schema = tool.parse()
 
             function_branches.append({
