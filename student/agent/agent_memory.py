@@ -130,15 +130,35 @@ class MemoryNode:
 
 class Memory:
     memory : Dict[str, MemoryNode]
+    keywords : Set[str]
 
     def __init__(self):
         self.memory : Dict[str, MemoryNode] = {}
+        self.keywords = set()
     
     def __size__(self) -> int:
         return len(self.memory.keys())
     
+    '''
+    def get_keywords(self) -> Set[str]:
+        keywords : Set[str] = set()
+        for node in self.get_nodes():
+            for k in node.keys:
+                keywords.add(k)
+        return keywords
+    '''
+
+    def get_node(self, id):
+        return self.memory.get(id)
+    
+    def delete_node(self, id):
+        del self.memory[id]
+        return
+
     def add(self, node: MemoryNode):
-        self.memory[node.id] = (node)
+        self.memory[node.id] = node
+        for k in node.keys:
+            self.keywords.add(k)
     
     def add_from_dict(self, node_dict: Dict) -> None:
         node = MemoryNode()
@@ -199,6 +219,26 @@ class Memory:
         return excited_nodes
         
     
+    def modify(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
+        node : MemoryNode = self.get_node(id)
+        deleted=False
+
+        if node is None:
+            return None, None
+        
+        if new_stimuli is not None:
+            node.remove_keys(node.keys)
+            node.add_keys(new_stimuli)
+
+        if new_content is not None:
+            node.content = new_content
+        
+        if new_content is None and new_stimuli is None:
+            self.delete_node(id)
+            deleted=True
+
+        return node, deleted
+
     
     def search_and_filter(self, context, src_list: list[str], top_k=10, node_to_exclude=None):
         '''

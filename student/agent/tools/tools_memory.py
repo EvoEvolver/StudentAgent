@@ -19,7 +19,7 @@ class AddMemory(Tool):
 
     def run(self, stimuli: list[str], content: str):
         new_node = MemoryNode(content=content, keys=stimuli)
-        self.memory.memory[new_node.id] = new_node
+        self.memory.add(new_node)
         return self.get_output(new_node)
 
     def get_output(self, new_node):
@@ -72,26 +72,12 @@ class ModifyMemory(Tool):
         self.memory = memory
 
     def run(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
-        node : MemoryNode = self.memory.memory.get(id)
-        deleted=False
-
-        if node is None:
-            return "<tool>No memory found to modify: Incorrect ID!</tool>"
-        
-        if new_stimuli is not None:
-            node.remove_keys(node.keys)
-            node.add_keys(new_stimuli)
-
-        if new_content is not None:
-            node.content = new_content
-        
-        if new_content is None and new_stimuli is None:
-            del self.memory.memory[id]
-            deleted=True
-
+        node, deleted = self.memory.modify(id, new_stimuli, new_content)
         return self.get_output(node, deleted=deleted)
 
     def get_output(self, node, deleted=False):
+        if node is None:
+            return "<tool>No memory found to modify: Incorrect ID!</tool>"
         if deleted:
             out = f"<tool>Memory deleted.\n</tool>"
             return out
