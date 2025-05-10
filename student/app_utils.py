@@ -32,7 +32,7 @@ def run_agent(st):
 
 
 def render_content(st, message):
-    return st.session_state.agent.render_content(message)
+    return st.session_state.agent.render_content(message, no_background=True)
 
 
 def display_chat(st, show_reasoning=False):
@@ -45,4 +45,48 @@ def display_chat(st, show_reasoning=False):
         for message in messages:
             role = message['role']
             content = render_content(st, message)
-            st.chat_message(role).markdown(content, unsafe_allow_html=True)
+            #add_message(st, role, content, html=True)
+            with st.chat_message(role):
+                st.html(content)
+
+
+
+
+def add_message(st, role, content, html=True):
+ 
+    background_color="light_amber"
+    background_color_set = {
+        'light_orange': '#FFF7EB',
+        'light_blue': '#F0F8FF',
+        'light_green': '#F0FFF0',
+        'light_red': '#FFF0F5',
+        'light_yellow': '#FFFFE0',
+        'light_purple': '#F8F8FF',
+        'light_pink': '#FFF0F5',
+        'light_cyan': '#E0FFFF',
+        'light_lime': '#F0FFF0',
+        'light_teal': '#E0FFFF',
+        'light_mint': '#F0FFF0',
+        'light_lavender': '#F8F8FF',
+        'light_peach': '#FFEFD5',
+        'light_rose': '#FFF0F5',
+        'light_amber': '#FFFFE0',
+        'light_emerald': '#F0FFF0',
+        'light_platinum': '#F1EEE9',
+    }
+
+    if background_color in background_color_set:
+        background_color = background_color_set[background_color]
+    if not html:
+        content = html.escape(content)
+        content = content.replace('\n', '<br/>')
+
+    output_html = f'''
+    <p style="background-color: {background_color}; padding: 20px; border-radius: 8px; color: #333;">
+        <strong>{role}</strong> 
+        <br/>
+        {content}
+    </p>
+    '''
+    with st.chat_message(role):
+        st.html(output_html)

@@ -28,6 +28,8 @@ if st.session_state.get("set_mode", False):
         "Show reasoning",
         key="show_reasoning"
     )
+    # Button that allows to delete the conversational history for the agent. The chat should remain!
+    # Button to reset the agent + chat
 
     load_agent(st, mode)
     load_history(st)

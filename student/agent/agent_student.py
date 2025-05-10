@@ -185,13 +185,13 @@ class StudentAgent:
     def get_memory_tool_mask(self):
         return [name for name in self.tools.keys() if name not in ["add", "recall", "modify"]]
 
-    def render_content(self, message):
+    def render_content(self, message, no_background=False):
         parsed = json.dumps(message)
         parsed = json.loads(parsed)["content"]['text']
-        return self.render_message_content(parsed)
+        return self.render_message_content(parsed, no_background=no_background)
     
 
-    def render_message_content(self, parsed):
+    def render_message_content(self, parsed, no_background=False):
         inner_parts = []
 
         if type(parsed) == str and parsed[0] != "{":
@@ -250,7 +250,8 @@ class StudentAgent:
 
                 if text:
                     if text.strip().startswith("<"):
-                        formatted_text = f"<pre style='background:#f8f8f8; padding:8px; border-radius:6px; overflow:auto; font-family:monospace; font-size:0.9em'><code style='background:none; color:inherit'>{html.escape(text)}</code></pre>"
+                        b  = "background:#f8f8f8;" if no_background else ""
+                        formatted_text = f"<pre style='{b}padding:8px; border-radius:6px; overflow:auto; font-family:monospace; font-size:0.9em'><code style='background:none; color:inherit'>{html.escape(text)}</code></pre>"
                     else:
                         formatted_text = html.escape(text).replace("\n", "<br>")
                     inner_parts.append(f"<div style='margin-top:5px;'><strong>Response:</strong><br>{formatted_text}</div>")
