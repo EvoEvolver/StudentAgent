@@ -1,16 +1,15 @@
 from .agent_student import StudentAgent
 from .agent_memory import Memory
 
-from .tools.tools_raspa import CoreMofLoader, TrappeLoader, ExecuteRaspa, ReadFile, WriteFile
+from .tools.tools_raspa import CoreMofLoader, TrappeLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser
 from .tools.tools import Tool
 from .tools.tools_memory import AddMemory, ModifyMemory, RecallMemory
-
-from .tools.input_gen import init_molecule_name_memory, init_framework_memory
 
 from mllm import Chat
 from typing import List, Dict, Union
 import json
 import os
+from .utils import *
 
 
 class RaspaAgent(StudentAgent):
@@ -27,38 +26,80 @@ class RaspaAgent(StudentAgent):
 
 
     def __init__(self, path="output"):
-        molecule_memory = init_molecule_name_memory()
-        framework_memory = init_framework_memory()
+        # molecule_memory = init_molecule_name_memory()
+        #framework_memory = init_framework_memory()
 
         raspa_tools = {
-            "coremof": CoreMofLoader(framework_memory, path),
-            "trappe": TrappeLoader(molecule_memory, path),
+            "coremof": CoreMofLoader(path),
+            "trappe": TrappeLoader(path),
             "raspa": ExecuteRaspa(),
+            "input": InputFile(),
             "read": ReadFile(),
             "write": WriteFile(),
+            "files": InspectFiles(),
+            "output": OutputParser(),
         }
 
         super().__init__(tools=raspa_tools)
 
-        self.setup_path(path)
+        self.reset(path)
     
     
     def setup_path(self, path : str) -> None:
         os.makedirs(path, exist_ok=True)
         self.path = path
+        for tool in self.tools.values():
+            if hasattr(tool, "path"):
+                tool.path = path
         return 
 
 
-    def run(self):
-        super().run()
-        # Setup
-        # Get input
+    def reset(self, path=None):
+        if path is not None:
+            self.setup_path(path)
+        self.tools['coremof'].has_file = False 
+        self.tools['trappe'].has_file = False
+        self.tools['input'].has_file = False
+        return
+
+
+    def check_files(self):
+        if self.tools['coremof'].has_file and self.tools['trappe'].has_file and self.tools['write'].has_file:
+            return True
+        return False
+
+
+    def run(self, prompt):
+        self.setup()
+        remove_tools = self.get_tool_mask()
+        
         # Evaluate input (generate input files)
-        #
+        res = super().run(prompt, remove_tools=remove_tools)
+        
         # Ask for feedback
         # Run and return output
-    
-        pass
+        output = res
+        return output
 
+
+    def get_tool_mask(self):
+        if self.check_files():
+            return []
+        else:
+            return ["raspa"]
+
+
+    def setup(self):
+        #self.init_special_memories()
+        return
+    
+    '''
+    def init_special_memories(self):
+        for tool in self.tools.values():
+            if hasattr(tool, "init_memory_prompt"):
+                prompt = tool.init_memory_prompt()
+                self.add_explicit_knowledge(prompt)
+        return
+    '''
 
 

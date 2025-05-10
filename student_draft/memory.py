@@ -2,7 +2,7 @@ import json
 import numpy as np
 from mllm import Chat, get_embeddings
 
-from student.bm25_indexing import get_bm25_score
+from student_draft.bm25_indexing import get_bm25_score
 
 
 class MemoryNode:

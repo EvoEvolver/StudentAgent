@@ -3,13 +3,13 @@ import shutil
 import streamlit as st
 import subprocess
 
-from student.agent_input_file import get_input_file_memory, decompose_instruction
+from student_draft.agent_input_file import get_input_file_memory, decompose_instruction
 
-from student.input_gen.simulation import input_generation, generate_simulation_input
-from student.input_gen.generate_mol_definition import generate_molecule_def
+from student_draft.input_gen.simulation import input_generation, generate_simulation_input
+from student_draft.input_gen.generate_mol_definition import generate_molecule_def
 
-from student.io_interface import echo, echo_code
-from student.memory import Memory
+from student_draft.io_interface import echo, echo_code
+from student_draft.memory import Memory
 from input_gen.memory_molecule import init_molecule_name_memory
 from input_gen.memory_framework import init_framework_memory, generate_framework_file
 

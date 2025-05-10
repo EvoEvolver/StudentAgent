@@ -1,7 +1,7 @@
 from mllm import Chat
-from student.io_interface import echo, echo_box
-from student.latex_parsing import get_raspa_memory
-from student.memory import Memory, MemoryNode
+from student_draft.io_interface import echo, echo_box
+from student_draft.latex_parsing import get_raspa_memory
+from student_draft.memory import Memory, MemoryNode
 
 
 def add_knowledge_by_instruction(memory: Memory, instruction: str):

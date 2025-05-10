@@ -5,7 +5,7 @@ from typing import List
 from mllm import Chat
 from mllm.utils import p_map
 
-from student.latex_parsing import split_latex_sections
+from student_draft.latex_parsing import split_latex_sections
 
 def decompose_instruction(instruction: str):
     prompt = f"""
