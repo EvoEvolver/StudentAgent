@@ -14,17 +14,21 @@ from .output import output_parser
 
 
 class RaspaTool(Tool):
-    def __init__(self, name, description, path=None):
+    def __init__(self, name, description, path=None, path_add=None):
         super().__init__(name, description)
         self.path = path
+        self.path_add = path_add
     
-    def get_path(self):
-        if self.path is  None:
+    def get_path(self, full=False):
+        if self.path is None:
             #raise RuntimeWarning(f"No path was set for {self.name}.")
             print(f"Warning: No path was set for {self.name}!")
             return "./"
         else:
-            return self.path
+            if full is True and self.path_add is not None:
+                return os.path.join(self.path, self.path_add)
+            else:
+                return self.path
 
 
 class InspectFiles(RaspaTool):
@@ -39,7 +43,7 @@ class InspectFiles(RaspaTool):
         '''
         Return files hierarchy starting from self.get_path()
         '''
-        path = self.get_path()
+        path = self.get_path(full=True)
         
         files : List[str] = all_files(path)
         return tool_response(self.name, files)
@@ -55,7 +59,7 @@ class ReadFile(RaspaTool):
         super().__init__(name, description, path)
         
     def run(self, file_name):
-        path = self.get_path()
+        path = self.get_path(full=True)
         
         content = None
         file_name = os.path.join(path, file_name)
@@ -69,7 +73,7 @@ class ReadFile(RaspaTool):
 
 
     def get_output(self, file_name, content=None):
-        if content is None:
+        if content is not None:
             return tool_response(self.name, file(file_name, content))
         else:
             return error("File not found {file_name}")
@@ -86,7 +90,7 @@ class WriteFile(RaspaTool):
         super().__init__(name, description, path)
         
     def run(self, file_content, file_name):
-        path = self.get_path()
+        path = self.get_path(full=True)
         error = None
         try:
             os.makedirs(path, exist_ok=True)
@@ -132,7 +136,6 @@ class ExecuteRaspa(RaspaTool):
         
 
     def run(self):
-        path = self.get_path()
         self.get_run_file()
         out = self.run_raspa()
         return self.get_output(out)
@@ -148,7 +151,7 @@ class ExecuteRaspa(RaspaTool):
             raise EnvironmentError("RASPA_DIR not found in .env which is required for running raspa!")
 
         content = f"#! /bin/sh -f\nexport RASPA_DIR={raspa_dir}\n$RASPA_DIR/bin/simulate"
-        path = self.get_path()
+        path = self.get_path(full=True)
         file_path = os.path.join(path, "run.sh")
         with open(file_path, "w") as f:
             f.write(content)
@@ -158,7 +161,7 @@ class ExecuteRaspa(RaspaTool):
     def run_raspa(self):
         process = subprocess.Popen(
             ['bash', 'run.sh'],
-            cwd=self.get_path(),
+            cwd=self.get_path(full=True),
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
@@ -185,7 +188,7 @@ class TrappeLoader(RaspaTool):
         res = self.search_names(molecule_names)
         ids = [self.get_molecule_id(name) for name in res]
 
-        out_path = self.get_path()
+        out_path = self.get_path(full=True)
 
         try:
             filenames = generate_molecule_def(molecule_ids=ids, names=molecule_names, output_dir=out_path)
@@ -212,7 +215,7 @@ class TrappeLoader(RaspaTool):
         # URL to scrape
         url = "http://trappe.oit.umn.edu/scripts/search_select.php"
         # check if the data is already downloaded
-        file_path = os.path.join(self.get_path(), "trappe_molecule_list.json")
+        file_path = os.path.join(self.get_path(full=False), "trappe_molecule_list.json")
         try:
             with open(file_path) as f:
                 return json.load(f)
@@ -280,7 +283,7 @@ class CoreMofLoader(RaspaTool):
         name = self.search_names(mof_name)
         if name is None:
             return self.get_output("", error="No entry found in coremof names.")
-        path = self.get_path()
+        path = self.get_path(full=True)
         out_path = os.path.join(path, output_file)
         datasets = self.get_coremof_datasets(name)
         if datasets is None:
@@ -354,7 +357,7 @@ class OutputParser(RaspaTool):
         super().__init__(name, description, path)
     
     def run(self, file_path):
-        path = os.path.join(self.get_path(), file_path)
+        path = os.path.join(self.get_path(full=True), file_path)
         
         try:
             with open(path) as in_file:
@@ -362,11 +365,9 @@ class OutputParser(RaspaTool):
             out = output_parser.parse(data)
             
             out = self.filter(out)
-            return out
             
         except Exception as e:
-            raise e
-            return error(f"Error with output parsing: {e}")
+            return error(f"Error with output parsing: {e}, (path={path})")
         return tool_response(self.name, out)
     
 

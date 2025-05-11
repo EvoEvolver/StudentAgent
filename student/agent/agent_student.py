@@ -63,6 +63,25 @@ class StudentAgent:
         self.expensive = expensive if expensive is not None else True
 
 
+    def load_memory(self, file:str):
+        if os.path.exists(file):
+            try:
+                self.memory.load(file)
+                return True
+            except Exception as e:
+                print("Error loading memory: ", e)
+                return None
+        return False
+    
+    def save_memory(self, file: str):
+        try:
+            self.memory.save(file)
+            return True
+        except Exception as e:
+            print("Error saving memory: ", e)
+            return False
+        
+
     def add_memory_tools(self):
         add = AddMemory(self.memory)
         modify = ModifyMemory(self.memory)
@@ -250,8 +269,10 @@ class StudentAgent:
 
                 if text:
                     if text.strip().startswith("<"):
-                        b  = "background:#f8f8f8;" if no_background else ""
-                        formatted_text = f"<pre style='{b}padding:8px; border-radius:6px; overflow:auto; font-family:monospace; font-size:0.9em'><code style='background:none; color:inherit'>{html.escape(text)}</code></pre>"
+                        if no_background is True:
+                            formatted_text = f"<pre style='background:#2d2d2d; color:#e0e0e0; padding:8px; border-radius:6px; overflow:auto; font-family:monospace; font-size:0.9em'><code style='background:none; color:inherit'>{html.escape(text)}</code></pre>"
+                        else:
+                            formatted_text = f"<pre style='background:#f8f8f8; padding:8px; border-radius:6px; overflow:auto; font-family:monospace; font-size:0.9em'><code style='background:none; color:inherit'>{html.escape(text)}</code></pre>"
                     else:
                         formatted_text = html.escape(text).replace("\n", "<br>")
                     inner_parts.append(f"<div style='margin-top:5px;'><strong>Response:</strong><br>{formatted_text}</div>")

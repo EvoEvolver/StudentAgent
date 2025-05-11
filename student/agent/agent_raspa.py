@@ -23,6 +23,7 @@ class RaspaAgent(StudentAgent):
     molecule_memory : Memory
     framework_memory: Memory
     path : str
+    path_add : str
 
 
     def __init__(self, path="output"):
@@ -42,7 +43,8 @@ class RaspaAgent(StudentAgent):
 
         super().__init__(tools=raspa_tools)
 
-        self.reset(path)
+        self.reset(path)        # base path
+        self.path_add = ""      # add onto path for simulations
     
     
     def setup_path(self, path : str) -> None:
@@ -52,9 +54,24 @@ class RaspaAgent(StudentAgent):
             if hasattr(tool, "path"):
                 tool.path = path
         return 
+    
+    def set_path_add(self, path_add):
+        self.path_add = path_add
+        full_path = self.get_full_path()
+        os.makedirs(full_path, exist_ok=True)
+        for tool in self.tools:
+            if hasattr(tool, path_add):
+                tool.path_add = path_add
+        return full_path
+        
+    def get_full_path(self):
+        return os.path.join(self.path, self.path_add)
 
 
     def reset(self, path=None):
+        '''
+        # TODO: fully reset everything except for memory
+        '''
         if path is not None:
             self.setup_path(path)
         self.tools['coremof'].has_file = False 

@@ -1,3 +1,5 @@
+import os
+import shutil
 from agent.agent_raspa import RaspaAgent
 from agent.agent_student import StudentAgent
 
@@ -5,17 +7,24 @@ import streamlit as st
 from streamlit.components.v1 import html
 
 
-def load_agent(st, mode):
+def load_agent(st, mode, path):
     if (
         "agent" not in st.session_state
         or st.session_state.agent_mode != mode
     ):
         st.session_state.agent_mode = mode
         if mode == "RASPA":
-            st.session_state.agent = RaspaAgent()
+            st.session_state.agent = RaspaAgent(path=path)
         else:
             st.session_state.agent = StudentAgent()
-        
+
+def load_memory(st, memory_path):
+    agent = get_agent(st)
+    return agent.load_memory(memory_path)
+
+def save_memory(st, memory_path):
+    agent = get_agent(st)
+    return agent.save_memory(memory_path)
 
 def load_history(st):
     if "history" not in st.session_state:
@@ -29,6 +38,45 @@ def run_agent(st):
         with st.spinner("Thinking…"):
             reply = st.session_state.agent.run(prompt=user_input)
         st.session_state.history.append(("assistant", reply))
+
+def run_raspa(st):
+    # TODO
+    with st.spinner("Running..."):
+        agent = get_agent()
+        if type(agent, RaspaAgent):
+            agent.tools['raspa'].run()
+        else:
+            raise Exception("Error running RASPA manually.")
+    return True
+
+
+def next_folder(path):
+    os.makedirs(path, exist_ok=True)
+    existing_folders = [
+        d for d in os.listdir(path)
+        if os.path.isdir(os.path.join(path, d)) and d.isdigit()
+    ]
+    if existing_folders:
+        next_num = max(int(folder) for folder in existing_folders) + 1
+    else:
+        next_num = 1
+    new = str(next_num)
+    new_path = os.path.join(path, new)
+    os.makedirs(new_path, exist_ok=True)
+
+    return new, new_path
+
+
+def get_agent(st):
+    return st.session_state.agent
+
+def setup_path(path):
+    # st.session_state.path = path
+    agent = get_agent(st)
+    if type(agent) == RaspaAgent:
+        new, path = next_folder(path)
+        agent.set_path_add(new)
+    return path
 
 
 def render_content(st, message):

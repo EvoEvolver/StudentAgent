@@ -68,15 +68,16 @@ class MemoryNode:
         return {
             "id": self.id,
             "content": self.content,
-            "keys": self.keys,
+            "keys": list(self.keys),
         }
 
     def _from_dict(self, d):
         self.content = d["content"]
-        self.keys = d["keys"]
+        self.keys = set(d["keys"])
         if "id" in d.keys():
             self.id = d["id"]
     
+    @classmethod
     def from_dict(cls, d):
         new_node = MemoryNode()  
         new_node._from_dict(d)
@@ -289,7 +290,7 @@ class Memory:
         with open(load_path) as f:
             memory_list = json.load(f)
         for d in memory_list:
-            node = MemoryNode._from_dict(d)
+            node = MemoryNode().from_dict(d)
             self.memory[node.id] = node
 
 
