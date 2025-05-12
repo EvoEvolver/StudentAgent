@@ -18,25 +18,23 @@ if "chat" not in st.session_state:
     
     mode = st.radio("Select Mode:", ["Student", "RASPA"], key="mode")
 
-    if "load_mem" not in st.session_state:
-        load_mem = st.checkbox(
-            "Load memory",
-            value=st.session_state.get("load_mem", True),
-            key="load_mem"
-        )
-    
-    load_agent(st, mode, path)
-    setup_path(path) # only relevant for RASPA agent: creates a new subdir
+    load_mem = st.checkbox(
+        "Load memory",
+        value=st.session_state.get("load_mem", True),
+        key="load_mem"
+    )
 
+    load_agent(st, mode, path)
+    
     if st.button("Start Chat"):
         st.session_state.chat = True
         st.session_state.agent_mode = mode
         
+        setup_path(path) # only relevant for RASPA agent: creates a new subdir
         if st.session_state.get("load_mem", False):
             load_memory(st, memory_path)
 
         st.rerun()
-
 
 
 if st.session_state.get("chat", False):
@@ -45,7 +43,6 @@ if st.session_state.get("chat", False):
     with st.sidebar:
         st.header("Settings")
         empty_line(st, 2)
-
 
         # Checkbox: show reasoning?
         show_reasoning = st.checkbox(
@@ -68,6 +65,7 @@ if st.session_state.get("chat", False):
                 # Button: Manually run RASPA
                 if st.button("Run RASPA", key="run_raspa_auto"):
                     run_raspa(st)
+                    # some kind of progress bar for running raspa run             (TODO advanced: parse output, ...)
             else:
                 empty_line(st, 1)
 
@@ -96,16 +94,15 @@ if st.session_state.get("chat", False):
         empty_line(st, 3)
 
 
-        # Button: reset the agent + chat                           
-        if st.button("🔄 Reset All", key="reset"):
-            st.session_state.clear()
-            st.rerun()    
-        
-        # Button to delete the conversational history for the agent   (TODO: add st message history OR rather make a mask for the agent's messages in the running)
+        # Button to delete the conversational history for the agent
         if st.button("🔄 Reset Agent", key="reset_messages"):
             reset_messages(st)
 
-        # some kind of progress bar for running raspa run             (TODO advanced: parse output, ...)
+        # Button: reset the agent + chat                           
+        if st.button("Reset All", key="reset"):
+            st.session_state.clear()
+            st.rerun()    
+        
 
 
     load_agent(st, mode, path)

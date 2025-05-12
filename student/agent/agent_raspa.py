@@ -60,8 +60,8 @@ class RaspaAgent(StudentAgent):
         self.path_add = path_add
         full_path = self.get_full_path()
         os.makedirs(full_path, exist_ok=True)
-        for tool in self.tools:
-            if hasattr(tool, path_add):
+        for tool in self.tools.values():
+            if hasattr(tool, "path_add"):
                 tool.path_add = path_add
         return full_path
         

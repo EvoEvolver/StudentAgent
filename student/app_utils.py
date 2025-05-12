@@ -41,7 +41,7 @@ def save_conversation(st, note, path):
     agent = get_agent(st)
     file = next_note(path)
     if type(agent) == RaspaAgent:
-        path = agent.get_path(full=True)
+        path = agent.get_full_path()
     
     path = os.path.join(path, "conversations")
     os.makedirs(path, exist_ok=True)
@@ -86,7 +86,6 @@ def get_agent(st) -> StudentAgent:
 
 
 def setup_path(path):
-    # st.session_state.path = path
     agent = get_agent(st)
     if type(agent) == RaspaAgent:
         new, path = next_folder(path)
