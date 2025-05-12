@@ -97,7 +97,7 @@ if st.session_state.get("chat", False):
 
 
         # Button: reset the agent + chat                           
-        if st.button("🔄 Reset", key="reset"):
+        if st.button("🔄 Reset All", key="reset"):
             st.session_state.clear()
             st.rerun()    
         

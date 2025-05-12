@@ -14,14 +14,14 @@ class StudentAgent:
     system_prompt : str
     chat : Chat
     id : int
-    
+    conversation : List
 
     def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None):
         self.tools = tools
         self.memory = Memory()
         self.add_memory_tools()
         self.id = 0
-        
+        self.conversation = [] # list of conversations. new list starts at each reset
 
         self.system_prompt = """
         You are an agent with a dynamic, long-term memory. 
@@ -71,6 +71,7 @@ class StudentAgent:
    
     def reset_chat(self):
         self.chat = Chat(system_message=self.system_prompt, dedent=False)
+        self.conversation.append([])
         
     
     def reset_id(self):
@@ -102,18 +103,22 @@ class StudentAgent:
             }
         }
         self.chat += prompt
-
+        n_tool_responses = 0
         for i in range(max_iter):
-            response, done = self._run(options)     
+            response, done, n = self._run(options)     
+            n_tool_responses += n
             if done:
-                break            
+                break         
+        
+        n = i + 2 + n_tool_responses # number of new messages = (i+1) responses + 1 user message
+        self.update_conversation(n)   
         return self.response(response)
     
     def _run(self, options):
         res = self.chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
         res = json.loads(res)
-        done = self.use_tools(res)    
-        return res, done
+        done, n_tool_responses = self.use_tools(res)    
+        return res, done, n_tool_responses
     
     def response(self, message: Dict):
         response = message.get("response", '')
@@ -131,6 +136,22 @@ class StudentAgent:
         self.chat.messages.append(message)
 
 
+    def update_conversation(self, n_messages):
+        #for n in range(n_messages):
+        #    message = self.chat.messages[-(n_messages-n)]
+        #    self.conversation[-1].append(message)
+        new_messages = self.chat.messages[-n_messages:] if n_messages > 0 else []
+        self.conversation[-1].extend(new_messages)
+
+
+    def get_conversation(self):
+        conv = []    
+        for conversation in self.conversation:
+            for message in conversation:
+                conv.append(message)
+            conv.append("reset")
+        return conv[:-1]
+
     def get_next_id(self):
         self.id += 1
         return self.id
@@ -140,6 +161,7 @@ class StudentAgent:
         '''
         Return a boolean indicating, >=1 tool call is present.
         '''
+        n = 0
         done = True
         tool_messages = []
         for call in message['react']:
@@ -148,8 +170,9 @@ class StudentAgent:
                 tool_messages.append(message)
                 if success is False:
                     done = False
+                n += 1
         self.add_message(tool_messages)
-        return done
+        return done, n
 
     
     def _use_tool(self, call):
@@ -207,7 +230,7 @@ class StudentAgent:
             json.dump(
                 {
                     "note" : note,
-                    "messages": self.chat.messages,
+                    "messages": self.conversation,
                     'id': self.id,
                 },
                 f,
@@ -225,7 +248,8 @@ class StudentAgent:
 
         # Only loads the messages if no previous conversation happened.
         if reset is True:
-            self.chat.messages = messages
+            self.conversation = messages
+            self.chat.messages = messages[-1]
             self.id = id
 
         return messages

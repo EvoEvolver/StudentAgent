@@ -43,6 +43,9 @@ def save_conversation(st, note, path):
     if type(agent) == RaspaAgent:
         path = agent.get_path(full=True)
     
+    path = os.path.join(path, "conversations")
+    os.makedirs(path, exist_ok=True)
+
     file = os.path.join(path, file)
     agent.save_conversation(filename=file, note=note)
     return
@@ -64,7 +67,7 @@ def next_note(path: str) -> str:
                 max_index = idx
 
     next_index = max_index + 1
-    return os.path.join("conversations", f"note_{next_index}.txt")
+    return f"note_{next_index}.txt"
 
 
 def run_agent(st):
@@ -93,9 +96,6 @@ def setup_path(path):
 
 def reset_messages(st):
     agent = get_agent(st)
-    messages = agent.chat.messages
-    
-
     agent.reset_chat()
     return
 
@@ -103,7 +103,7 @@ def reset_messages(st):
 
 def run_raspa(st):
     with st.spinner("Running..."):
-        agent = get_agent()
+        agent = get_agent(st)
         if type(agent, RaspaAgent):
             agent.tools['raspa'].run()
         else:
@@ -147,13 +147,17 @@ def display_chat(st, show_reasoning=False):
             st.chat_message(role).write(msg)
             
     else:
-        messages = st.session_state.agent.chat.messages
+        agent = get_agent(st)
+        messages = agent.get_conversation()
         for message in messages:
-            role = message['role']
-            content = render_content(st, message)
-            #add_message(st, role, content, html=True)
-            with st.chat_message(role):
-                st.html(content)
+            if message == "reset":
+                st.info("🔄 Conversation has been reset.")
+            else:
+                role = message['role']
+                content = render_content(st, message)
+                #add_message(st, role, content, html=True)
+                with st.chat_message(role):
+                    st.html(content)
 
 
 def add_message(st, role, content, html=True):
