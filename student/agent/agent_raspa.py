@@ -24,6 +24,7 @@ class RaspaAgent(StudentAgent):
     framework_memory: Memory
     path : str
     path_add : str
+    auto_run : bool
 
 
     def __init__(self, path="output"):
@@ -45,7 +46,7 @@ class RaspaAgent(StudentAgent):
 
         self.reset(path)        # base path
         self.path_add = ""      # add onto path for simulations
-    
+        self.auto_run = False
     
     def setup_path(self, path : str) -> None:
         os.makedirs(path, exist_ok=True)
@@ -100,16 +101,28 @@ class RaspaAgent(StudentAgent):
 
 
     def get_tool_mask(self):
-        if self.check_files():
-            return []
-        else:
+        mask = []
+
+        # self.auto_run controls visibility of the raspa tool:
+        if self.auto_run is False:
+            mask.append("raspa")
+
+        # all required files need to be present:
+        elif not self.check_files():
             return ["raspa"]
+
+        return mask
 
 
     def setup(self):
         #self.init_special_memories()
         return
     
+    def set_auto(self, auto):
+        self.auto_run = auto
+        return
+
+
     '''
     def init_special_memories(self):
         for tool in self.tools.values():

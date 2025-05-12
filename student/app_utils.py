@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from agent.agent_raspa import RaspaAgent
 from agent.agent_student import StudentAgent
@@ -6,6 +7,8 @@ from agent.agent_student import StudentAgent
 import streamlit as st
 from streamlit.components.v1 import html
 
+
+############ Agent utils ############
 
 def load_agent(st, mode, path):
     if (
@@ -30,17 +33,75 @@ def load_history(st):
     if "history" not in st.session_state:
         st.session_state.history = []
 
+def set_auto(st, auto):
+    agent = get_agent(st)
+    agent.set_auto(auto)
+
+def save_conversation(st, note, path):
+    agent = get_agent(st)
+    file = next_note(path)
+    if type(agent) == RaspaAgent:
+        path = agent.get_path(full=True)
+    
+    file = os.path.join(path, file)
+    agent.save_conversation(filename=file, note=note)
+    return
+
+
+def next_note(path: str) -> str:
+    """
+    Scan the given directory for files named note_<i>.txt,
+    find the highest i, and return the next filename in sequence.
+    """
+    pattern = re.compile(r"^note_(\d+)\.txt$")
+    max_index = -1
+
+    for fname in os.listdir(path):
+        match = pattern.match(fname)
+        if match:
+            idx = int(match.group(1))
+            if idx > max_index:
+                max_index = idx
+
+    next_index = max_index + 1
+    return os.path.join("conversations", f"note_{next_index}.txt")
+
 
 def run_agent(st):
     user_input = st.chat_input("Type your message…")
     if user_input:
         st.session_state.history.append(("user", user_input))
         with st.spinner("Thinking…"):
-            reply = st.session_state.agent.run(prompt=user_input)
+            agent = get_agent(st)
+            reply = agent.run(prompt=user_input)
+            #st.session_state.history.append(new_messages)
         st.session_state.history.append(("assistant", reply))
 
+
+def get_agent(st) -> StudentAgent:
+    return st.session_state.agent
+
+
+def setup_path(path):
+    # st.session_state.path = path
+    agent = get_agent(st)
+    if type(agent) == RaspaAgent:
+        new, path = next_folder(path)
+        agent.set_path_add(new)
+    return path
+
+
+def reset_messages(st):
+    agent = get_agent(st)
+    messages = agent.chat.messages
+    
+
+    agent.reset_chat()
+    return
+
+############ RASPA utils ############
+
 def run_raspa(st):
-    # TODO
     with st.spinner("Running..."):
         agent = get_agent()
         if type(agent, RaspaAgent):
@@ -67,16 +128,13 @@ def next_folder(path):
     return new, new_path
 
 
-def get_agent(st):
-    return st.session_state.agent
 
-def setup_path(path):
-    # st.session_state.path = path
-    agent = get_agent(st)
-    if type(agent) == RaspaAgent:
-        new, path = next_folder(path)
-        agent.set_path_add(new)
-    return path
+############ Streamlit stuff ############
+
+
+def empty_line(st, n):
+    for i in range(n):
+        st.write("")
 
 
 def render_content(st, message):
@@ -96,8 +154,6 @@ def display_chat(st, show_reasoning=False):
             #add_message(st, role, content, html=True)
             with st.chat_message(role):
                 st.html(content)
-
-
 
 
 def add_message(st, role, content, html=True):

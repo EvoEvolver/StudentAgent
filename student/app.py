@@ -44,18 +44,16 @@ if st.session_state.get("chat", False):
 
     with st.sidebar:
         st.header("Settings")
+        empty_line(st, 2)
 
-        # Button: Save memory
-        if st.button("💾 Save Memory", key="save_memory"):
-            save_memory(st, memory_path)
-            st.write("memory saved")
-        
+
         # Checkbox: show reasoning?
         show_reasoning = st.checkbox(
             "Show reasoning",
             value=st.session_state.get("show_reasoning", True),
             key="show_reasoning"
         )
+
 
         # Checkbox: manual or automatic raspa usage?
         if mode == "RASPA":
@@ -64,30 +62,62 @@ if st.session_state.get("chat", False):
                 value=st.session_state.get("auto_raspa", False),
                 key="auto_raspa"
             )
-            if auto:
+            set_auto(st, auto)
 
+            if not auto:
                 # Button: Manually run RASPA
-                if st.button("Run RASPA", key="run_raspa"):
+                if st.button("Run RASPA", key="run_raspa_auto"):
                     run_raspa(st)
+            else:
+                empty_line(st, 1)
 
-
+        empty_line(st, 3)
         
-        # rename subfolder or add custom note + conversation history  (TODO: add load/save messages to agent)
-        # some kind of progress bar for running raspa run             (TODO advanced: parse output, ...)
+
+        # Button: Save memory
+        if st.button("💾 Save Memory", key="save_memory"):
+            save_memory(st, memory_path)
+            st.success("Memory saved")
+        
+        empty_line(st, 3)
+
+
+        # Button: Save conversation
+        note = st.text_input("Conversation description", key="note")
+        if st.button("💾 Save Conversation", key="save_conversation"):
+            if note:
+                save_conversation(st, note, path)
+                st.success("Conversation saved")
+            else:
+                st.warning("Please enter a note before saving.")
+        else:
+            empty_line(st, 2)
+
+        empty_line(st, 3)
+
+
+        # Button: reset the agent + chat                           
+        if st.button("🔄 Reset", key="reset"):
+            st.session_state.clear()
+            st.rerun()    
         
         # Button to delete the conversational history for the agent   (TODO: add st message history OR rather make a mask for the agent's messages in the running)
-        # Button to reset the agent + chat                            (TODO: reset some session_states, reset the agent + rerun())
+        if st.button("🔄 Reset Agent", key="reset_messages"):
+            reset_messages(st)
+
+        # some kind of progress bar for running raspa run             (TODO advanced: parse output, ...)
 
 
     load_agent(st, mode, path)
 
-    load_history(st)
+    load_history(st)                    # TODO: limit conversation history of the agent (how does mllm do it?)
 
     run_agent(st)
 
-    display_chat(st, show_reasoning)
+    display_chat(st, show_reasoning)  
 
     
 
 
 # TODO: file manager (view only)
+# checkbox: show_file_manager

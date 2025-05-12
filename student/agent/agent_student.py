@@ -14,12 +14,14 @@ class StudentAgent:
     system_prompt : str
     chat : Chat
     id : int
+    
 
     def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None):
         self.tools = tools
         self.memory = Memory()
         self.add_memory_tools()
         self.id = 0
+        
 
         self.system_prompt = """
         You are an agent with a dynamic, long-term memory. 
@@ -54,33 +56,26 @@ class StudentAgent:
         """
         self.chat_config(cache, expensive)
         self.reset_chat()
+        self.reset_id()
+
         self.special_keywords = {
             "explicit knowledge" : keyword("explicit knowledge"),
         }
+
+    ############ General Setup ############
 
     def chat_config(self, cache=None, expensive=None):
         self.cache = cache if cache is not None else True
         self.expensive = expensive if expensive is not None else True
 
-
-    def load_memory(self, file:str):
-        if os.path.exists(file):
-            try:
-                self.memory.load(file)
-                return True
-            except Exception as e:
-                print("Error loading memory: ", e)
-                return None
-        return False
-    
-    def save_memory(self, file: str):
-        try:
-            self.memory.save(file)
-            return True
-        except Exception as e:
-            print("Error saving memory: ", e)
-            return False
+   
+    def reset_chat(self):
+        self.chat = Chat(system_message=self.system_prompt, dedent=False)
         
+    
+    def reset_id(self):
+        self.id = 0
+
 
     def add_memory_tools(self):
         add = AddMemory(self.memory)
@@ -91,11 +86,8 @@ class StudentAgent:
         self.tools[modify.name] = modify
         self.tools[recall.name] = recall
     
-    
-    def reset_chat(self):
-        self.chat = Chat(system_message=self.system_prompt, dedent=False)
-        self.id = 0
-
+ 
+    ############ Running ############
 
     def run(self, prompt: str, max_iter: int=10, schema:str=None, remove_tools:List[str]=[]):
         if schema is None:
@@ -137,6 +129,7 @@ class StudentAgent:
             return
         assert "content" in message and "role" in message, "Message must contain 'content' and 'role'"
         self.chat.messages.append(message)
+
 
     def get_next_id(self):
         self.id += 1
@@ -186,6 +179,60 @@ class StudentAgent:
         return message, success
 
 
+    ############ Load/Save ############
+
+
+    def load_memory(self, file:str):
+        if os.path.exists(file):
+            try:
+                self.memory.load(file)
+                return True
+            except Exception as e:
+                print("Error loading memory: ", e)
+                return None
+        return False
+    
+
+    def save_memory(self, file: str):
+        try:
+            self.memory.save(file)
+            return True
+        except Exception as e:
+            print("Error saving memory: ", e)
+            return False
+        
+
+    def save_conversation(self, filename, note=""):
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(
+                {
+                    "note" : note,
+                    "messages": self.chat.messages,
+                    'id': self.id,
+                },
+                f,
+                ensure_ascii=False,
+                indent=2
+            )
+        return
+
+
+    def load_conversation(self, filename, reset=True):
+        with open(filename, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        messages = data.get("messages", [])
+        id = data.get("id", 0)
+
+        # Only loads the messages if no previous conversation happened.
+        if reset is True:
+            self.chat.messages = messages
+            self.id = id
+
+        return messages
+
+
+    ############ Memory ############
+
     def add_explicit_knowledge(self, prompt):
         prompt += instructions(f"""
             You are required to store this information in your memory as one block.
@@ -203,6 +250,10 @@ class StudentAgent:
 
     def get_memory_tool_mask(self):
         return [name for name in self.tools.keys() if name not in ["add", "recall", "modify"]]
+
+
+    ############ Render/Parsing ############
+
 
     def render_content(self, message, no_background=False):
         parsed = json.dumps(message)
