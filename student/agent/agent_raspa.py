@@ -27,9 +27,7 @@ class RaspaAgent(StudentAgent):
     auto_run : bool
 
 
-    def __init__(self, path="output"):
-        # molecule_memory = init_molecule_name_memory()
-        #framework_memory = init_framework_memory()
+    def __init__(self, path="output", version="v1.xml"):
 
         raspa_tools = {
             "coremof": CoreMofLoader(path),
@@ -42,11 +40,14 @@ class RaspaAgent(StudentAgent):
             "output": OutputParser(),
         }
 
-        super().__init__(tools=raspa_tools)
+        super().__init__(tools=raspa_tools, version=version)
 
         self.reset(path)        # base path
         self.path_add = ""      # add onto path for simulations
         self.auto_run = False
+        
+    def build_system_prompt(self, dir, version):
+        return super().build_system_prompt(dir, version)
     
     def setup_path(self, path : str) -> None:
         os.makedirs(path, exist_ok=True)

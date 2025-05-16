@@ -5,7 +5,8 @@ from typing import List
 from mllm import Chat
 from mllm.utils import p_map
 
-from student_draft.latex_parsing import split_latex_sections
+from latex_parsing import split_latex_sections
+from student.agent.agent_memory import Memory, MemoryNode
 
 def decompose_instruction(instruction: str):
     prompt = f"""
@@ -84,10 +85,6 @@ def decompose_input_file(content: str):
     return content[:first], content[first:]
 
 
-from student.memory import Memory, MemoryNode
-
-
-
 def init_input_file_memory():
     this_path = os.path.dirname(os.path.abspath(__file__))
     with open(this_path + "/data/examples.tex") as f:
@@ -105,16 +102,17 @@ def init_input_file_memory():
                 running_setup, system_setup = decompose_input_file(c)
                 simulation_inputs[sections[i].title] = f"# {sections[i].title}"+"\n"+running_setup+"\n"+system_setup
 
-
     memory = Memory()
 
     for key, res in p_map(decompose_instruction, simulation_inputs.keys()):
-        memory_node = MemoryNode()
-        memory_node.content = simulation_inputs[key]
-        memory_node.abstract = key
-        memory_node.src.append(key)
-        memory_node.src.append(res["simulation"])
-        memory.memory.append(memory_node)
+        
+        content = simulation_inputs[key]
+        
+        keys = key
+        keys.append(res["simulation"])
+        
+        memory_node = MemoryNode(content = content, keys = keys)
+        memory.add(memory_node)
 
     memory.save(this_path + "/input_file_memory.json")
     return memory
@@ -123,11 +121,11 @@ def init_input_file_memory():
 input_file_memory = None
 
 def get_input_file_memory():
-    from student.memory import Memory
+    
     global input_file_memory
     if input_file_memory is not None:
         return input_file_memory
-    input_file_memory = Memory()
+    
 
     this_path = os.path.dirname(os.path.abspath(__file__))
     memory_path = this_path + "/input_file_memory.json"

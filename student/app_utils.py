@@ -16,10 +16,13 @@ def load_agent(st, mode, path):
         or st.session_state.agent_mode != mode
     ):
         st.session_state.agent_mode = mode
+        provider = st.session_state.provider
+        version = "v2.xml"
+        
         if mode == "RASPA":
-            st.session_state.agent = RaspaAgent(path=path)
+            st.session_state.agent = RaspaAgent(path=path, version=version, provider=provider)
         else:
-            st.session_state.agent = StudentAgent()
+            st.session_state.agent = StudentAgent(version=version, provider=provider)
 
 def load_memory(st, memory_path):
     agent = get_agent(st)

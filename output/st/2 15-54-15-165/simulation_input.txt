@@ -1,0 +1,18 @@
+# Simulation Input File
+
+# System
+molecule_file = propane.def
+
+# Simulation Parameters
+temperature = 300.0  # Kelvin
+pressure = 101325    # Pascal
+simulation_time = 1000  # picoseconds
+
+# Methods
+ensemble = NPT
+integrator = VelocityVerlet
+
+# Output
+output_frequency = 100  # steps
+
+# End of File

@@ -16,6 +16,7 @@ memory_path = "memory/test.txt"
 if "chat" not in st.session_state:
     st.title("Student Agent")
     
+    provider = st.radio("Select LLM Provider:", ["OpenAI", "Anthropic"], key="provider")
     mode = st.radio("Select Mode:", ["Student", "RASPA"], key="mode")
 
     load_mem = st.checkbox(

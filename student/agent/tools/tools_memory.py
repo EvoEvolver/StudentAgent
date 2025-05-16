@@ -1,18 +1,23 @@
 from typing import List, Dict
 from .tools import Tool
 from ..agent_memory import Memory, MemoryNode
+from ..utils import *
 
 
 class AddMemory(Tool):
 
     def __init__(self, memory: Memory):
         name = "add"
-        description = """
-        Use this tool to generate and store a new memory item. 
-        You must provide a list of keywords (called 'stimuli') that describe the context or meaning of the memory, and the content of the memory itself as a string. 
-        This tool is useful when you want to save information for future retrieval. 
-        For example, if the user provides a fact, insight, or important context, you can use this tool to remember it.    
+        description="""
+        Store new knowledge in your memory that you can later recall.
+        DO NOT use without recalling relevant memory first
+        ALWAYS choose keywords as stimuli that facilitate the retrieval
+        ALWAYS split knowledge into its building blocks by adding multiple memorys with suitable content/stimuli
+        ALWAYS add abstract keywords NO NOT use details as keywords
+        ONLY inject the relevant knowledge to the content and NOT simply copy
+        NEVER use a memory id as key or content
         """
+        description +="ALWAYS highlight words in the content that likely are keywords for other memory entries as xml: <keyword/>"
 
         super().__init__(name, description)
         self.memory = memory
@@ -23,9 +28,7 @@ class AddMemory(Tool):
         return self.get_output(new_node)
 
     def get_output(self, new_node):
-        out = f"""
-        <tool>Successfully added this to memory:\n\t{new_node.__str__()}\n</tool>
-        """
+        out = tool_response(self.name, f"Added:\n\t{new_node.__str__()}\n")
         return out
 
 
@@ -33,18 +36,24 @@ class RecallMemory(Tool):
     def __init__(self, memory: Memory):
         name = "recall"
         description = """
-            Use this tool to search for and retrieve previously stored memory items based on their associated keywords ('stimuli'). 
+        Recall knowledge from your memory based on a list of stimuli to use your knowledge.
+        ALWAYS choose abstract keywords as stimuli
+        ALWAYS add more specific keywords to target more specific knowledge
+        AFTER recalling, extract new keywords from the content, especially highlighted as xml: <keyword/>
+        """
+        #The sensitivity value [0,1] controls the memory search. A smaller value returns less strict matches and is therefore prefered such as 0.1
+        old="""
             You must provide a list of search keywords and a sensitivity value (a float between 0 and 1) that controls how loosely related the results can be. 
             A higher sensitivity retrieves more results even if the match is weaker. 
             The tool returns up to 3 memory items that are most similar to the given stimuli. 
-            This is useful when trying to remember related facts or previously stored context relevant to the current conversation or task.
             The output is a dictionary mapping a memory ID (which can be used with the modify tool) to the memory content.
         """
         super().__init__(name, description)
         self.memory = memory
+        self.sensitivity = 0.3
 
-    def run(self, stimuli: list[str], sensitivity: float = 0.01) -> str:
-        res = self.memory.recall(stimuli, max_recall=3, sensitivity=sensitivity)
+    def run(self, stimuli: list[str]) -> str:
+        res = self.memory.recall(stimuli, max_recall=3, sensitivity=self.sensitivity)
         return self.get_output(stimuli, res)
     
     def get_output(self, stimuli, res: Dict[str, Dict[str, str]]) -> str:
@@ -53,7 +62,7 @@ class RecallMemory(Tool):
             mem += i
         if mem == "":
             mem = "<no memory found/>"
-        out = f"<tool>Recalled from memory with the stimuli \n\t<stimuli>{stimuli}</stimuli>: \n\t{mem}\n</tool>"
+        out = tool_response(self.name, f"Recalled: \n\t{mem}")
         return out
 
 
@@ -61,12 +70,11 @@ class ModifyMemory(Tool):
     def __init__(self, memory: Memory):
         name = "modify"
         description = """
-          Use this tool to update an existing memory item by providing its memory ID.
-          You have access to the memory IDs via the output of the recall tool.
-          You can change its associated keywords ('stimuli'), its content, or both. 
-          This is useful when a memory item needs to be corrected, refined, or re-contextualized.
-          Only one or both of the optional parameters — new_stimuli or new_content — need to be provided. 
-          If you provide new_content=None and new_stimuli=None, then the memory node is deleted.
+        Modify a specific knowledge entry from the memory to correct, update or refine knowledge.
+        DO NOT use without recalling relevant memory first
+        ALWAYS use a memory id from a recalled memory entry
+        update one or both of the memory stimuli and content.
+        to delete a memory entry, choose new_content=None and new_stimuli=None
         """
         super().__init__(name, description)
         self.memory = memory
@@ -77,9 +85,9 @@ class ModifyMemory(Tool):
 
     def get_output(self, node, deleted=False):
         if node is None:
-            return "<tool>No memory found to modify: Incorrect ID!</tool>"
+            return error("No memory found to modify: Incorrect ID")
         if deleted:
-            out = f"<tool>Memory deleted.\n</tool>"
+            out = tool_response(self.name, "Memory deleted.\n")
             return out
-        out = f"<tool>Modified memory with the updated memory: \n\t{node.__str__()}\n</tool>"
+        out = tool_response(self.name, f"Modified entry: \n\t{node.__str__()}\n")
         return out

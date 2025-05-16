@@ -20,7 +20,8 @@ punctuations = set(string.punctuation)
 def tokenize(text):
     """Tokenizes and preprocesses text."""
     tokens = word_tokenize(text.lower())  # Lowercasing and tokenization
-    tokens = [word for word in tokens if word not in stop_words and word not in punctuations]  # Remove stopwords & punctuation
+    if len(tokens) > 1:
+        tokens = [word for word in tokens if word not in stop_words and word not in punctuations]  # Remove stopwords & punctuation
     return tokens
 
 def get_bm25_score(embed_src: list[str], stimuli_list: list[str]):

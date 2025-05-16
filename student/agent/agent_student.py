@@ -3,6 +3,7 @@ from .tools.tools import Tool
 from .tools.tools_memory import AddMemory, ModifyMemory, RecallMemory
 
 from mllm import Chat
+import mllm.provider_switch
 from typing import List, Dict, Union
 import json
 from .utils import *
@@ -16,14 +17,14 @@ class StudentAgent:
     id : int
     conversation : List
 
-    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None):
+    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version="v1.xml", provider="openai"):
         self.tools = tools
         self.memory = Memory()
         self.add_memory_tools()
         self.id = 0
         self.conversation = [] # list of conversations. new list starts at each reset
 
-        self.system_prompt = """
+        a = """
         You are an agent with a dynamic, long-term memory. 
         You can autonomously retrieve, add and modify the knowlege with your tools.
         When using tools, leave <response/> empty. You will be automaitcally reprompted with the output of the tools and you can think or use tools again. 
@@ -54,15 +55,48 @@ class StudentAgent:
         - To delete a memory entry, provide None as stimuli and new content.
         </modify>
         """
+        self.build_system_prompt(dir="memory", version=version)
         self.chat_config(cache, expensive)
         self.reset_chat()
         self.reset_id()
-
+        self.setup_provider(provider)
         self.special_keywords = {
             "explicit knowledge" : keyword("explicit knowledge"),
         }
 
     ############ General Setup ############
+    def setup_provider(self, provider="openai"):
+        self.provider = provider
+        if provider== "anthropic":
+            mllm.provider_switch.set_default_to_anthropic()
+        
+
+    def build_system_prompt(self, dir, version):
+        prompt_parts = []
+        try:
+            prompt_parts.append(self._build_system_prompt(dir=dir, version=version))
+
+        except RuntimeError as e:
+            print(e)
+        self.system_prompt = "\n".join(prompt_parts)
+        return
+
+
+    def _build_system_prompt(self, dir, version) -> str:
+        # Reads the prompt file and returns it as a string.
+        here = os.path.dirname(__file__)
+        base_dir = os.path.join(here, "prompts", "system")
+        
+        path = os.path.join(base_dir, dir)
+        path = os.path.join(path, version)
+
+        if not os.path.isfile(path):
+            raise RuntimeError(f"Required prompt file missing: {path}")
+
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read().strip()
+
+        return text
 
     def chat_config(self, cache=None, expensive=None):
         self.cache = cache if cache is not None else True
@@ -93,15 +127,8 @@ class StudentAgent:
     def run(self, prompt: str, max_iter: int=10, schema:str=None, remove_tools:List[str]=[]):
         if schema is None:
             schema = self.get_output_jsonschema(remove_tools=remove_tools)
-        options = {"response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "test",
-                        "schema": schema,
-                        "strict": True
-                    },
-            }
-        }
+        options = self.get_options(schema)
+        
         self.chat += prompt
         n_tool_responses = 0
         for i in range(max_iter):
@@ -124,6 +151,17 @@ class StudentAgent:
         response = message.get("response", '')
         return response
 
+    def get_options(self, schema):
+        options = {"response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "test",
+                        "schema": schema,
+                        "strict": True
+                    },
+            }
+        }
+        return options
 
     def add_message(self, message: Union[Dict[str, str], List[Dict[str, str]]]):
         if isinstance(message, list):
@@ -190,7 +228,7 @@ class StudentAgent:
             out = e
     
         message = {
-            "role": "assistant",
+            "role": "user",
             'content': {
                 'type': 'text',
                 'text': json.dumps({

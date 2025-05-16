@@ -50,8 +50,8 @@ class MemoryNode:
     #def update_associations(self, new_associations):
     #    self.assocations = new_associations
 
-
-    def get_score(self, input_keys, sensitivity=0, w: int =1):
+    '''
+    def get_score(self, input_keys, sensitivity=0):
         input_keys_embeddings = np.array(get_embeddings(input_keys))
         embeddings = np.array(self.embeddings)
 
@@ -61,7 +61,45 @@ class MemoryNode:
         
         bm25__similarity = get_bm25_score(self.keys, input_keys)
         
-        return embed_similarity + w * bm25__similarity
+        return embed_similarity + bm25__similarity
+    '''
+
+    def _get_embedding_score(self, query : List[str], keys: List[str]=None, sensitivity=0.4):
+        q_emb = np.array(get_embeddings(query))
+        
+        if keys is None:
+            keys = self.keys
+            if self.embeddings == []:
+                self.set_embeddings()
+            k_emb = np.array(self.embeddings)
+        else:
+            k_emb = np.array(get_embeddings(keys))
+        
+        similarity = np.dot(q_emb, k_emb.T) # len(query) x len(keys)
+        q = np.linalg.norm(q_emb, axis=1, keepdims=True)
+        k = np.linalg.norm(k_emb, axis=1)
+
+        norm = q * k + (q-k)**2 + 1
+        similarity = 2 * similarity / norm
+        '''
+        for i in range(len(query)):
+            q = np.linalg.norm(q_emb[i])
+            for j in range(len(keys)):
+                k = np.linalg.norm(k_emb[i])
+
+                similarity[i][j] /= k * q +((q-k)**2 + 1)
+                similarity[i][j] *= 2
+        '''     
+
+        similarity = similarity * (similarity > sensitivity) # filter out bad matches
+        return similarity 
+
+
+    def get_score(self, query : List[str], keys: List[str] = None, sensitivity=0.4):
+        scores_emb = self._get_embedding_score(query, keys, sensitivity) # len(query) x len(keys)
+        scores_max = np.max(scores_emb, axis=0) # max score per key # len(keys)
+        score_final = np.mean(scores_max) # average over keys
+        return score_final
 
 
     def to_dict(self):
@@ -174,50 +212,52 @@ class Memory:
                 nodes.append(node)
                 node.set_embeddings()
         return nodes
-
-
-    def recall(self, queries: List[str], max_recall=5, sensitivity=0.01) -> Dict[str, Dict[str, str]]:
-        '''
-        Performs a similarity search on the keys of the memory nodes (O(nodes^2)).
-
-        Returns a dict[memory_node id -> content]
-        '''
+    
+    def get_scores(self, nodes, queries: List[str], sensitivity=0.01):
         scores = []
+        for node in nodes:
+            node_scores = node.get_score(queries, sensitivity=sensitivity)
+            node_scores = np.array(node_scores)
+            scores.append(node_scores)
+
+        scores = np.array(scores) # m
+
+        #score_summation_for_src = np.sum(scores, axis=0)
+
+        #score_norm_factor_for_src = score_summation_for_src + (score_summation_for_src == 0.0)
+        #scores = scores / score_norm_factor_for_src
+        #scores = np.sum(scores, axis=1)
+        return scores
+
+    def _recall(self, queries: List[str], max_recall=5, sensitivity=0.3, thres=0.3) -> Dict[str, float]:
         nodes = self.get_nodes()
         if len(nodes) == 0:
             return {}
-
-        for node in nodes:
-            node_scores = node.get_score(queries)
-            node_scores = np.array(node_scores)
-
-            if node_scores.ndim == 0:
-                node_scores = np.expand_dims(node_scores, axis=0)
-
-            scores.append(node_scores)
-
-        scores = np.array(scores)
-        score_summation_for_src = np.sum(scores, axis=0)
-        score_norm_factor_for_src = score_summation_for_src + (score_summation_for_src == 0.0)
-        scores = scores / score_norm_factor_for_src
-        scores = np.sum(scores, axis=1)
         
         excited_nodes = {}
-        if max_recall == 1:
-            top_index = np.argmax(scores)
-            node = nodes[top_index]
-            excited_nodes[node.id] = node.content
-
+        scores = self.get_scores(nodes, queries, sensitivity)
+        
         top_k_indices = np.argsort(-scores)
         
-        
         for i in range(min(max_recall, len(top_k_indices))):
-            if scores[top_k_indices[i]] <= sensitivity:
+            s = scores[top_k_indices[i]]
+            if s <= thres:
                 break
 
             node : MemoryNode = nodes[top_k_indices[i]]
-            excited_nodes[node.id] = node.__str__()
+            excited_nodes[node.id] = s
+        
         return excited_nodes
+    
+    def recall(self, queries: List[str], max_recall=5, sensitivity=0.3, thres=0.3) -> Dict[str, str]:
+        excited_nodes = self._recall(queries, max_recall=max_recall, sensitivity=sensitivity, thres=thres)
+        out = {}
+        for id, score in excited_nodes.items():
+            node = self.get_node(id)
+            out[id] = node.__str__() 
+        return out
+
+
         
     
     def modify(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
