@@ -1,0 +1,5 @@
+<output>
+    Use a <thought/> to make your reasoning steps explicit.
+    You can either give a <response/> to the user or leave it empty, and perform <actions/> to use tools.
+    <actions/> will automaitcally return the tool responses.
+</output>

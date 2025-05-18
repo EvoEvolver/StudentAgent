@@ -2,7 +2,8 @@ import os
 import re
 import shutil
 from agent.agent_raspa import RaspaAgent
-from agent.agent_student import StudentAgent
+from agent.student import StudentAgent
+from agent.agent_memory import MemoryAgent
 
 import streamlit as st
 from streamlit.components.v1 import html
@@ -17,7 +18,7 @@ def load_agent(st, mode, path):
     ):
         st.session_state.agent_mode = mode
         provider = st.session_state.provider
-        version = "v2.xml"
+        version = "v3"
         
         if mode == "RASPA":
             st.session_state.agent = RaspaAgent(path=path, version=version, provider=provider)
@@ -25,7 +26,7 @@ def load_agent(st, mode, path):
             st.session_state.agent = StudentAgent(version=version, provider=provider)
 
 def load_memory(st, memory_path):
-    agent = get_agent(st)
+    agent = get_memory_agent(st)
     return agent.load_memory(memory_path)
 
 def save_memory(st, memory_path):
@@ -87,6 +88,10 @@ def run_agent(st):
 def get_agent(st) -> StudentAgent:
     return st.session_state.agent
 
+def get_memory_agent(st) -> MemoryAgent:
+    agent = get_agent(st)
+    return agent.get_memory_agent()
+
 
 def setup_path(path):
     agent = get_agent(st)
@@ -139,6 +144,11 @@ def next_folder(path):
 
 ############ Streamlit stuff ############
 
+def toggle_sidebar():
+    st.session_state.sb_state = (
+        "collapsed" if st.session_state.sb_state == "expanded" else "expanded"
+    )
+    st.rerun()
 
 def empty_line(st, n):
     for i in range(n):
@@ -149,13 +159,13 @@ def render_content(st, message):
     return st.session_state.agent.render_content(message, no_background=True)
 
 
-def display_chat(st, show_reasoning=False):
+def display_chat(st, show_reasoning=False, memory=False):
     if show_reasoning is False:
         for role, msg in st.session_state.history:
             st.chat_message(role).write(msg)
             
     else:
-        agent = get_agent(st)
+        agent = get_agent(st) if memory is False else get_memory_agent(st)
         messages = agent.get_conversation()
         for message in messages:
             if message == "reset":

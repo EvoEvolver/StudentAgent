@@ -15,12 +15,15 @@ class Agent:
     id : int
     conversation : List
 
-    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version="v1.xml", provider="openai"):
+    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, dir=None, version=None, provider="openai"):
         self.tools = tools
         self.id = 0
         self.conversation = [] # list of conversations. new list starts at each reset
+        self.system_prompt = ""
 
-        self.build_system_prompt(dir="memory", version=version)
+        if dir is not None and version is not None:
+            self.add_system_prompt(dir=dir, version=version)
+            
         self.chat_config(cache, expensive)
         self.reset_chat()
         self.reset_id()
@@ -33,14 +36,14 @@ class Agent:
             mllm.provider_switch.set_default_to_anthropic()
         
 
-    def build_system_prompt(self, dir, version):
+    def add_system_prompt(self, dir, version):
         prompt_parts = []
         try:
             prompt_parts.append(self._build_system_prompt(dir=dir, version=version))
 
         except RuntimeError as e:
             print(e)
-        self.system_prompt = "\n".join(prompt_parts)
+        self.system_prompt += "\n".join(prompt_parts)
         return
 
 
@@ -50,7 +53,7 @@ class Agent:
         base_dir = os.path.join(here, "prompts", "system")
         
         path = os.path.join(base_dir, dir)
-        path = os.path.join(path, version)
+        path = os.path.join(path, f"{version}.xml")
 
         if not os.path.isfile(path):
             raise RuntimeError(f"Required prompt file missing: {path}")
@@ -59,6 +62,20 @@ class Agent:
             text = fh.read().strip()
 
         return text
+    
+    def get_prompt(self, type, dir=None, version="v1", version_general="v1", version_output="v1", json=True):
+        general = self._build_system_prompt(f"{dir}/general", version_general)    
+        p = os.path.join(dir, type)
+        add = self._build_system_prompt(p, version)   
+                
+        full = general
+        full += add
+        
+        if json is True:
+            full += "\n"
+            full += self._build_system_prompt("output", version_output)
+        return full
+    
 
     def chat_config(self, cache=None, expensive=None):
         self.cache = cache if cache is not None else True
@@ -75,6 +92,13 @@ class Agent:
 
  
     ############ Running ############
+
+    def single_run(self, prompt):
+        chat = Chat(dedent=True)
+        chat += prompt
+        res = chat.complete(cache=True, expensive=True) # TODO: check cache and parse
+        return res
+
 
     def run(self, prompt: str, max_iter: int=10, schema:str=None, remove_tools:List[str]=[]):
         if schema is None:
@@ -185,7 +209,8 @@ class Agent:
                 'type': 'text',
                 'text': json.dumps({
                     "tool_call_id": id,
-                    "tool_response": str(out)
+                    "tool_name":tool.name,
+                    "tool_response": str(out),
                 })
             }
         }
@@ -291,7 +316,8 @@ class Agent:
             if "tool_response" in parsed:
                 text = parsed["tool_response"].strip()
                 tool_id = str(parsed['tool_call_id']).strip()
-                tool_call_note = f" <span style='color:#666; font-size:0.85em;'>(Tool Call ID: <code>{tool_id}</code>)</span>"
+                #tool_call_note = f" <span style='color:#666; font-size:0.85em;'>(Tool Call ID: <code>{tool_id}</code>)</span>"
+                tool_name = str(parsed['tool_name']).strip()
 
                 if text:
                     if text.strip().startswith("<"):
@@ -301,7 +327,9 @@ class Agent:
                             formatted_text = f"<pre style='background:#f8f8f8; padding:8px; border-radius:6px; overflow:auto; font-family:monospace; font-size:0.9em'><code style='background:none; color:inherit'>{html.escape(text)}</code></pre>"
                     else:
                         formatted_text = html.escape(text).replace("\n", "<br>")
-                    inner_parts.append(f"<div style='margin-top:5px;'><strong>Response:</strong><br>{formatted_text}</div>")
+                    #inner_parts.append(f"<div style='margin-top:5px;'><strong>Tool:</strong><br>{formatted_text}</div>")
+                    inner_parts.append(f"<div style='margin-top:5px;'><strong>Tool: {tool_name}</strong><br>{formatted_text}</div>")
+
 
         return "<br>".join(inner_parts)
 

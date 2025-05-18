@@ -1,6 +1,6 @@
 from typing import List, Dict
 from .tools import Tool
-from ..agent_memory import Memory, MemoryNode
+from ..memory import Memory, MemoryNode
 from ..utils import *
 
 

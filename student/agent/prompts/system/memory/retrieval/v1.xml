@@ -1,0 +1,14 @@
+<retrieval>
+    <repeat initial="very high abstraction" stop="most detailed">
+        <level_of_abstraction description="a thought that reflects upon the current state of abstraction" example="most detailed">
+            <decomposition description="at the given level of abstraction, decompose your full context into these fragments">
+                <understanding description="a thought that captures the current " example="The understandning of a task"/>
+                <task_progress description="a thought that reflects upon the past actions and planned actions" example="relevant memory was recalled and now i need to think about modifying the memory or adding something new based on the initial input."/>    
+                <keywords description="keywords that you now use directly to recall relevant knowledge from your memory", example="chemistry, computational physics, simulations"/>
+            </decomposition>
+        </level_of_abstraction>
+        <increase description="concretize the relevant context and repeat">
+            <level_of_abstraction/>
+        </increase>
+    </repeat>
+</retrieval>

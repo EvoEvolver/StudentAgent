@@ -1,9 +1,8 @@
-from .agent_student import StudentAgent
-from .agent_memory import Memory
+from .student import StudentAgent
+from .memory import Memory
 
 from .tools.tools_raspa import CoreMofLoader, TrappeLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser
 from .tools.tools import Tool
-from .tools.tools_memory import AddMemory, ModifyMemory, RecallMemory
 
 from mllm import Chat
 from typing import List, Dict, Union

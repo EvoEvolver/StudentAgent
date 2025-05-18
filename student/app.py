@@ -13,10 +13,20 @@ path = "output/st/test_henrik/"
 memory_path = "memory/test.txt"
 
 
+if "sidebar_state" not in st.session_state:
+    st.session_state.sb_state = "expanded"
+
+st.set_page_config(
+    page_title="Two-pane Chat",
+    layout="wide",
+    initial_sidebar_state=st.session_state.sb_state,
+)
+
+
 if "chat" not in st.session_state:
     st.title("Student Agent")
     
-    provider = st.radio("Select LLM Provider:", ["OpenAI", "Anthropic"], key="provider")
+    provider = st.radio("Select LLM Provider:", ["Anthropic","OpenAI"], key="provider")
     mode = st.radio("Select Mode:", ["Student", "RASPA"], key="mode")
 
     load_mem = st.checkbox(
@@ -40,8 +50,10 @@ if "chat" not in st.session_state:
 
 if st.session_state.get("chat", False):
     mode = st.session_state.agent_mode
+    
 
     with st.sidebar:
+        
         st.header("Settings")
         empty_line(st, 2)
 
@@ -51,7 +63,8 @@ if st.session_state.get("chat", False):
             value=st.session_state.get("show_reasoning", True),
             key="show_reasoning"
         )
-
+        show_mem = st.checkbox("Show MemoryAgent conversation")
+        st.divider()
 
         # Checkbox: manual or automatic raspa usage?
         if mode == "RASPA":
@@ -103,19 +116,23 @@ if st.session_state.get("chat", False):
         if st.button("Reset All", key="reset"):
             st.session_state.clear()
             st.rerun()    
-        
-
-
-    load_agent(st, mode, path)
-
-    load_history(st)                    # TODO: limit conversation history of the agent (how does mllm do it?)
-
-    run_agent(st)
-
-    display_chat(st, show_reasoning)  
-
     
 
+
+    ##### Conversation #####
+    if show_mem:
+        st.header("MemoryAgent Conversation")
+        display_chat(st, show_reasoning=show_reasoning, memory=True)
+        
+    else:
+        st.header("🗨️ StudentAgent")
+        load_agent(st, mode, path)
+        load_history(st)                    # TODO: limit conversation history of the agent (how does mllm do it?
+        run_agent(st)
+        display_chat(st, show_reasoning)  
+
+
+    
 
 # TODO: file manager (view only)
 # checkbox: show_file_manager

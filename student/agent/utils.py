@@ -25,14 +25,21 @@ def keyword(s):
 def tool(s):
     return f"<tool name={s}/>"
 
-def tool_response(tool_name, response, LIMIT=500):
-    return f"<tool response name={tool_name}>{response[:LIMIT]}</tool response>"
+def tool_response(tool_name, response, LIMIT=800):
+    #return f"<tool response name={tool_name}>{response[:LIMIT]}</tool response>"
+    return response[:LIMIT]
 
 def error(s):
     return f"<error>{s}</error>"
 
 def file(name, content=""):
     return f"<file name={name}>{content}</file>"
+
+def question(s):
+    return f"<question>{s}</question>"
+
+def context(s):
+    return f"<context>{s}</context>"
 
 def molecule(s):
     return f"<molecule name={s}/>"
