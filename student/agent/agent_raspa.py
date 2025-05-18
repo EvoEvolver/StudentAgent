@@ -27,7 +27,7 @@ class RaspaAgent(StudentAgent):
     auto_run : bool
 
 
-    def __init__(self, path="output", version="v1.xml"):
+    def __init__(self, path="output", version="v1.xml", provider="anthropic"):
 
         raspa_tools = {
             "coremof": CoreMofLoader(path),
@@ -40,7 +40,7 @@ class RaspaAgent(StudentAgent):
             "output": OutputParser(),
         }
 
-        super().__init__(tools=raspa_tools, version=version)
+        super().__init__(tools=raspa_tools, version=version, provider=provider)
 
         self.reset(path)        # base path
         self.path_add = ""      # add onto path for simulations

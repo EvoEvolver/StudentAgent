@@ -215,14 +215,16 @@ class TrappeLoader(RaspaTool):
         # URL to scrape
         url = "http://trappe.oit.umn.edu/scripts/search_select.php"
         # check if the data is already downloaded
-        file_path = os.path.join(self.get_path(full=False), "trappe_molecule_list.json")
+        path = self.get_path(full=False)
+        file_path = os.path.join(path, "trappe_molecule_list.json")
         try:
             with open(file_path) as f:
                 return json.load(f)
         except FileNotFoundError:
             pass
-
+        os.makedirs(path, exist_ok=True)
         res_dict = json.loads(request_by_post(url))['search']
+        
         with open(file_path, "w") as f:
             json.dump(res_dict, f)
 

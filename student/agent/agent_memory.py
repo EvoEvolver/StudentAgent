@@ -280,41 +280,6 @@ class Memory:
 
         return node, deleted
 
-    
-    def search_and_filter(self, context, src_list: list[str], top_k=10, node_to_exclude=None):
-        '''
-        top_excited_nodes = self.search(src_list, top_k, node_to_exclude=node_to_exclude)
-        prompts = [f"""
-        You are required to select the most relevant memory that is related to the following context:
-        <instruction>
-        {context}
-        </instruction>
-        The following memories are retrieved from your knowledge base:
-        """]
-        for i, node in enumerate(top_excited_nodes):
-            prompts.append(f"""
-            <memory_{i}>
-            {node.content()}
-            </memory_{i}>
-            """)
-        prompts.append("""
-        <output>
-        You are required to output a JSON object with the following
-        - analysis (str): the analysis of the memory that is most relevant to the instruction. mention their indices.
-        - indices (list of int): the indices of the selected memories.
-        </output>
-        """)
-        chat = Chat(dedent=True)
-        chat += "\n".join(prompts)
-        res = chat.complete(parse="dict", cache=True, expensive=True)
-        filtered_nodes = []
-        for i in res["indices"]:
-            filtered_nodes.append(top_excited_nodes[i])
-        return filtered_nodes
-        '''
-        pass
-
-
 
     def save(self, save_path):
         # save the memory to a file

@@ -9,7 +9,7 @@ load_dotenv()
 
 from app_utils import *
 
-path = "output/st/"
+path = "output/st/test_henrik/"
 memory_path = "memory/test.txt"
 
 

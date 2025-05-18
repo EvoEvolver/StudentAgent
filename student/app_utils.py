@@ -120,7 +120,13 @@ def next_folder(path):
         if os.path.isdir(os.path.join(path, d)) and d.isdigit()
     ]
     if existing_folders:
-        next_num = max(int(folder) for folder in existing_folders) + 1
+        max_num = max(int(folder) for folder in existing_folders)
+        
+        if not os.listdir(os.path.join(path, str(max_num))): # empty
+            next_num = max_num
+
+        next_num = max_num +1
+
     else:
         next_num = 1
     new = str(next_num)
@@ -129,7 +135,7 @@ def next_folder(path):
 
     return new, new_path
 
-
+    
 
 ############ Streamlit stuff ############
 
