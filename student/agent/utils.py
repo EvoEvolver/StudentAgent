@@ -29,6 +29,9 @@ def tool_response(tool_name, response, LIMIT=800):
     #return f"<tool response name={tool_name}>{response[:LIMIT]}</tool response>"
     return response[:LIMIT]
 
+def recalled(s):
+    return f"<recalled>{s}</recalled>"
+
 def error(s):
     return f"<error>{s}</error>"
 

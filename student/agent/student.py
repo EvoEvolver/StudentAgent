@@ -30,13 +30,13 @@ class StudentAgent(Agent):
 
 
     def student_prompt(self):
-        general = self._build_system_prompt("student/general", "v1")
-        learning_instructions = self._build_system_prompt("student/learning", "v1")
-        retrieval_instructions = self._build_system_prompt("student/retrieval", "v1")
+        general = self._build_prompt("student/general", "v1")
+        learning_instructions = self._build_prompt("student/learning", "v1")
+        retrieval_instructions = self._build_prompt("student/retrieval", "v1")
 
         full = general.format(retrieval_instructions=retrieval_instructions, learning_instructions=learning_instructions)
         full += "\n"
-        full += self._build_system_prompt("output", "v1")
+        full += self._build_prompt("output", "v1")
         self.system_prompt = full
     
     def run(self, prompt: str, max_iter: int=10):

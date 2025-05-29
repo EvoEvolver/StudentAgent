@@ -1,0 +1,10 @@
+<knowledge_retrieval>
+    You need to retrieve as much relevant knowledge to the input as you can find.
+    You can recall with different stimuli multiple times.
+<knowledge_retrieval/>
+<instructions>
+    Evaluate the content of the recalled memory to identify new potentially relevant keys.
+    If no memory is recalled, attempt to select different keywords, if available.
+    - <thought/>: reflect if the recalled memory is related to the input.
+    - <response>: ONLY the recalled information. An empty response should be this: <nothing/>
+</instructions>

@@ -9,9 +9,7 @@ class MemoryNode:
     id : str
     keys : Set[str]
     embeddings : List[str]
-    content : str
-    # assocations : list[str] # list of keys associated to this node
-    
+    content : str    
 
     def __init__(self, content: str = "", keys: List[str] = []):
         self.id = str(uuid.uuid4())[:8]
@@ -20,7 +18,6 @@ class MemoryNode:
         self.embeddings = []
 
         self.add_keys(keys)
-        # self.associations = []
 
     def get_keys(self):
         return list(self.keys)
@@ -44,23 +41,6 @@ class MemoryNode:
     def set_embeddings(self):
         self.embeddings = get_embeddings(list(self.keys))
 
-
-    #def update_associations(self, new_associations):
-    #    self.assocations = new_associations
-
-    '''
-    def get_score(self, input_keys, sensitivity=0):
-        input_keys_embeddings = np.array(get_embeddings(input_keys))
-        embeddings = np.array(self.embeddings)
-
-        embed_similarity = np.dot(embeddings, input_keys_embeddings.T)
-        embed_similarity = embed_similarity * (embed_similarity > sensitivity)
-        embed_similarity = np.sum(embed_similarity, axis=0)
-        
-        bm25__similarity = get_bm25_score(self.keys, input_keys)
-        
-        return embed_similarity + bm25__similarity
-    '''
 
     def _get_embedding_score(self, query : List[str], keys: List[str]=None, sensitivity=0.4):
         q_emb = np.array(get_embeddings(query))
@@ -171,20 +151,11 @@ class Memory:
 
     def __init__(self):
         self.memory : Dict[str, MemoryNode] = {}
-        self.keywords = set()
+        self.keywords : Dict[str, int] = {}
     
     def __size__(self) -> int:
         return len(self.memory.keys())
     
-    '''
-    def get_keywords(self) -> Set[str]:
-        keywords : Set[str] = set()
-        for node in self.get_nodes():
-            for k in node.keys:
-                keywords.add(k)
-        return keywords
-    '''
-
     def get_node(self, id):
         return self.memory.get(id)
     
@@ -195,12 +166,23 @@ class Memory:
     def add(self, node: MemoryNode):
         self.memory[node.id] = node
         for k in node.keys:
-            self.keywords.add(k)
+            self.update_keywords(k)
+    
+    def update_keywords(self, keyword):
+        if keyword in self.keywords:
+            self.keywords[keyword] += 1
+        else:
+            self.keywords[keyword] = 1
     
     def add_from_dict(self, node_dict: Dict) -> None:
         node = MemoryNode()
         node._from_dict(node_dict)
         self.add(node)
+
+    def get_keywords(self, topk=50):
+        '''Returns the topk most frequent keys in memory'''
+        keys = self.keywords
+        return sorted(keys, key=keys.get, reverse=True)[:topk]
 
 
     def get_nodes(self) -> List[MemoryNode]:

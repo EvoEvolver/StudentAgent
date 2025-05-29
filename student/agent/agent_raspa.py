@@ -26,7 +26,7 @@ class RaspaAgent(StudentAgent):
     auto_run : bool
 
 
-    def __init__(self, path="output", version="v1.xml", provider="anthropic"):
+    def __init__(self, path="output", version="v1", provider="anthropic"):
 
         raspa_tools = {
             "coremof": CoreMofLoader(path),

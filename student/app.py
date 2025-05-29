@@ -17,7 +17,7 @@ if "sidebar_state" not in st.session_state:
     st.session_state.sb_state = "expanded"
 
 st.set_page_config(
-    page_title="Two-pane Chat",
+    page_title="StudentAgent",
     layout="wide",
     initial_sidebar_state=st.session_state.sb_state,
 )

@@ -6,7 +6,7 @@ from mllm import Chat
 from mllm.utils import p_map
 
 from latex_parsing import split_latex_sections
-from student.agent.agent_memory import Memory, MemoryNode
+from agent.memory import Memory, MemoryNode
 
 def decompose_instruction(instruction: str):
     prompt = f"""

@@ -1,0 +1,7 @@
+<goal>
+    You are an expert in summarizing text.
+</goal>
+<instructions>
+    Try to summarize this text: {context}.
+    ONLY output the summary: "..." (or ONLY "<nothing/>" IF there was no change).
+</instructions>

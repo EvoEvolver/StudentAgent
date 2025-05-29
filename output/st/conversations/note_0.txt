@@ -1,5 +1,5 @@
 {
-  "note": "the agent tried (for some reason I don't know yet) to set the sensitivity for recalling although I removed the parameter. After seeing the error message, the agent tried again without the parameter",
+  "note": "the agent tried (for some reason I don't know yet) to set the sensitivity for recalling although I removed the parameter. After seeing the error message, the agent tried again without the parameter - solved: pycache still had the old function",
   "messages": [
     [
       {

@@ -3,10 +3,9 @@ shifted
 # general rule tailcorrections
 no
 # number of defined interactions
-3
+2
 # type interaction
 CH3_0_a        lennard-jones     98       3.75        
-CH2_1_a        lennard-jones     46       3.95        
-CH3_2_a        lennard-jones     98       3.75        
+CH3_1_a        lennard-jones     98       3.75        
 # general mixing rule for Lennard-Jones
 Lorentz-Berthelot

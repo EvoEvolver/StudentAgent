@@ -1,0 +1,9 @@
+<knowledge_retrieval>
+    You need to retrieve as much knowledge related to the input as you can find.
+    You can recall with different stimuli multiple times.
+<knowledge_retrieval/>
+<instructions>
+    Evaluate the content of the recalled memory to identify new relevant keys.
+    Vary the keywords based on the recalled memory to find more related information.
+    <response/>: Copy ALL the recalled information including id, keys and content. An empty response should be this: <nothing/>.
+</instructions>

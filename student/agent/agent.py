@@ -36,18 +36,7 @@ class Agent:
             mllm.provider_switch.set_default_to_anthropic()
         
 
-    def add_system_prompt(self, dir, version):
-        prompt_parts = []
-        try:
-            prompt_parts.append(self._build_system_prompt(dir=dir, version=version))
-
-        except RuntimeError as e:
-            print(e)
-        self.system_prompt += "\n".join(prompt_parts)
-        return
-
-
-    def _build_system_prompt(self, dir, version) -> str:
+    def _build_prompt(self, dir, version) -> str:
         # Reads the prompt file and returns it as a string.
         here = os.path.dirname(__file__)
         base_dir = os.path.join(here, "prompts", "system")
@@ -63,17 +52,18 @@ class Agent:
 
         return text
     
-    def get_prompt(self, type, dir=None, version="v1", version_general="v1", version_output="v1", json=True):
-        general = self._build_system_prompt(f"{dir}/general", version_general)    
-        p = os.path.join(dir, type)
-        add = self._build_system_prompt(p, version)   
-                
-        full = general
-        full += add
+    def get_prompt(self, type, dir=None, version="v1", version_general="v1", version_output="v1", json=True, general=True):
+        
+        full = self._build_prompt(f"{dir}/general", version_general) if general is True else ""
+
+        if type != "general":
+            p = os.path.join(dir, type)
+            add = self._build_prompt(p, version)   
+            full += add
         
         if json is True:
             full += "\n"
-            full += self._build_system_prompt("output", version_output)
+            full += self._build_prompt("output", version_output)
         return full
     
 
@@ -81,11 +71,22 @@ class Agent:
         self.cache = cache if cache is not None else True
         self.expensive = expensive if expensive is not None else True
 
-   
+    def reset_system_prompt(self, sys_prompt, append=False):
+        if append is True:
+            self.system_prompt += sys_prompt
+        else:
+            self.system_prompt = sys_prompt
+        self.reset_chat()
+
+
     def reset_chat(self):
         self.chat = Chat(system_message=self.system_prompt, dedent=False)
-        self.conversation.append([])
-        
+        if len(self.conversation) > 0:
+            if len(self.conversation[-1]) != 0:
+                self.conversation.append([])
+        else:
+            self.conversation.append([])
+            
     
     def reset_id(self):
         self.id = 0
@@ -93,10 +94,10 @@ class Agent:
  
     ############ Running ############
 
-    def single_run(self, prompt):
+    def single_run(self, prompt, parse=None):
         chat = Chat(dedent=True)
         chat += prompt
-        res = chat.complete(cache=True, expensive=True) # TODO: check cache and parse
+        res = chat.complete(cache=True, expensive=True, parse=parse) # TODO: check cache
         return res
 
 
@@ -192,7 +193,9 @@ class Agent:
     def _use_tool(self, call):
         success = False
         name = call['function']
-        args = call['parameters']['parameters']
+        args = call['parameters']
+        if "parameters" in args.keys():
+            args = args['parameters']
         tool = self.tools.get(name)
         id = self.get_next_id()
         call['tool_call_id'] = id
@@ -382,6 +385,22 @@ class Agent:
         html_parts.append("</div>")
         return HTML("".join(html_parts))
         
+    def render_conversation(self):
+        from IPython.display import HTML
+
+        html_parts = ["<div style='font-family:Arial, sans-serif; line-height:1.6;'>"]        
+        
+        for messages in self.conversation:
+
+            for message in messages:
+                html_parts.append(self.render_message(message))
+
+            html_parts.append("</div>")
+            html_parts.append("<hr>")
+        html_parts.pop()
+        
+        return HTML("".join(html_parts))
+
 
     def get_output_jsonschema(self, remove_tools=[]):
         function_branches = []

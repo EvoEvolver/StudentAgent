@@ -2,7 +2,7 @@ from typing import List, Dict
 from .tools import Tool
 from ..memory import Memory, MemoryNode
 from ..utils import *
-
+from mllm import Chat
 
 class AddMemory(Tool):
 
@@ -22,15 +22,31 @@ class AddMemory(Tool):
         super().__init__(name, description)
         self.memory = memory
 
-    def run(self, stimuli: list[str], content: str):
+    def _run(self, stimuli: list[str], content: str):
         new_node = MemoryNode(content=content, keys=stimuli)
         self.memory.add(new_node)
+        return new_node
+    
+    def run(self, stimuli: list[str], content: str):
+        new_node = self._run(stimuli, content)
         return self.get_output(new_node)
 
     def get_output(self, new_node):
         out = tool_response(self.name, f"Added:\n\t{new_node.__str__()}\n")
         return out
 
+'''
+class ExtendedAddMemory(AddMemory):
+    def __init__(self, memory:Memory, chat):
+        super().__init__(memory)
+        self.chat = chat
+
+    def run(self, stimuli, new_content) -> None:
+        
+        new_node = super()._run(stimuli, new_content)
+
+        return self.get_output()
+'''
 
 class RecallMemory(Tool):
     def __init__(self, memory: Memory):
@@ -50,7 +66,7 @@ class RecallMemory(Tool):
         """
         super().__init__(name, description)
         self.memory = memory
-        self.sensitivity = 0.3
+        self.sensitivity = 0.2
 
     def run(self, stimuli: list[str]) -> str:
         res = self.memory.recall(stimuli, max_recall=3, sensitivity=self.sensitivity)
@@ -91,3 +107,29 @@ class ModifyMemory(Tool):
             return out
         out = tool_response(self.name, f"Modified entry: \n\t{node.__str__()}\n")
         return out
+
+class ExtendedModifyMemory(ModifyMemory):
+    def __init__(self, memory:Memory, chat):
+        super().__init__(memory)
+        self.chat = chat
+        self.description = """
+        Modify a specific memory entry to correct, update or refine knowledge.
+        Input the memory ID you want to modify and the new_information.
+        ALWAYS use a memory id from a recalled memory entry
+        """
+
+    def run(self, id: str, new_information) -> None:
+        node = self.memory.get_node(id)
+        if node is None:
+            return self.get_output(None)
+        
+        old_stimuli = node.keys
+        old_content = node.content
+
+        extract_content = f"Based on this new information: {new_information}. \n Update this old information: {old_content}. YOU MUST ONLY output a the new information: 'new information'"
+        new_content = self.chat(extract_content)
+
+        extract_stimuli = f'Based on this new information: {new_information}. \n Update these old keywords by adding new ones or removing old ones: {old_stimuli}. YOU MUST ONLY output a list of the all keywords: ["key", "key"]'
+        new_stimuli = self.chat(extract_stimuli, parse="list")
+
+        return super().run(id, new_stimuli, new_content)

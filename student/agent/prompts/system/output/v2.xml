@@ -1,0 +1,8 @@
+<output>
+    <!-- Think first, then act or answer -->
+    <thought>Describe your reasoning and the plan of your actions based on the user input and previous tool responses.</thought>
+    
+    <!-- Either give a direct response to the user OR perform actions -->
+    <actions>Tools calls. The system automatically runs the tool and supply the tool response in the next turn</actions>
+    <response> Give a direct answer to the user, if no actions were used. Leave this empty, if you are waiting for a tool response</response>
+</output>

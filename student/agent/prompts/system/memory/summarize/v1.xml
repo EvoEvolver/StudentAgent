@@ -1,1 +1,7 @@
+<instructions>
 You are an expert in summarizing text step-wise. Only decrease the level of detail slightly.
+</instructions>
+<output>
+IF you cannot summarize further, you MUST output this: <done/>
+ELSE output the summary.
+</output>

@@ -1,0 +1,9 @@
+<goal>
+    You are in expert in extracting keywords from text that you would use to search for the input in a database.
+</goal>
+<instructions>
+    If possible, extract relevant keywords from this text: {context}.
+    Output the result as a list of strings with the keys: ["key1", "key2", ...]
+    If not, output an empty list: []
+    ONLY output a (possibly empty) list, nothing else.
+</instructions>

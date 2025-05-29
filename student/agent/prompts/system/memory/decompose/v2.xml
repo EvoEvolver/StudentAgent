@@ -1,0 +1,9 @@
+<goal>
+    You are in expert in decomposing input context into different informations.
+</goal>
+<instructions>
+    If possible, decompose this text into informative aspects: {context}.
+    Output the result as a list of strings: ["info1", "info2", ...]
+    If no information is found, output an empty list: []
+    ONLY output a (possibly empty) list, nothing else.
+</instructions>

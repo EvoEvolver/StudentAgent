@@ -1,6 +1,6 @@
 from .memory import Memory
 from .tools.tools import Tool
-from .tools.tools_memory import AddMemory, ModifyMemory, RecallMemory
+from .tools.tools_memory import AddMemory, ModifyMemory, RecallMemory, ExtendedModifyMemory
 from .agent import Agent
 
 from mllm import Chat
@@ -45,12 +45,14 @@ class Learn(Tool):
 class MemoryAgent(Agent):
     memory : Memory
 
-    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version="v1.xml", provider="openai"):
+    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version="v1", provider="openai"):
         super().__init__(tools=tools, cache=cache, expensive=expensive, version=version, provider=provider)
         
         self.memory = Memory()
         self.add_memory_tools()
-        self.add_system_prompt(dir="memory/general", version=version)
+        
+        prompt = self.get_prompt(type="general", version=version)
+        self.reset_system_prompt(prompt, append=True)
 
         #self.special_keywords = {"explicit knowledge" : keyword("explicit knowledge"),}
 
@@ -58,7 +60,7 @@ class MemoryAgent(Agent):
 
     def add_memory_tools(self):
         add = AddMemory(self.memory)
-        modify = ModifyMemory(self.memory)
+        modify = ExtendedModifyMemory(self.memory, self.single_run)# ModifyMemory(self.memory)
         recall = RecallMemory(self.memory)
         
         self.tools[add.name] = add
@@ -69,10 +71,15 @@ class MemoryAgent(Agent):
         return [name for name in self.tools.keys() if name not in ["add", "recall", "modify"]]
     
     def get_learning_mask(self):
-        return ["add", "modify"]
+        return ["recall"]
 
     def get_question_mask(self):
-        return ["recall"]
+        return ["add", "modify"]
+    
+    
+    def get_all_mask(self):
+        return [name for name in self.tools.keys()]
+
 
     def load_memory(self, file:str):
         if os.path.exists(file):
@@ -95,71 +102,98 @@ class MemoryAgent(Agent):
     
     ####### Calls #######
 
-    def ask(self, question:str):
-        # self.reset_chat()
-        question = q(question)
-        self.set_prompt(type="retrieval", version="v1")
-        return self.run(question)
+    def ask(self, question:str, detailed_out=False):
+        self.set_prompt(type="retrieval", version="v3")
+        
+        recall = []
+        extracted_keys = []
+        rev_summaries = self.full_summary(question)     # decompose into abstraction level
+
+        for summary in rev_summaries:                   # iterate by summarizing
+            keys = self.extract_keys(summary)           # ask for context
+            extracted_keys.append(keys)                 # store extracted keys
+        
+            input = f"Retrieve all knowledge related to this input: {q(question)}"    
+            input += f"Use these or similar keys as stimuli: {keys}"
+
+            recall.append(self.run(input, remove_tools=self.get_question_mask())) # TODO: see only last level
+            # TODO: aggregate each time
+            
+        response = self.filter_information(q(question), recalled(';\n'.join(recall)))
+
+        if detailed_out:
+            return response, recall, rev_summaries, extracted_keys
+        return response
 
 
     def learn(self, context:str):
-        # self.reset_chat()
-
-        # TODO:
-        #   decompose into abstraction levels
-        #   iterate by summarizing:
-        #       ask for context
-        #       store (summary, extracted keys)
-        #
-        #   iterate inversely (abstract -> detail):
-        #       run learn ()
-
 
         # ask for context
-        question = f"What knowledge is in my memory related to this context: {c(context)}"
-        recall = self.ask(question)
+        recall, summaries, keys = self.ask(context, detailed_out=True)
 
-        new = context # TODO: summarize at current level of abstraction <=> input last summary
-        prompt = f" <new_knowledge>{new}</new_knowledge><knowledge>I have recalled this related knowledge from my memory: {recall}</knowledge>"
+        for k, summary, mem in zip(keys, recall, summaries):
+            continue
 
         # learn
-        self.set_prompt(type="learning", version="v1")
-        out = self.run(prompt)
-        # TODO: add quality control tool for key selection - automatic recall of used keywords
+        prompt = f" <new_knowledge>{summary}</new_knowledge><knowledge>I have recalled this related knowledge from my memory: {recall}</knowledge>"
+        self.set_prompt(type="learning", version="v2")
+        out = self.run(prompt)# remove_tools=self.get_learning_mask()
+        # TODO: refactor add/modify
+
+        # TODO: refactor quality control tool for key selection - automatic recall of used keywords
+        #     ALWAYS try to recall memory after adding to evaluate if the keys need to be modified.
         
         # TODO: after loop, summarize, reflect, ask for clarification, response
         return out
 
+    def filter_information(self, question, information):
+        prompt = self.get_prompt("filter", "v2", json=False, general=False)
+        prompt = prompt.format(question=question, knowledge=information)
+        return self.single_run(prompt)
 
     def summarize(self, context):
-        prompt = self.get_prompt("summarize", "v1")
-        prompt += f"Summarize this context: {c(context)}"
+        prompt = self.get_prompt("summarize", "v2", json=False, general=False)
+        prompt = prompt.format(context=context)
         return self.single_run(prompt)
 
     def decompose(self, context):
-        prompt = self.get_prompt("decompose", "v1")
-        prompt += f"Decompose this context: {c(context)}"
-        return self.single_run(prompt)
+        prompt = self.get_prompt("decompose", "v2", json=False)
+        prompt = prompt.format(context=context)
+        return self.single_run(prompt, parse="list")
 
     def extract_keys(self, context):
-        # TODO: add list of all current keywords
-        prompt = self.get_prompt("extract_keys", "v1")
-        prompt += f"Extract keys from this context: {c(context)}"
+        keywords = self.memory.get_keywords(topk=50)
+
+        prompt = self.get_prompt("extract_keys", "v2", json=False)
+        prompt = prompt.format(context=context, keywords=keywords.__str__()[1:-1])
+        return self.single_run(prompt)
+
+    def full_summary(self, context, max_runs=5):
+        summaries = [context]
+        for i in range(max_runs):
+            res = self.summarize(summaries[-1])
+            if res == "<nothing/>":
+                break
+            summaries.append(res)
+        summaries.reverse()
+        return summaries
+
 
     ####### Prompts #######
 
-    def get_prompt(self, type, version, json=True):
-        super().get_prompt(type, dir="memory", version=version, version_general="v3", version_output="v1", json=json)
+    def get_prompt(self, type, version, json=True, general=True):
+        return super().get_prompt(type, dir="memory", version=version, version_general="v3", version_output="v2", json=json, general=general)
     
 
     def set_prompt(self, prompt=None, type=None, version="v1"):
         
-        if prompt is not None:
+        if prompt is None:
             try:
                 prompt = self.get_prompt(type, version=version)
             except Exception as e:
                 raise e
-        self.system_prompt = prompt
+        
+        self.reset_system_prompt(prompt)
 
     ######### Potentially interesting additional features #########
 
