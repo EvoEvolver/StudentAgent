@@ -16,13 +16,12 @@ def get_trappe_properties(molecule_id: int):
     """
     Returns: critical constants: Temperature [T] in Kelvin, Pressure [Pa], and Acentric factor [-]
     """
+    molecule_id = int(molecule_id)
     # Incomplete property files for some small molecules are handled separately:
     if molecule_id == 119: # nitrogen
         return (126.192, 3395800.0, 0.0372)
     if molecule_id in [120, 117]: # no trappe data available for the properties!
         return None
-        
-
 
     df = pd.read_csv(StringIO(download_properties(molecule_id)), skiprows=1)
 
