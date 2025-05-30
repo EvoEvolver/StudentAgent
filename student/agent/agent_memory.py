@@ -102,7 +102,7 @@ class MemoryAgent(Agent):
     
     ####### Calls #######
 
-    def ask(self, question:str, detailed_out=False):
+    def ask(self, question:str):
         self.set_prompt(type="retrieval", version="v3")
         
         recall = []
@@ -121,30 +121,48 @@ class MemoryAgent(Agent):
             
         response = self.filter_information(q(question), recalled(';\n'.join(recall)))
 
-        if detailed_out:
-            return response, recall, rev_summaries, extracted_keys
         return response
 
 
     def learn(self, context:str):
 
-        # ask for context
-        recall, summaries, keys = self.ask(context, detailed_out=True)
+        recall = []
+        extracted_keys = []
+        updates = []
 
-        for k, summary, mem in zip(keys, recall, summaries):
-            continue
-
-        # learn
-        prompt = f" <new_knowledge>{summary}</new_knowledge><knowledge>I have recalled this related knowledge from my memory: {recall}</knowledge>"
-        self.set_prompt(type="learning", version="v2")
-        out = self.run(prompt)# remove_tools=self.get_learning_mask()
-        # TODO: refactor add/modify
-
-        # TODO: refactor quality control tool for key selection - automatic recall of used keywords
-        #     ALWAYS try to recall memory after adding to evaluate if the keys need to be modified.
+        rev_summaries = self.full_summary(context)     # decompose into abstraction level
         
-        # TODO: after loop, summarize, reflect, ask for clarification, response
-        return out
+        for summary in rev_summaries:                   # iterate by summarizing
+            self.set_prompt(type="learning", version="v4")
+            
+            # ask
+            keys = self.extract_keys(summary)           # ask for context
+            extracted_keys.append(keys)                 # store extracted keys
+
+            input = f"Retrieve all knowledge related to this input: {q(context)}"    
+            input += f"Use these or similar keys as stimuli: {keys}"
+            
+            prompt = self.get_prompt(type="retrieval", version="v3", json=False, general=False)
+            prompt += input
+            mem = self.run(prompt, remove_tools=self.get_question_mask())
+            recall.append(mem)
+
+            # learn
+            prompt = self.get_prompt(type="update_mem", version="v1", json=False, general=False)
+            prompt = prompt.format(new_information = summary, recalled=mem)
+            update = self.run(prompt)
+            updates.append(update)
+
+            # TODO: refactor quality control tool for key selection - automatic recall of used keywords
+            #     ALWAYS try to recall memory after adding to evaluate if the keys need to be modified.
+
+        answer = self.learning_answer(updates, context)
+        return answer
+
+    def learning_answer(self, updates, new_information):
+        prompt = self.get_prompt("learning_answer", "v1", json=False, general=False)
+        prompt = prompt.format(updates=updates, new_information=new_information)
+        return self.single_run(prompt)
 
     def filter_information(self, question, information):
         prompt = self.get_prompt("filter", "v2", json=False, general=False)
@@ -152,7 +170,7 @@ class MemoryAgent(Agent):
         return self.single_run(prompt)
 
     def summarize(self, context):
-        prompt = self.get_prompt("summarize", "v2", json=False, general=False)
+        prompt = self.get_prompt("summarize", "v3", json=False, general=False)
         prompt = prompt.format(context=context)
         return self.single_run(prompt)
 

@@ -283,7 +283,8 @@ class Agent:
                         inner_parts.append(f"💭 <strong>Thought:</strong> {html.escape(item['thought'])}")
                     elif "function" in item:
                         function = html.escape(item.get("function", "unknown"))
-                        params = item.get("parameters", {}).get("parameters", {})
+                        params = item.get("parameters", {})
+                        params = params.get("parameters", params)
 
                         lines = [f"⚙️ <strong>Action:</strong> {function}"]
 

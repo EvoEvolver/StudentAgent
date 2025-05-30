@@ -1,0 +1,7 @@
+<instructions>
+    1. Analyze this new information <new>{new_information}</new>.
+    2. Compare it to this recalled memory: <recalled>{recalled}</recalled>
+    3. Update it by using the actions <modify/> and <add/>
+    4. Recall the new memory to verify if the key selection was good. Else, modify the new entries.
+    5. Repeat until done. Then output (as <response>) a summary of your actions and thoughts. Explicitly mention the need for clarification.
+</instructions>

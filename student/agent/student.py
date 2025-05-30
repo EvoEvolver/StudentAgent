@@ -39,14 +39,14 @@ class StudentAgent(Agent):
         full += self._build_prompt("output", "v1")
         self.system_prompt = full
     
-    def run(self, prompt: str, max_iter: int=10):
+    def run(self, prompt: str, max_iter: int=10, remove_tools=None):
         # 1. Decompose into learning and asking
         # 2. Ask -> Knowledge
         # 3. ReAct using knowledge
         # 4. Update learning
         # 5. Summarize for response
         
-        super().run(prompt, max_iter=max_iter)
+        super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
     
 
     def decompose(self, input):

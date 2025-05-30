@@ -1,0 +1,9 @@
+<instructions>
+    The memory system tried to integrate this new information: <new>{new_information}</new>.
+    You need to reflect upon the memory changes and provide a response:
+    - Shortly, reflect the changes.
+    - Ask for clarifications, if the conflicting information was present.
+
+    These are the memory changes:
+    <changes>{updates}</changes>
+</instructions>
