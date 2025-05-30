@@ -8,7 +8,6 @@ COPY . .
 
 
 RUN pip install -r requirements.txt
-RUN git clone https://github.com/coudertlab/CoRE-MOF.git
 
 EXPOSE 8080
 
