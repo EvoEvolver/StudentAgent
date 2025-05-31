@@ -19,7 +19,11 @@ def memory_agent_tools(provider):
 class Ask(Tool):
     def __init__(self, agent:Agent):
         name="ask"
-        description="Use to retrive related knowledge to a question from your memory."
+        description="""
+        Retrive related knowledge to a question from your memory.
+        ALWAYS use if you encounter a task or question.
+        Your memory could relevant information for everything.
+        """
         super().__init__(name, description)
         self.agent = agent
 
@@ -31,7 +35,13 @@ class Ask(Tool):
 class Learn(Tool):
     def __init__(self, agent:Agent):
         name="learn"
-        description="Use to learn the knowledge from a given context."
+        description="""
+        Learn the knowledge from a given information context.
+        The knowlege is automatically stored into your memory.
+        You can access it later.
+        ALWAYS use if you encounter interesting knowledge you think you should remember.
+        ALWAYS use if asked to remember something.
+        """
         super().__init__(name, description)
         self.agent = agent
     
@@ -133,7 +143,7 @@ class MemoryAgent(Agent):
         rev_summaries = self.full_summary(context)     # decompose into abstraction level
         
         for summary in rev_summaries:                   # iterate by summarizing
-            self.set_prompt(type="learning", version="v4")
+            self.set_prompt(type="learning", version="v5")
             
             # ask
             keys = self.extract_keys(summary)           # ask for context
@@ -148,7 +158,7 @@ class MemoryAgent(Agent):
             recall.append(mem)
 
             # learn
-            prompt = self.get_prompt(type="update_mem", version="v1", json=False, general=False)
+            prompt = self.get_prompt(type="update_mem", version="v2", json=False, general=False)
             prompt = prompt.format(new_information = summary, recalled=mem)
             update = self.run(prompt)
             updates.append(update)
@@ -160,7 +170,7 @@ class MemoryAgent(Agent):
         return answer
 
     def learning_answer(self, updates, new_information):
-        prompt = self.get_prompt("learning_answer", "v1", json=False, general=False)
+        prompt = self.get_prompt("learning_answer", "v2", json=False, general=False)
         prompt = prompt.format(updates=updates, new_information=new_information)
         return self.single_run(prompt)
 
@@ -170,7 +180,7 @@ class MemoryAgent(Agent):
         return self.single_run(prompt)
 
     def summarize(self, context):
-        prompt = self.get_prompt("summarize", "v3", json=False, general=False)
+        prompt = self.get_prompt("summarize", "v4", json=False, general=False)
         prompt = prompt.format(context=context)
         return self.single_run(prompt)
 

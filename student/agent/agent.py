@@ -22,7 +22,7 @@ class Agent:
         self.system_prompt = ""
 
         if dir is not None and version is not None:
-            self.add_system_prompt(dir=dir, version=version)
+            self.reset_system_prompt(self.get_prompt(dir=dir, version=version))
             
         self.chat_config(cache, expensive)
         self.reset_chat()
@@ -34,6 +34,7 @@ class Agent:
         self.provider = provider
         if provider== "anthropic":
             mllm.provider_switch.set_default_to_anthropic()
+            mllm.config.default_models.expensive = "claude-sonnet-4-20250514"
         
 
     def _build_prompt(self, dir, version) -> str:

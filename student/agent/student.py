@@ -12,7 +12,7 @@ class StudentAgent(Agent):
     def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version=None, provider="openai"):
         super().__init__(tools=tools, cache=cache, expensive=expensive, version=version, provider=provider)
 
-        self.system_prompt = self.student_prompt()
+        self.reset_system_prompt(self.student_prompt())
         self.get_memory_tools()
 
 
@@ -22,7 +22,6 @@ class StudentAgent(Agent):
         self.memory_agent : MemoryAgent = memory['agent']
         for tool in memory['tools']:
             self.tools[tool.name] = tool
-        
         
 
     def get_memory_agent(self):
@@ -37,9 +36,9 @@ class StudentAgent(Agent):
         full = general.format(retrieval_instructions=retrieval_instructions, learning_instructions=learning_instructions)
         full += "\n"
         full += self._build_prompt("output", "v1")
-        self.system_prompt = full
+        return full
     
-    def run(self, prompt: str, max_iter: int=10, remove_tools=None):
+    def run(self, prompt: str, max_iter: int=10, remove_tools=[]):
         # 1. Decompose into learning and asking
         # 2. Ask -> Knowledge
         # 3. ReAct using knowledge

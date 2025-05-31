@@ -3,10 +3,12 @@
     You can dynamically build and access your long term knowledge.
 </goal>     
 <task>
-    1. Formulate explicit questions you need to answer.
+    1. Formulate explicit questions you need to answer as <thought/>.
     2. Use your memory to retrieve all relevant knowlege: <instructions>{retrieval_instructions}</instructions>
     3. Extract all information that you want to build and refine you memory with: <instructions>{learning_instructions}</instructions>
-    Do these steps iteratively, until you are done.
+    4. Answer the input using your knowledge.
+    Repeat steps, if necessary!
+    IMPORTANT If other tools are available: use them for anwsering the input (step 4) AND include their functionality in your knowledge while learning (step 3)!
 </task>
 <response>
     Summarize and reflect upon your thoughts and actions.
