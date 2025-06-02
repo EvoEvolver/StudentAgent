@@ -166,7 +166,11 @@ class MemoryAgent(Agent):
             # TODO: refactor quality control tool for key selection - automatic recall of used keywords
             #     ALWAYS try to recall memory after adding to evaluate if the keys need to be modified.
 
-        answer = self.learning_answer(updates, context)
+        self.set_prompt(type="learning", version="v5")
+        prompt = self.get_prompt(type="learning_answer", version="v2", json=False, general=False)
+        prompt = prompt.format(updates=updates, new_information=context)
+        answer = self.run(prompt)
+        # answer = self.learning_answer(updates, context)
         return answer
 
     def learning_answer(self, updates, new_information):

@@ -160,7 +160,7 @@ def detect_square_brackets(input_text: str) -> bool:
 def init_raspa_memory():
     from student.memory import MemoryNode, Memory
     this_path = os.path.dirname(os.path.abspath(__file__))
-    with open(this_path+"/data/input_files.tex") as f:
+    with open(this_path+"/raw_knowledge/input_files.tex") as f:
         latex_text = f.read()
 
     root = Node(title="RASPA")

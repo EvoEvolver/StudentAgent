@@ -1,6 +1,6 @@
 <knowledge_retrieval>
     You need to retrieve as much knowledge based on the input as you can find.
-    You can recall with different stimuli multiple times.
+    You can recall with different stimuli 2 times.
 <knowledge_retrieval/>
 <instructions>
     Evaluate the content of the recalled memory to identify new relevant keys.

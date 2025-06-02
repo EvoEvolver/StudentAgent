@@ -2,7 +2,7 @@ import os
 import re
 import shutil
 from agent.agent_raspa import RaspaAgent
-from agent.student import StudentAgent
+from student.agent.agent_student import StudentAgent
 from agent.agent_memory import MemoryAgent
 
 import streamlit as st

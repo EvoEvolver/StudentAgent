@@ -6,7 +6,7 @@ from mllm import Chat
 from mllm.utils import p_map
 
 from latex_parsing import split_latex_sections
-from agent.memory import Memory, MemoryNode
+from student.agent.memory import Memory, MemoryNode
 
 def decompose_instruction(instruction: str):
     prompt = f"""
@@ -87,7 +87,7 @@ def decompose_input_file(content: str):
 
 def init_input_file_memory():
     this_path = os.path.dirname(os.path.abspath(__file__))
-    with open(this_path + "/data/examples.tex") as f:
+    with open(this_path + "/raw_knowledge/examples.tex") as f:
         latex_text = f.read()
     sections = split_latex_sections(latex_text, depth=1)
 
@@ -107,8 +107,7 @@ def init_input_file_memory():
     for key, res in p_map(decompose_instruction, simulation_inputs.keys()):
         
         content = simulation_inputs[key]
-        
-        keys = key
+        keys = [key]
         keys.append(res["simulation"])
         
         memory_node = MemoryNode(content = content, keys = keys)

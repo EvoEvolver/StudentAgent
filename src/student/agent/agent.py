@@ -95,10 +95,10 @@ class Agent:
  
     ############ Running ############
 
-    def single_run(self, prompt, parse=None):
+    def single_run(self, prompt, expensive=True, parse=None):
         chat = Chat(dedent=True)
         chat += prompt
-        res = chat.complete(cache=True, expensive=True, parse=parse) # TODO: check cache
+        res = chat.complete(cache=True, expensive=expensive, parse=parse) # TODO: check cache
         return res
 
 

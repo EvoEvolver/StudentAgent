@@ -1,10 +1,10 @@
 <instructions>
     The memory system tried to integrate this new information: <new>{new_information}</new>.
     You need to use (multiple) <thoughts/> to reflect upon all the memory changes. 
-    Give a <response/> containing ONLY these aspects:
-    - Confirm if changes were done.
-    - Ask for clarifications, if the conflicting information was present.
-
     These are the memory changes:
     <changes>{updates}</changes>
 </instructions>
+<response>
+    - Confirm if changes were done with one sentence. Do NOT mention specific memory details!
+    - Ask for clarifications, if the conflicting information was present.
+</response>

@@ -1,4 +1,4 @@
-from .student import StudentAgent
+from .agent_student import StudentAgent
 from .memory import Memory
 
 from .tools.tools_raspa import CoreMofLoader, TrappeLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser

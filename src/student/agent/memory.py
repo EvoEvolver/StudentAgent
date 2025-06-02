@@ -19,6 +19,11 @@ class MemoryNode:
 
         self.add_keys(keys)
 
+
+    def check_keys(self):
+        if len(self.keys) == 0:
+            raise ValueError("MemoryNode must have at least one key of length > 0")
+ 
     def get_keys(self):
         return list(self.keys)
 
@@ -26,20 +31,36 @@ class MemoryNode:
         assert isinstance(new_keys, List)
         for key in new_keys:
             assert isinstance(key, str)
-            self.keys.add(key)
+            key = self.format_key(key)
+            if len(key) > 0:    # avoid empty strings as key
+                self.keys.add(key)
         return self.keys
     
+    def format_key(self, key):
+        return key.strip(" \t\n")
 
     def remove_keys(self, rem_keys: Set[str]):
         assert isinstance(rem_keys, Set)
         for key in list(rem_keys):
             assert isinstance(key, str)
             self.keys.remove(key)
+        self.check_keys()
         return self.keys
 
-
+    def clean_keys(self):
+        for key in self.keys:
+            if key and len(self.format_key(key)) == 0:
+                self.keys.remove(key)
+    
     def set_embeddings(self):
-        self.embeddings = get_embeddings(list(self.keys))
+        self.clean_keys() # keys are not allowed to be empty!
+        keys = list(self.keys) 
+
+        if len(keys) > 0:
+            self.embeddings = get_embeddings(keys)
+            return True
+        else: 
+            return False
 
 
     def _get_embedding_score(self, query : List[str], keys: List[str]=None, sensitivity=0.4):
@@ -48,7 +69,9 @@ class MemoryNode:
         if keys is None:
             keys = self.keys
             if self.embeddings == []:
-                self.set_embeddings()
+                if self.set_embeddings() is False:
+                    return np.array([0])
+
             k_emb = np.array(self.embeddings)
         else:
             k_emb = np.array(get_embeddings(keys))
@@ -89,7 +112,7 @@ class MemoryNode:
 
     def _from_dict(self, d):
         self.content = d["content"]
-        self.keys = set(d["keys"])
+        self.add_keys(d["keys"])
         if "id" in d.keys():
             self.id = d["id"]
     
@@ -275,8 +298,11 @@ class Memory:
         with open(load_path) as f:
             memory_list = json.load(f)
         for d in memory_list:
-            node = MemoryNode().from_dict(d)
-            self.memory[node.id] = node
+            try:
+                node = MemoryNode().from_dict(d)
+                self.memory[node.id] = node
+            except ValueError as e:
+                print(e, "for dictionary: ", d)
 
 
     def render_html(self, *, max_emb_len: int = 12):
