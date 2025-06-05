@@ -17,7 +17,7 @@ class Tool(ABC):
     def get_output(self):
         return self.name
 
-    def parse(self) -> Dict:
+    def parse(self, name=None) -> Dict:
         func = self.run
 
         sig = inspect.signature(func)
@@ -79,8 +79,8 @@ class Tool(ABC):
             "properties": {
                 "function": {
                     "type": "string",
-                    "const": self.name,
-                    "description": f"Calls the {self.name} function"
+                    "const": name if name is not None else self.name,
+                    "description": self.description,
                 },
                 "parameters": {
                     "type": "object",

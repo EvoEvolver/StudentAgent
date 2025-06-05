@@ -12,6 +12,7 @@ class AddMemory(Tool):
         Store new knowledge in your memory that you can later recall.
         DO NOT use without recalling relevant memory first
         ALWAYS choose keywords as stimuli that facilitate the retrieval
+        AVOID long content!
         ALWAYS split knowledge into its building blocks by adding multiple memorys with suitable content/stimuli
         ALWAYS add abstract keywords NO NOT use details as keywords
         ONLY inject the relevant knowledge to the content and NOT simply copy
@@ -28,10 +29,14 @@ class AddMemory(Tool):
         return new_node
     
     def run(self, stimuli: list[str], content: str):
+        if len(stimuli) == 0:
+            return self.get_output(None)
         new_node = self._run(stimuli, content)
         return self.get_output(new_node)
 
     def get_output(self, new_node):
+        if new_node is None:
+            return error("Error during creation of new memory node. Maybe you forgot to include stimuli!")
         out = tool_response(self.name, f"Added:\n\t{new_node.__str__()}\n")
         return out
 
@@ -129,7 +134,7 @@ class ExtendedModifyMemory(ModifyMemory):
         extract_content = f"Based on this new information: {new_information}. \n Update this old information: {old_content}. YOU MUST ONLY output a the new information: 'new information'"
         new_content = self.chat(extract_content)
 
-        extract_stimuli = f'Based on this new information: {new_information}. \n Update these old keywords by adding new ones or removing old ones: {old_stimuli}. YOU MUST ONLY output a list of the all keywords: ["key", "key"]'
+        extract_stimuli = f'Based on this new information: {new_information}. \n Update these old keywords by adding new ones or removing old ones: {old_stimuli}. YOU MUST ONLY output a list of the all keywords including the old keys you want to keep: ["key", "key"] (DO NOT leave the keys empty!)'
         new_stimuli = self.chat(extract_stimuli, parse="list")
 
         return super().run(id, new_stimuli, new_content)

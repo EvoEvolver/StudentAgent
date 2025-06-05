@@ -29,13 +29,13 @@ class StudentAgent(Agent):
 
 
     def student_prompt(self):
-        general = self._build_prompt("student/general", "v1")
-        learning_instructions = self._build_prompt("student/learning", "v1")
-        retrieval_instructions = self._build_prompt("student/retrieval", "v1")
+        general = self._build_prompt("student/general", "v2")
+        learning_instructions = self._build_prompt("student/learning", "v2")
+        retrieval_instructions = self._build_prompt("student/retrieval", "v2")
 
         full = general.format(retrieval_instructions=retrieval_instructions, learning_instructions=learning_instructions)
         full += "\n"
-        full += self._build_prompt("output", "v1")
+        full += self._build_prompt("output", "v3")
         return full
     
     def run(self, prompt: str, max_iter: int=10, remove_tools=[]):
@@ -52,3 +52,13 @@ class StudentAgent(Agent):
         prompt = self.get_prompt("decompose")
         prompt += f"Decompose this context: {c(input)}"
         return self.single_run(prompt)
+    
+    def save(self, filename):
+        self.save_conversation(f"{filename}_conversation.txt")
+        self.get_memory_agent().save_memory(f"{filename}_memory.txt")
+        self.get_memory_agent().save_conversation(f"{filename}_conversation_memory.txt")
+
+    def load(self, filename):
+        self.load_conversation(f"{filename}_conversation.txt")
+        self.get_memory_agent().load_memory(f"{filename}_memory.txt")
+        self.get_memory_agent().load_conversation(f"{filename}_conversation_memory.txt")

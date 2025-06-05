@@ -91,20 +91,20 @@ class WriteFile(RaspaTool):
         
     def run(self, file_content, file_name):
         path = self.get_path(full=True)
-        error = None
+        e = None
         try:
             os.makedirs(path, exist_ok=True)
             with open(os.path.join(path, file_name), "w") as f:
                 f.write(file_content)
         except Exception as e:
-            error = e
-        return self.get_output(file_name, error)
+            pass
+        return self.get_output(file_name, e)
 
-    def get_output(self, file_name, error=None):
-        if error is None:
+    def get_output(self, file_name, e=None):
+        if e is None:
             return tool_response(self.name, file(file_name))
         else:
-            return error(error)
+            return error(e)
             
 
 class InputFile(WriteFile):
@@ -114,12 +114,13 @@ class InputFile(WriteFile):
         self.description = """
         Use this tool to write the simulation input file.
         You must provide the content as string. The filename is always simulation.input
+        ALWAYS use a template or example as reference
         """
         self.has_file = False
 
     def run(self, file_content):
         file_name="simulation.input"
-        out = super.run(file_content, file_name)
+        out = super().run(file_content, file_name)
 
         if not out.startswith("<error>"):
             self.has_file = True
@@ -195,12 +196,12 @@ class TrappeLoader(RaspaTool):
             self.has_file = True
         except Exception as e:
             #echo(f"There was some error with the molecule file generation: {e}")
-            return self.get_output(error=e)
+            return self.get_output(e=e)
         
         return self.get_output(filenames=filenames)
     
     
-    def get_output(self, filenames=None, error=None):
+    def get_output(self, filenames=None, e=None):
         if filenames is not None:
             response = f"""
             Successfully generated the molecule input files (and force field files) for: 
@@ -208,7 +209,7 @@ class TrappeLoader(RaspaTool):
             """
             return tool_response(self.name, response)
         else:
-            return error(error)
+            return error(e)
 
 
     def _load_trappe_names(self):
@@ -284,12 +285,12 @@ class CoreMofLoader(RaspaTool):
 
         name = self.search_names(mof_name)
         if name is None:
-            return self.get_output("", error="No entry found in coremof names.")
+            return self.get_output("", e="No entry found in coremof names.")
         path = self.get_path(full=True)
         out_path = os.path.join(path, output_file)
         datasets = self.get_coremof_datasets(name)
         if datasets is None:
-            return self.get_output(output_file, error=f"<error>No dataset found for {name}</error>")
+            return self.get_output(output_file, e=f"<error>No dataset found for {name}</error>")
         
         errors=[]
 
@@ -306,11 +307,11 @@ class CoreMofLoader(RaspaTool):
         return self.get_output(self, output_file, errors)
         
 
-    def get_output(self, file_name, error=None):
-        if error is None:
+    def get_output(self, file_name, e=None):
+        if e is None:
             return tool_response(self.name, file(file_name))
         else:
-            return error(error)
+            return error(e)
 
 
     def get_coremof_structures(self):

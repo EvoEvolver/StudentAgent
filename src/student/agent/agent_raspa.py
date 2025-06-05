@@ -44,9 +44,11 @@ class RaspaAgent(StudentAgent):
         self.reset(path)        # base path
         self.path_add = ""      # add onto path for simulations
         self.auto_run = False
-        
-    def build_system_prompt(self, dir, version):
-        return super().build_system_prompt(dir, version)
+        self.add_raspa_prompt()
+
+    def add_raspa_prompt(self):
+        prompt = self._build_prompt("raspa", "v1")
+        self.reset_system_prompt(prompt, append=True)
     
     def setup_path(self, path : str) -> None:
         os.makedirs(path, exist_ok=True)
@@ -87,12 +89,12 @@ class RaspaAgent(StudentAgent):
         return False
 
 
-    def run(self, prompt):
+    def run(self, prompt, max_iter=15):
         self.setup()
         remove_tools = self.get_tool_mask()
         
         # Evaluate input (generate input files)
-        res = super().run(prompt, remove_tools=remove_tools)
+        res = super().run(prompt, remove_tools=remove_tools, max_iter=max_iter)
         
         # Ask for feedback
         # Run and return output
@@ -108,8 +110,8 @@ class RaspaAgent(StudentAgent):
             mask.append("raspa")
 
         # all required files need to be present:
-        elif not self.check_files():
-            return ["raspa"]
+        #elif not self.check_files():
+        #    return ["raspa"]
 
         return mask
 

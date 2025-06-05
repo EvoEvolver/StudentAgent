@@ -95,8 +95,12 @@ class PseudoAtoms:
                 new_ps.atom_types[atom_type] = copy.deepcopy(other.atom_types[atom_type])
 
         return new_ps
+    
+    def parse_uff(self, cif):
+        raise NotImplementedError
+        
 
-    def parse(self, sections: list[list[str]], ps_id: str = "x") -> None:
+    def parse_trappe(self, sections: list[list[str]], ps_id: str = "x") -> None:
         """
         Parses a list of pseudoatom sections (each section as a multiline string)
         and updates the object in place by populating its dictionary of PseudoAtom objects.

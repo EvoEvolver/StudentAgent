@@ -1,0 +1,15 @@
+<output>
+    <!-- Think first -->
+    <thought>Describe your reasoning and the plan of your actions based on the user input and previous tool responses.</thought>
+    
+    <!-- Choose between actions or response. NEVER both -->    
+    <actions> 
+        Tools calls. The system automatically runs the tool and supply the tool response in the next turn. Leave <response/> empty!
+    </actions>
+    <!--OR-->
+    <response> 
+        Give a direct answer to the user. Leave <actions/> empty! 
+        NEVER give a response IF you call a tool/function!
+    </response>
+
+</output>

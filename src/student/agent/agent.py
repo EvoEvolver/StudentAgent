@@ -35,6 +35,7 @@ class Agent:
         if provider== "anthropic":
             mllm.provider_switch.set_default_to_anthropic()
             mllm.config.default_models.expensive = "claude-sonnet-4-20250514"
+            mllm.config.default_models.normal = "claude-3-5-haiku-20241022"
         
 
     def _build_prompt(self, dir, version) -> str:
@@ -53,7 +54,7 @@ class Agent:
 
         return text
     
-    def get_prompt(self, type, dir=None, version="v1", version_general="v1", version_output="v1", json=True, general=True):
+    def get_prompt(self, type, dir=None, version="v1", version_general="v3", version_output="v3", json=True, general=True):
         
         full = self._build_prompt(f"{dir}/general", version_general) if general is True else ""
 
@@ -95,14 +96,14 @@ class Agent:
  
     ############ Running ############
 
-    def single_run(self, prompt, expensive=True, parse=None):
+    def single_run(self, prompt, expensive=False, parse=None):
         chat = Chat(dedent=True)
         chat += prompt
         res = chat.complete(cache=True, expensive=expensive, parse=parse) # TODO: check cache
         return res
 
 
-    def run(self, prompt: str, max_iter: int=10, schema:str=None, remove_tools:List[str]=[]):
+    def run(self, prompt: str, max_iter: int=15, schema:str=None, remove_tools:List[str]=[]):
         if schema is None:
             schema = self.get_output_jsonschema(remove_tools=remove_tools)
         options = self.get_options(schema)
@@ -197,7 +198,7 @@ class Agent:
         args = call['parameters']
         if "parameters" in args.keys():
             args = args['parameters']
-        tool = self.tools.get(name)
+        tool = self.tools.get(name, None)
         id = self.get_next_id()
         call['tool_call_id'] = id
 
@@ -206,14 +207,19 @@ class Agent:
         except Exception as e:
             success = False
             out = e
-    
+
+        if tool is None:
+            name = "INVALID TOOL NAME"
+        else:
+            name = tool.name
+            
         message = {
             "role": "user",
             'content': {
                 'type': 'text',
                 'text': json.dumps({
                     "tool_call_id": id,
-                    "tool_name":tool.name,
+                    "tool_name": name,
                     "tool_response": str(out),
                 })
             }
@@ -268,7 +274,7 @@ class Agent:
     def render_message_content(self, parsed, no_background=False):
         inner_parts = []
 
-        if type(parsed) == str and parsed[0] != "{":
+        if type(parsed) == str and len(parsed) > 0 and parsed[0] != "{":
             text = parsed
             escaped_text = html.escape(text).replace("\n", "<br>")
             inner_parts.append(f"<div style='margin-top:5px;'>{escaped_text}</div>")
@@ -412,21 +418,9 @@ class Agent:
             tool_name = name 
             if name in remove_tools:
                 continue
-            tool_schema = tool.parse()
+            tool_schema = tool.parse(tool_name)
 
-            function_branches.append({
-                "type": "object",
-                "properties": {
-                    "function": {
-                        "type": "string",
-                        "const": tool_name,
-                        "description": f"Calls the {tool_name} function"
-                    },
-                    "parameters": tool_schema
-                },
-                "required": ["function", "parameters"],
-                "additionalProperties": False
-            })
+            function_branches.append(tool_schema)
 
         schema = {
         "type": "object",
@@ -453,7 +447,7 @@ class Agent:
             },
             "response": {
                 "type": "string",
-                "description": "Final response to the user. Empty string if more actions/thoughts are expected."
+                "description": "Final response to the user. IGNORED IF a function is included in the react scheme"
             }
         },
         "required": ["react", "response"],

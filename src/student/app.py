@@ -10,7 +10,7 @@ load_dotenv()
 from app_utils import *
 
 path = "output/st/test_henrik/"
-memory_path = "memory/test.txt"
+memory_path = "memory/mvp2_memory.txt"
 
 
 if "sidebar_state" not in st.session_state:

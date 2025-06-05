@@ -94,7 +94,7 @@ def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb, ps_id='x') -> dict
     # --- Pseudoatom Section ---
     pseudoatoms = parse_section(PARAM_STRING, "#,(pseudo)atom", 6)
     ps = PseudoAtoms()
-    ps.parse([pseudoatoms], ps_id=ps_id)
+    ps.parse_trappe([pseudoatoms], ps_id=ps_id)
 
     num_atoms = len(pseudoatoms)
 

@@ -39,12 +39,13 @@ class MemoryNode:
     def format_key(self, key):
         return key.strip(" \t\n")
 
-    def remove_keys(self, rem_keys: Set[str]):
+    def remove_keys(self, rem_keys: Set[str], check=True):
         assert isinstance(rem_keys, Set)
         for key in list(rem_keys):
             assert isinstance(key, str)
             self.keys.remove(key)
-        self.check_keys()
+        if check is True:
+            self.check_keys()
         return self.keys
 
     def clean_keys(self):
@@ -271,7 +272,7 @@ class Memory:
             return None, None
         
         if new_stimuli is not None:
-            node.remove_keys(node.keys)
+            node.remove_keys(node.keys, check=False)
             node.add_keys(new_stimuli)
 
         if new_content is not None:
