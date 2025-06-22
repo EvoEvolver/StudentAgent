@@ -64,7 +64,7 @@ def get_trappe_properties(molecule_id: int):
     return Tc, float(pc), float(w)
 
 
-def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb, ps_id='x') -> dict:
+def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb) -> dict:
     """
     Retrieves TraPPE parameters for a given molecule_id and returns a dictionary.
     The returned dictionary includes pseudoatom information, bond stretching, bending,
@@ -94,7 +94,7 @@ def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb, ps_id='x') -> dict
     # --- Pseudoatom Section ---
     pseudoatoms = parse_section(PARAM_STRING, "#,(pseudo)atom", 6)
     ps = PseudoAtoms()
-    ps.parse_trappe([pseudoatoms], ps_id=ps_id)
+    ps.parse_trappe(pseudoatoms)
 
     num_atoms = len(pseudoatoms)
 
@@ -120,7 +120,8 @@ def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb, ps_id='x') -> dict
                 eq_length = float(length_str)
                 #if family == "small":
                 #    bond_stretches.append((atom1, atom2, "RIGID_BOND", "", ""))
-                bond_stretches.append((atom1, atom2, "HARMONIC_BOND", default_force_constant, eq_length))
+                # bond_stretches.append((atom1, atom2, "HARMONIC_BOND", default_force_constant, eq_length))
+                bond_stretches.append((atom1, atom2, "RIGID_BOND", "", ""))
             except Exception:
                 continue
     # --- Bond Bending Parameters ---
@@ -227,56 +228,50 @@ def get_trappe_parameters(molecule_id: int, n_vdw, n_coulomb, ps_id='x') -> dict
 def get_intramol_interactions(mol: Chem.Mol, k: int = 4) -> tuple:
     """
     Computes a dictionary of atom-atom interactions that are separated by at least k bonds.
-    Returns a tuple: (n_vdw, n_coulomb, interactions)
     """
     mol = Chem.RemoveHs(mol)
     n_atoms = mol.GetNumAtoms()
-    interactions = {}
-    n_vdw = 0
-    n_coulomb = 0
+    interactions = {"vdw" : [], "coulomnb" : []}
+    print("Warning: Coulomb interactions only for heteroatoms currently!")
 
-    def classify_interaction(atom1: Chem.Atom, atom2: Chem.Atom) -> str:
+    def is_coulomb(a1: Chem.Atom, a2: Chem.Atom):
         polar_atoms = {"N", "O", "F", "Cl", "Br", "I", "P", "S"}
-        return "coulomb" if (atom1.GetSymbol() in polar_atoms or atom2.GetSymbol() in polar_atoms) else "vdw"
+        return (a1.GetSymbol() in polar_atoms and a2.GetSymbol() in polar_atoms) 
 
     for i in range(n_atoms):
         for j in range(i+1, n_atoms):
             path = Chem.rdmolops.GetShortestPath(mol, i, j)
             dist = len(path) - 1
             if dist >= k:
+                interactions["vdw"].append((i,j))
+
                 atom_i = mol.GetAtomWithIdx(i)
                 atom_j = mol.GetAtomWithIdx(j)
-                classification = classify_interaction(atom_i, atom_j)
-                if classification == 'vdw':
-                    n_vdw += 1
-                else:
-                    n_coulomb += 1
+                
+                if is_coulomb(atom_i, atom_j):
+                    interactions["coulomb"].append((i,j))
 
-                interactions[(i, j)] = {
-                    "distance": dist,
-                    "classification": classification,
-                    "atoms": (atom_i.GetSymbol(), atom_j.GetSymbol())
-                }
     
-    return n_vdw, n_coulomb, interactions
+    return interactions
 
 
-def get_intramol_string( n_vdw: int, n_coulomb: int, interactions: dict) -> str:
+def get_intramol_string(interactions: dict) -> str:
     """
     Generates a formatted string for the IntraVDW and IntraCoulomb sections of the molecule.def file.
     """
     lines = []
+    n_vdw = len(interactions['vdw'])
+    n_coulomb = len(interactions['coulomb'])
+
     if n_vdw > 0:
         lines.append("# Intra VDW: atom n1-n2")
-        for (i, j), info in sorted(interactions.items()):
-            if info['classification'] == 'vdw':
-                lines.append(f"{i} {j}")
+        for (i, j) in sorted(interactions["vdw"]):
+            lines.append(f"{i} {j}")
 
     if n_coulomb > 0:    
         lines.append("# Intra Coulomb: atom n1-n2")
-        for (i, j), info in sorted(interactions.items()):
-            if info['classification'] == 'coulomb':
-                lines.append(f"{i} {j}")
+        for (i, j) in sorted(interactions["coulomb"]):
+            lines.append(f"{i} {j}")
         
     return "\n".join(lines)
 
@@ -349,7 +344,7 @@ def get_nr_fixed_section(mol: Chem.Mol) -> str:
     return "\n".join(out)
 
 
-def build_molecule_definition_lines(ps: PseudoAtoms, Tc, pc, acentric_factor, params, n_vdw, n_coulomb, interactions) -> list:
+def build_molecule_definition_lines(ps: PseudoAtoms, Tc, pc, acentric_factor, params, interactions) -> list:
     """
     Constructs the list of lines that will make up the molecule.def file.
     """
@@ -403,7 +398,7 @@ def build_molecule_definition_lines(ps: PseudoAtoms, Tc, pc, acentric_factor, pa
             lines.append(f"{atom1} {atom2} {atom3} {atom4} {torsion_type} {c0} {c1} {c2} {c3}")
     
     # Intra-molecular interactions
-    lines.append(get_intramol_string(n_vdw, n_coulomb, interactions))
+    lines.append(get_intramol_string(interactions))
     lines.append("")
     
     return lines
@@ -423,22 +418,27 @@ def generate_molecule_def(molecule_ids: list[int], names: list[str], output_dir:
         List of the file names for the molecule files.
     """
     overall_ps = PseudoAtoms()
-    ps_ids = "abcdefghijklmnop"
     i = 0    
     file_names = []
 
     for name, molecule_id in zip(names, molecule_ids):
         
         mol = get_mol(name.replace("_", " "))
-        n_vdw, n_coulomb, interactions = get_intramol_interactions(mol)
+        if mol is None:
+            raise RuntimeError("No molecule found for ", mol)
+        
+        interactions = get_intramol_interactions(mol)
         
         Tc, pc, acentric_factor = get_trappe_properties(molecule_id)
         
-        params = get_trappe_parameters(molecule_id, n_vdw, n_coulomb, ps_id=ps_ids[i])
+        n_vdw = len(interactions['vdw'])
+        n_coulomb = len(interactions['coulomb'])
+
+        params = get_trappe_parameters(molecule_id, n_vdw, n_coulomb)
         ps = params["pseudoatoms"]
         overall_ps = overall_ps + ps
 
-        lines = build_molecule_definition_lines(ps, Tc, pc, acentric_factor, params, n_vdw, n_coulomb, interactions)
+        lines = build_molecule_definition_lines(ps, Tc, pc, acentric_factor, params, interactions)
         filename = f"{name}.def"
         
         with open(os.path.join(output_dir, filename), "w") as f:

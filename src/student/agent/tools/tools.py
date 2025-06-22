@@ -1,6 +1,8 @@
+import os
 from abc import ABC, abstractmethod
 import inspect
 from typing import get_origin, get_args, List, Dict
+
 
 class Tool(ABC):
     name : str
@@ -93,3 +95,21 @@ class Tool(ABC):
             "additionalProperties": False
         }
 
+
+
+class RaspaTool(Tool):
+    def __init__(self, name, description, path=None, path_add=None):
+        super().__init__(name, description)
+        self.path = path
+        self.path_add = path_add
+    
+    def get_path(self, full=False):
+        if self.path is None:
+            #raise RuntimeWarning(f"No path was set for {self.name}.")
+            print(f"Warning: No path was set for {self.name}!")
+            return "./"
+        else:
+            if full is True and self.path_add is not None:
+                return os.path.join(self.path, self.path_add)
+            else:
+                return self.path

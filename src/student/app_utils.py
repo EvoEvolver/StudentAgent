@@ -1,9 +1,9 @@
 import os
 import re
 import shutil
-from agent.agent_raspa import RaspaAgent
+from student.agent.agent_raspa import RaspaAgent
 from student.agent.agent_student import StudentAgent
-from agent.agent_memory import MemoryAgent
+from student.agent.agent_memory import MemoryAgent
 
 import streamlit as st
 from streamlit.components.v1 import html
@@ -111,7 +111,7 @@ def reset_messages(st):
 def run_raspa(st):
     with st.spinner("Running..."):
         agent = get_agent(st)
-        if type(agent, RaspaAgent):
+        if type(agent) == RaspaAgent:
             agent.tools['raspa'].run()
         else:
             raise Exception("Error running RASPA manually.")

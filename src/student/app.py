@@ -7,7 +7,7 @@ import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
 
-from app_utils import *
+from .app_utils import *
 
 path = "output/st/test_henrik/"
 memory_path = "memory/mvp2_memory.txt"

@@ -9,8 +9,8 @@ from .utils import context as c
 
 
 class StudentAgent(Agent):
-    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version=None, provider="openai"):
-        super().__init__(tools=tools, cache=cache, expensive=expensive, version=version, provider=provider)
+    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version=None, provider="openai", verbose=False):
+        super().__init__(tools=tools, cache=cache, expensive=expensive, version=version, provider=provider, verbose=verbose)
 
         self.reset_system_prompt(self.student_prompt())
         self.get_memory_tools()
