@@ -21,7 +21,10 @@ def load_agent(st, mode, path):
         version = "v3"
         
         if mode == "RASPA":
-            st.session_state.agent = RaspaAgent(path=path, version=version, provider=provider)
+            r = RaspaAgent(path=path, version=version, provider=provider)
+            r.tools["framework loader"].coremof = False
+            print("Not using CoreMOF database!")
+            st.session_state.agent = r
         else:
             st.session_state.agent = StudentAgent(version=version, provider=provider)
 
