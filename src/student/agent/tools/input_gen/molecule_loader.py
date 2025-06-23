@@ -198,6 +198,14 @@ class MoleculeLoaderTrappe(RaspaTool):
 
         mol = get_mol(name.replace("_", " "), verbose=self.verbose)
         mol = Chem.RemoveHs(mol)
+        heteroatoms = [7, 8, 15, 16]
+        hetero_idx = []
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() in heteroatoms:
+                hetero_idx.append(atom.GetIdx())
+        if len(hetero_idx) > 0:
+            mol = Chem.AddHs(mol, onlyOnAtoms=hetero_idx)
+
         
         if mol is None:
             raise RuntimeError("No molecule could be generated for ", mol)

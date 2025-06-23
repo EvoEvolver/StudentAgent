@@ -271,9 +271,11 @@ class PseudoAtomsBag:
 
         for atom in atoms:
             ps_type = atom.__repr__()
-            alias =  re.sub(r'\d', '', ps_type)[:-3]
+            #alias =  re.sub(r'\d', '', ps_type)[:-3]
+            alias = atom.atom_type
             if alias[-1] == "H" and len(alias) > 1:
                 alias = alias[:-1]
+            
             chem = alias
             charge = atom.charge
             mass = atom.mass
