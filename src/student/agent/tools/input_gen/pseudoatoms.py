@@ -1,21 +1,33 @@
 import os
 import re
 import copy
+import pickle
+from typing import Dict, List
+
+PATH = os.path.dirname(__file__)
+
+with open(os.path.join(PATH, "ps_type_to_label.pkl"), "rb") as f:
+    TYPE_TO_LABEL = pickle.load(f)
+
 
 class Atom:
-    def __init__(self, id, atom_type: str, type_val, epsilon, sigma, charge):
+    def __init__(self, id, atom_type: str, ps_type, epsilon, sigma, charge):
         self.id = [id]
-        self.atom_type = atom_type 
-        self.type_val = type_val
+        self.atom_type = atom_type      # main atom
+        self.ps_type = ps_type        # ps_type
         self.epsilon = epsilon
         self.sigma = sigma
         self.charge = charge
-        self.radius = self.get_radius(atom_type)
-        self.mass = self.get_mass(atom_type)
-        self.label = self.__repr__()
+        self.radius = self.get_radius()
+        self.mass = self.get_mass()
+        self.label = self.get_label()
+        self.add_id = 0
 
-    def get_radius(self, atom_type):
-        label = atom_type
+    def get_label(self):
+        return TYPE_TO_LABEL.get(self.atom_type, {}).get(self.ps_type, None)
+
+    def get_radius(self):
+        label = self.atom_type
         if label.startswith("CH"):
             label = "CHx"
 
@@ -29,10 +41,14 @@ class Atom:
             "He": 1.0,
             "Ar": 0.7,
             "S" : 0.9,
+            "F" : 0.68, # as oxygen
+            "P" : 0.9,  # as sulfur
+            "CFx" : 1.0, # as CHx
+            "M" : 0,
         }
         return radii.get(label, 0)
         
-    def get_mass(self, atom_type):
+    def get_mass(self):
         masses = {
             "C" : 12.0107,
             "O" : 15.9994,
@@ -41,12 +57,20 @@ class Atom:
             "He": 4.002602,
             "Ar": 39.948,
             "S" : 32.065,
+            "F" : 18.998,
+            "P" : 30.974,
+            "M" : 0,
         }
+        atom_type = self.atom_type
         if atom_type in masses.keys():
             return masses.get(atom_type, 0)
         elif atom_type.startswith("CH"):
             n_h = 1 if len(atom_type) == 2 else int(atom_type[2])
             mass = masses.get("C") + n_h * masses.get("H")
+            return mass
+        elif atom_type.startswith("CF"):
+            n_f = 1 if len(atom_type) == 2 else int(atom_type[2])
+            mass = masses.get("C") + n_f * masses.get("F")
             return mass
         else:
             return NotImplemented     
@@ -55,7 +79,7 @@ class Atom:
         if not isinstance(other, Atom):
             return NotImplemented
         return (self.atom_type == other.atom_type and
-                # self.type_val == other.type_val and
+                self.ps_type == other.ps_type and
                 self.epsilon == other.epsilon and
                 self.sigma == other.sigma and
                 self.charge == other.charge)
@@ -64,20 +88,20 @@ class Atom:
         if self == other:
             self.id.extend(other.id)
             return self
-        return NotImplemented
+        
+        return False
     
     def __repr__(self):
-        return f"{self.atom_type}_{self.id[0]}"
+        if self.add_id == 0:
+            return self.label
+        return f"{self.label}_{self.add_id}"
+
 
 
 class PseudoAtoms:
     def __init__(self):
-        """
-        Container for multiple PseudoAtom objects, keyed by main atom type.
-        """
         self.atoms = {} # id -> Atom
-        self.atom_types = {} # atom_type -> [ids]
-
+        self.ps_labels = {} # ps_type -> [ids]
 
     def __add__(self, other):
         new_ps = copy.deepcopy(self)
@@ -87,84 +111,157 @@ class PseudoAtoms:
                 new_ps.atoms[id] = copy.deepcopy(other.atoms[id])    
             else:
                 print("Error with Pseudoatom additions: IDs not unique!")
-                return None
-        for atom_type in other.atom_types.keys():
-            if atom_type in new_ps.atom_types.keys():
-                new_ps.atom_types[atom_type].extend(copy.deepcopy(other.atom_types[atom_type]))
+                return self
+            
+        for atom_type in other.ps_labels.keys():
+            if atom_type in new_ps.ps_labels.keys():
+                new_ps.ps_labels[atom_type].extend(copy.deepcopy(other.ps_labels[atom_type]))
             else:
-                new_ps.atom_types[atom_type] = copy.deepcopy(other.atom_types[atom_type])
+                new_ps.ps_labels[atom_type] = copy.deepcopy(other.ps_labels[atom_type])
 
         return new_ps
     
-    def parse_uff(self, cif):
-        raise NotImplementedError
-        
 
-    def parse_trappe(self, sections: list[list[str]], ps_id: str = "x") -> None:
-        """
-        Parses a list of pseudoatom sections (each section as a multiline string)
-        and updates the object in place by populating its dictionary of PseudoAtom objects.
-        
-        Parameters:
-            sections (list[str]): A list of pseudoatom section strings.
-        """
+    def get_atoms(self):
+        atomic_positions = []
+        for id, atom in self.atoms.items():
+            atomic_positions.append((id, atom.__repr__()))
+        return atomic_positions
 
-        for section in sections:
-            for parts in section:
-                try:
-                    id = f"{int(parts[0])-1}_{ps_id}"
-                    main_atom = parts[1]
-                    type_val = parts[2]
-                    epsilon = float(parts[3])
-                    sigma = float(parts[4])
-                    charge = float(parts[5])
-                except Exception as e:
-                    print("Error parsing pseudoatom line:", e)
-                    print("You might need to check if you used a list in the input!")
-                    return
+    def parse_trappe(self, section: list[str]) -> None:
+        for parts in section:
+            try:
+                id = int(parts[0])-1
+                main_atom = parts[1]
+                type_val = parts[2]
+                epsilon = float(parts[3])
+                sigma = float(parts[4])
+                charge = float(parts[5])
+            
+            except Exception as e:
+                print("Error parsing pseudoatom line:", e)
+                print("You might need to check if you used a list in the input!")
+                return
 
-                #if main_atom not in self.atoms:
-                self.atoms[id] = Atom(id, main_atom, type_val, epsilon, sigma, charge)
-                ids = self.atom_types.get(main_atom, [])
-                self.atom_types[main_atom] = ids + [id]
+            a = Atom(id, main_atom, type_val, epsilon, sigma, charge)
+            self.atoms[id] = a
+            self.ps_labels[a.label] = self.ps_labels.get(a.label, []) + [id]
 
-    def get_atoms_with_type(self, atom_type: str):
-        ids = self.atom_types.get(atom_type, [])
+    def get_atoms_with_label(self, label: str):
+        return [self.atoms[id] for id in self.ps_labels.get(label, [])]
+
+
+    def get_atoms_main(self):
+        return {index : (atom.atom_type, atom.charge) for index, atom in self.atoms.items()}
+
+
+class PseudoAtomsBag:
+    def __init__(self):
+        self.pseudoatoms : Dict[str: PseudoAtoms] = {} # name : Pseudoatoms
+        self.labels = set()
+
+    def add(self, name, ps : PseudoAtoms):
+        self.pseudoatoms[name] = ps
+        for label in ps.ps_labels.keys():
+            self.labels.add(label)
+
+    def get_atoms_with_label(self, label : str) -> List:
         atoms = []
-        for id in ids:
-            atoms.append(self.atoms[id])
+        for ps in self.pseudoatoms.values():
+            atoms.extend(ps.get_atoms_with_label(label))
         return atoms
     
-    def get_atom_types(self):
-        return list(self.atoms.keys())
-    
-    def get_unique_atoms_with_type(self, atom_type: str):
-        atoms = self.get_atoms_with_type(atom_type)
-        if atoms is None:
-            return None
-
+    def get_unique_atoms_with_label(self, label: str):
+        atoms = self.get_atoms_with_label(label)
+        
         unique_atoms = []
         for atom in atoms:
             duplicate_found = False
+            
             for idx, u in enumerate(unique_atoms):
                 if u == atom:
                     unique_atoms[idx] = u + atom
                     duplicate_found = True
                     break
+                elif u.label == atom.label: # if label is identical, but different parameters, add distinct identifier
+                    atom.add_id = u.add_id + 1
+            
             if not duplicate_found:
                 unique_atoms.append(atom)
+        
         return unique_atoms
 
     def get_unique_atoms(self):
         atoms = []
-        for atom_type in self.atom_types:
-            atoms.extend(self.get_unique_atoms_with_type(atom_type))
+        for label in self.labels:
+            atoms.extend(self.get_unique_atoms_with_label(label))
         return atoms
 
+    def build_ff_mixing(self):
+        atoms = self.get_unique_atoms()
+        n = len(atoms)
 
-    def get_pesudoatoms_string(self):
-        # atoms = self.get_unique_atoms()
-        atoms = self.atoms.values()
+        framework_ff, n_ff = self.get_generic_mof()
+
+        lines = []
+        lines.append("# general rule for shifted vs truncated")
+        lines.append("truncated")
+        lines.append("# general rule tailcorrections")
+        lines.append("yes")
+        lines.append("# number of defined interactions")
+        lines.append(f"{n+n_ff}")
+        lines.append("# type interaction")
+        lines.append(framework_ff)
+        
+        for atom in atoms:
+            ps_type = atom.__repr__()
+            epsilon = atom.epsilon
+            sigma = atom.sigma
+            
+            fields = [
+                ps_type,        # type
+                "lennard-jones",
+                f"{epsilon:.5g}",        # epsilon
+                f"{sigma:.5g}",          # sigma
+            ]
+
+            flag_format = (
+                "{:15}"   # type
+                "{:18s}"  
+                "{:9s}"   # epsilon
+                "{:12s}"  # sigma
+            )     
+            line = flag_format.format(*fields)
+            lines.append(line)
+        lines.append("# general mixing rule for Lennard-Jones")
+        lines.append("Lorentz-Berthelot")
+        lines.append("")  
+        
+        return "\n".join(lines)
+    
+    def build_ff(self):
+        lines = []
+        lines.append("# rules to overwrite")
+        lines.append("0")
+        lines.append("# number of defined interactions")
+        lines.append("0")
+        lines.append("# mixing rules to overwrite")
+        lines.append("0")
+        lines.append("")
+        return "\n".join(lines)
+        
+    def get_generic_mof(self):
+        with open(os.path.join(os.path.dirname(__file__), "forcefields/generic_ff_mof.def"), "r") as f:
+            s = f.read()
+        return s, 45
+    
+    def get_generic_zeolites(self):
+        with open(os.path.join(os.path.dirname(__file__), "forcefields/generic_ff_zeolites.def"), "r") as f:
+            s = f.read()
+        return s, 16
+
+    def build_pseudoatoms(self):
+        atoms = self.get_unique_atoms()
         n = len(atoms)
 
         lines = []
@@ -174,9 +271,11 @@ class PseudoAtoms:
 
         for atom in atoms:
             ps_type = atom.__repr__()
-            alias =  re.sub(r'\d', '', ps_type)[:-3]
+            #alias =  re.sub(r'\d', '', ps_type)[:-3]
+            alias = atom.atom_type
             if alias[-1] == "H" and len(alias) > 1:
                 alias = alias[:-1]
+            
             chem = alias
             charge = atom.charge
             mass = atom.mass
@@ -220,58 +319,3 @@ class PseudoAtoms:
         lines.append("")  
 
         return "\n".join(lines)
-
-    def get_atoms(self):
-        atomic_positions = []
-        for id, p in self.atoms.items():
-            atomic_positions.append((id, p.__repr__()))
-        return atomic_positions
-    
-    def get_ff_string(self):
-        atoms = self.atoms.values()
-        n = len(atoms)
-
-        lines = []
-        lines.append("# general rule for shifted vs truncated")
-        lines.append("shifted")
-        lines.append("# general rule tailcorrections")
-        lines.append("no")
-        lines.append("# number of defined interactions")
-        lines.append(f"{n}")
-        lines.append("# type interaction")
-        
-        for atom in atoms:
-            ps_type = atom.__repr__()
-            epsilon = atom.epsilon
-            sigma = atom.sigma
-            
-            fields = [
-                ps_type,        # type
-                "lennard-jones",
-                f"{epsilon:.5g}",        # epsilon
-                f"{sigma:.5g}",          # sigma
-            ]
-
-            flag_format = (
-                "{:15}"   # type
-                "{:18s}"  
-                "{:9s}"   # epsilon
-                "{:12s}"  # sigma
-            )     
-            line = flag_format.format(*fields)
-            lines.append(line)
-        lines.append("# general mixing rule for Lennard-Jones")
-        lines.append("Lorentz-Berthelot")
-        lines.append("")  
-        
-        return "\n".join(lines)
-
-    def generate_ff_file(self, output_dir=None):
-        s = self.get_ff_string()
-        with open(os.path.join(output_dir, "force_field_mixing_rules.def"), "w") as f:
-            f.write(s)
-
-    def generate_ps_file(self, output_dir=None):
-        s = self.get_pesudoatoms_string()
-        with open(os.path.join(output_dir, "pseudo_atoms.def"), "w") as f:
-            f.write(s)

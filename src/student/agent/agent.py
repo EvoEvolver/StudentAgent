@@ -15,7 +15,7 @@ class Agent:
     id : int
     conversation : List
 
-    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, dir=None, version=None, provider="openai"):
+    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, dir=None, version=None, provider="openai", verbose=False):
         self.tools = tools
         self.id = 0
         self.conversation = [] # list of conversations. new list starts at each reset
@@ -28,6 +28,7 @@ class Agent:
         self.reset_chat()
         self.reset_id()
         self.setup_provider(provider)
+        self.verbose = verbose
         
     ############ General Setup ############
     def setup_provider(self, provider="openai"):
@@ -123,7 +124,10 @@ class Agent:
     def _run(self, options):
         res = self.chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
         res = json.loads(res)
-        done, n_tool_responses = self.use_tools(res)    
+        done, n_tool_responses = self.use_tools(res)   
+        
+        if self.verbose is True:
+            print(self.response(res))
         return res, done, n_tool_responses
     
     def response(self, message: Dict):

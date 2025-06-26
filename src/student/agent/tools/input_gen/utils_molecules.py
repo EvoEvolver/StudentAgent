@@ -23,6 +23,8 @@ def molecule_name_to_smiles(name: str):
         else:
             smiles = None
     except Exception as e:
+        if type(e) == requests.exceptions.ConnectionError:
+            print("No connection PubChem API could be established.")
         return None
     return smiles
 
@@ -44,8 +46,12 @@ def mol_from_smiles(smiles: str):
         return None
     return mol
 
-def get_mol(name):
+def get_mol(name, verbose=False):
     smiles = molecule_name_to_smiles(name)
+    if verbose:
+        print("SMILES found for ", name, " :" ,smiles)
+    if smiles is None:
+        return None
     mol = mol_from_smiles(smiles)
     return mol
 

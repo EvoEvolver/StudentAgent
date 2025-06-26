@@ -1,7 +1,7 @@
 from .agent_student import StudentAgent
 from .memory import Memory
 
-from .tools.tools_raspa import CoreMofLoader, TrappeLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser
+from .tools.tools_raspa import CoreMofLoader, TrappeLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser, FrameworkLoader, MoleculeLoader
 from .tools.tools import Tool
 
 from mllm import Chat
@@ -26,20 +26,31 @@ class RaspaAgent(StudentAgent):
     auto_run : bool
 
 
-    def __init__(self, path="output", version="v1", provider="anthropic"):
+    def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=False):
+        if csd_path is not None:
+            framework_loader = FrameworkLoader(path, coremof=False, csd_path=csd_path)
+        else:
+            print("A CSD path is required to access the coremof files.")
+            framework_loader = FrameworkLoader(path, coremof=False)
 
-        raspa_tools = {
-            "coremof": CoreMofLoader(path),
-            "trappe": TrappeLoader(path),
-            "raspa": ExecuteRaspa(),
-            "input": InputFile(),
-            "read": ReadFile(),
-            "write": WriteFile(),
-            "files": InspectFiles(),
-            "output": OutputParser(),
+        raspa_tools = [
+            #"coremof": CoreMofLoader(path),
+            framework_loader,
+            # TrappeLoader(path),
+            MoleculeLoader(path),
+            ExecuteRaspa(),
+            InputFile(),
+            ReadFile(),
+            WriteFile(),
+            InspectFiles(),
+            OutputParser()
+        ]
+        tools = {
+            tool.name : tool
+            for tool in raspa_tools
         }
 
-        super().__init__(tools=raspa_tools, version=version, provider=provider)
+        super().__init__(tools=tools, version=version, provider=provider, verbose=verbose)
 
         self.reset(path)        # base path
         self.path_add = ""      # add onto path for simulations
@@ -77,14 +88,14 @@ class RaspaAgent(StudentAgent):
         '''
         if path is not None:
             self.setup_path(path)
-        self.tools['coremof'].has_file = False 
-        self.tools['trappe'].has_file = False
-        self.tools['input'].has_file = False
+        for tool in self.tools:
+            if hasattr(tool, "has_file"):
+                tool.has_file =False
         return
 
 
     def check_files(self):
-        if self.tools['coremof'].has_file and self.tools['trappe'].has_file and self.tools['write'].has_file:
+        if all([tool.has_file for tool in self.tools if hasattr(tool, "has_file")]):
             return True
         return False
 
