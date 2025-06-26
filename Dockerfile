@@ -8,8 +8,7 @@ RUN conda install python=3.11 -y
 RUN conda install -c conda-forge raspa2 -y
 RUN pip install -e .
 RUN pip install -r requirements.txt
-RUN conda info --base
-
+ENV RASPA_DIR=/opt/conda
 
 EXPOSE 8080
 
