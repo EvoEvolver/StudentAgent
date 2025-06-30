@@ -11,7 +11,8 @@ student.egg-info/
 
 .env
 CSD-modified/cifs/NCR/
-CSD-modified/cifs/CR/
+CSD-modified/cifs/CR/ASR/
 CSD-modified/cifs/CR/Ion/
-!CSD-modified/cifs/CR/FSR/2024*
+
+CSD-modified/cifs/CR/FSR/*
 CSD-modified/NCR_data_CSD_modified_*
