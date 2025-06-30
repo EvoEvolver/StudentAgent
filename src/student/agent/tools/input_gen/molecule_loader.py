@@ -1,4 +1,6 @@
 from student.agent.tools.tools import RaspaTool
+from student.agent.tools.input_gen.data.unknown_trappe import *
+
 import os
 import json
 import requests
@@ -19,6 +21,7 @@ from .utils_molecules import get_mol
 from .trappe_loader import download_parameters, download_properties
 from .pseudoatoms import PseudoAtoms, Atom, PseudoAtomsBag
 
+PATH = os.path.dirname(__file__)
 
 def get_trappe_properties(molecule_id: int):
     """
@@ -91,14 +94,16 @@ class MoleculeLoaderTrappe(RaspaTool):
         for name in molecule_names:
 
             res = self._search_name(name)
-            if res is  None:
-                continue
-            out_names.append(res)
-            id = self.get_molecule_id(res)
             
-            mol_def = self.build_molecule_definition(id, res)
+            if res is not None and molecule_name_to_smiles(res) == molecule_name_to_smiles(name):
+                id = self.get_molecule_id(res)
+                mol_def = self.build_molecule_definition(id, res)
+            else:
+                res = name
+                mol_def = self.load_unknown_molecule(name)
+                
             self.make_file(mol_def, f"{res}.def")
-        
+            out_names.append(res)
         self.make_ff_ps_files()
         
         return out_names
@@ -183,11 +188,125 @@ class MoleculeLoaderTrappe(RaspaTool):
             if in_section:
                 if line.startswith("#,"):
                     break  # end of this section
+                line = line.replace("(cyc,", "(cyc")
                 parts = [p.strip() for p in line.split(",")]
                 if len(parts) >= min_parts:
                     section_lines.append(parts[:min_parts])
         return section_lines
     
+
+
+    def load_unknown_molecule(self, name):
+        
+        smiles = molecule_name_to_smiles(name)
+        Tc, pc, acentric_factor = get_properties(smiles)
+
+
+        with open(os.path.join(PATH,"data/parameters/ps_type_to_smarts.pkl"), "rb") as f:
+            type_to_smarts = pickle.load(f)
+
+        with open(os.path.join(PATH,"data/parameters/param_types.pkl"), "rb") as f:
+            param_types = pickle.load(f)
+
+        with open(os.path.join(PATH,"data/parameters/bonded.pkl"), "rb") as f:
+            bonded = pickle.load(f)
+        
+        mol = get_mol(name)
+
+        if mol is None:
+            return None
+        
+        mol = assign_atom_types_by_smarts(mol, type_to_smarts)
+        
+        ps = PseudoAtoms()
+        ps.parse_mol(mol, param_types)
+        self.ps_bag.add(name, ps)
+
+        bonds, bends, torsions = assign_bonded_interactions(mol, bonded)
+
+        bonded = bonded_definitions(bonds, bends, torsions, bonded)
+        interactions = self.get_intramol_interactions(mol)
+        n_vdw = len(interactions['vdw'])
+        n_coulomb = len(interactions['coulomb'])
+
+
+        lines = []
+        
+        # Critical constants section
+        lines.append("# critical constants: Temperature [T], Pressure [Pa], and Acentric factor [-]")
+        lines.append(f"{Tc}")
+        lines.append(f"{pc}")
+        lines.append(f"{acentric_factor}")
+        
+        # Molecular composition section
+        lines.append("# Number Of Atoms")
+        lines.append(f"{mol.GetNumAtoms()}")
+        lines.append("# Number Of Groups")
+        lines.append(f"{1}")
+        
+        # Group information
+        lines.append(f"# Group")
+        lines.append(f"flexible")
+        lines.append("# number of atoms")
+        lines.append(f"{mol.GetNumAtoms()}")
+        
+        # Atomic positions
+        lines.append("# atomic positions")
+        for i, atom in enumerate(mol.GetAtoms()):
+            lines.append(f"{i} {atom.GetProp('label')}")
+        
+        # Intramolecular interaction flags
+        lines.append("# Chiral centers Bond  BondDipoles Bend  UrayBradley InvBend  Torsion Imp. Torsion Bond/Bond Stretch/Bend Bend/Bend Stretch/Torsion Bend/Torsion IntraVDW IntraCoulomb")
+        intramol = [
+            0,                      # Chiral centers
+            len(bonds),             # Bond
+            0,                      # BondDipoles
+            len(bends),             # Bend
+            0,                      # UrayBradley
+            0,                      # InvBend
+            len(torsions),          # Torsion
+            0,                      # Imp. Torsion
+            0,                      # Bond/Bond 
+            0,                      # Stretch/Bend 
+            0,                      # Bend/Bend 
+            0,                      # Stretch/Torsion 
+            0,                      # Bend/Torsion 
+            n_vdw,
+            n_coulomb
+        ]
+
+        flag_format = (
+            "{:16d}"  # Chiral centers
+            "{:5d}"   # Bond
+            "{:13d}"  # BondDipoles
+            "{:5d}"   # Bend
+            "{:13d}"  # UrayBradley
+            "{:8d}"   # InvBend
+            "{:9d}"   # Torsion
+            "{:13d}"  # Imp. Torsion
+            "{:10d}"  # Bond/Bond 
+            "{:13d}"  # Stretch/Bend
+            "{:10d}"  # Bend/Bend 
+            "{:16d}"  # Stretch/Torsion 
+            "{:13d}"  # Bend/Torsion 
+            "{:9d}"   # IntraVDW 
+            "{:12d}"  # IntraCoulomb
+        )
+        intramolecular_flags = flag_format.format(*intramol)
+        lines.append(intramolecular_flags)
+
+        lines.append(bonded)
+        
+        # Intra-molecular interactions
+        lines.append(self.get_intramol_string(interactions))
+        
+        # Partial reinsertion moves
+        lines.append(self.get_nr_fixed_section(mol))
+        
+        lines.append("")
+        return lines
+
+
     def build_molecule_definition(self, id, name) -> list:
         
         Tc, pc, acentric_factor = get_trappe_properties(id)
@@ -197,15 +316,6 @@ class MoleculeLoaderTrappe(RaspaTool):
         self.ps_bag.add(name, ps)
 
         mol = get_mol(name.replace("_", " "), verbose=self.verbose)
-        mol = Chem.RemoveHs(mol)
-        heteroatoms = [7, 8, 15, 16]
-        hetero_idx = []
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() in heteroatoms:
-                hetero_idx.append(atom.GetIdx())
-        if len(hetero_idx) > 0:
-            mol = Chem.AddHs(mol, onlyOnAtoms=hetero_idx)
-
         
         if mol is None:
             raise RuntimeError("No molecule could be generated for ", mol)
@@ -336,8 +446,8 @@ class MoleculeLoaderTrappe(RaspaTool):
                     eq_length = float(length_str)
                     #if family == "small":
                     #    bond_stretches.append((atom1, atom2, "RIGID_BOND", "", ""))
-                    # bond_stretches.append((atom1, atom2, "HARMONIC_BOND", default_force_constant, eq_length))
-                    bond_stretches.append((atom1, atom2, "RIGID_BOND", "", ""))
+                    bond_stretches.append((atom1, atom2, "HARMONIC_BOND", default_force_constant, eq_length))
+                    #bond_stretches.append((atom1, atom2, "RIGID_BOND", "", ""))
                     bonds.append((atom1, atom2))
                 except Exception:
                     continue
@@ -581,7 +691,6 @@ class MoleculeLoaderTrappe(RaspaTool):
         """
         Generates the "nr fixed" section (fixed fragments list) for a molecule.def file.
         """
-        mol = Chem.RemoveHs(mol)
         n = mol.GetNumAtoms()
         if n < 2:
             return "\n".join(["# Number of config moves", str(len(lines) - 1)])

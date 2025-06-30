@@ -3,10 +3,13 @@ import re
 import copy
 import pickle
 from typing import Dict, List
+from rdkit.Chem import Mol
+
+from .data import unknown_trappe
 
 PATH = os.path.dirname(__file__)
 
-with open(os.path.join(PATH, "ps_type_to_label.pkl"), "rb") as f:
+with open(os.path.join(PATH, "data/parameters/ps_type_to_label.pkl"), "rb") as f:
     TYPE_TO_LABEL = pickle.load(f)
 
 
@@ -127,6 +130,23 @@ class PseudoAtoms:
         for id, atom in self.atoms.items():
             atomic_positions.append((id, atom.__repr__()))
         return atomic_positions
+
+    def parse_mol(self, mol : Mol, param_types):
+        for atom in mol.GetAtoms():
+            id = atom.GetIdx()
+            main_atom = atom.GetProp("main_type")
+            type_val = atom.GetProp("label")
+
+            if type_val in param_types.keys():
+                epsilon, sigma, charge = param_types[type_val]
+            else:
+                print("No parameters assigned for atom of type ", type_val)
+                continue
+
+            a = Atom(id, main_atom, type_val, epsilon, sigma, charge)
+            self.atoms[id] = a
+            self.ps_labels[a.label] = self.ps_labels.get(a.label, []) + [id]
+
 
     def parse_trappe(self, section: list[str]) -> None:
         for parts in section:
@@ -251,12 +271,12 @@ class PseudoAtomsBag:
         return "\n".join(lines)
         
     def get_generic_mof(self):
-        with open(os.path.join(os.path.dirname(__file__), "forcefields/generic_ff_mof.def"), "r") as f:
+        with open(os.path.join(os.path.dirname(__file__), "data/forcefields/generic_ff_mof.def"), "r") as f:
             s = f.read()
         return s, 45
     
     def get_generic_zeolites(self):
-        with open(os.path.join(os.path.dirname(__file__), "forcefields/generic_ff_zeolites.def"), "r") as f:
+        with open(os.path.join(os.path.dirname(__file__), "data/forcefields/generic_ff_zeolites.def"), "r") as f:
             s = f.read()
         return s, 16
 

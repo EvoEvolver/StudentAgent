@@ -17,7 +17,7 @@ from .input_gen.molecule_loader import MoleculeLoaderTrappe
 from .output import output_parser
 from ..utils import quick_search
 
-from .input_gen.generate_mol_definition import generate_molecule_def
+# from .input_gen.generate_mol_definition import generate_molecule_def
 
 
 class MoleculeLoader(MoleculeLoaderTrappe):
@@ -190,6 +190,7 @@ class ExecuteRaspa(RaspaTool):
         return out
 
 
+'''
 class TrappeLoader(RaspaTool):
 
     def __init__(self, path=None):
@@ -216,7 +217,7 @@ class TrappeLoader(RaspaTool):
         out_path = self.get_path(full=True)
 
         try:
-            filenames = generate_molecule_def(molecule_ids=ids, names=molecule_names, output_dir=out_path)
+            # filenames = generate_molecule_def(molecule_ids=ids, names=molecule_names, output_dir=out_path)
             self.has_file = True
         except Exception as e:
             #echo(f"There was some error with the molecule file generation: {e}")
@@ -293,7 +294,7 @@ class TrappeLoader(RaspaTool):
         """
         return prompt
     
-
+'''
 class CoreMofLoader(RaspaTool):
     
     def __init__(self, path=None):
@@ -366,7 +367,7 @@ class CoreMofLoader(RaspaTool):
             
         best_match = matches[0]
         return best_match[0]
-    
+
 
 _BLOCK_RE = re.compile(r'^Block\s*\[\s*\d+\s*\]$')
 

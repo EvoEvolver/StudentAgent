@@ -1,7 +1,7 @@
 from .agent_student import StudentAgent
 from .memory import Memory
 
-from .tools.tools_raspa import CoreMofLoader, TrappeLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser, FrameworkLoader, MoleculeLoader
+from .tools.tools_raspa import CoreMofLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser, FrameworkLoader, MoleculeLoader
 from .tools.tools import Tool
 
 from mllm import Chat
@@ -34,7 +34,7 @@ class RaspaAgent(StudentAgent):
             framework_loader = FrameworkLoader(path, coremof=False)
 
         raspa_tools = [
-            #"coremof": CoreMofLoader(path),
+            # CoreMofLoader(path),
             framework_loader,
             # TrappeLoader(path),
             MoleculeLoader(path),

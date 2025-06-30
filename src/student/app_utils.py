@@ -115,7 +115,7 @@ def run_raspa(st):
     with st.spinner("Running..."):
         agent = get_agent(st)
         if type(agent) == RaspaAgent:
-            agent.tools['raspa'].run()
+            agent.tools["execute raspa"].run()
         else:
             raise Exception("Error running RASPA manually.")
     return True
