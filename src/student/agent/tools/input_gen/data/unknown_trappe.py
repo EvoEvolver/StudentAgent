@@ -114,7 +114,7 @@ def assign_atom_types_by_smarts(mol, type_to_smarts):
 
 
 def bonded_definitions(stretches, bends, torsions, bonded):
-    stretch_labels, _, _, bend_labels, _, torsion_labels, _ = bonded
+    stretch_labels, _, _, bend_labels, _, _, torsion_labels, _, _ = bonded
 
     # Bond stretching parameters
     lines = []
@@ -144,7 +144,7 @@ def bonded_definitions(stretches, bends, torsions, bonded):
     return"\n".join(lines)
 
 
-def assign_bend(atom_tuple, bend_data, label="label"):
+def assign_bend(bends, atom_tuple, bend_data, label="label"):
     n1, a, n2 = atom_tuple
     printed = None
     done = False
@@ -185,7 +185,7 @@ def assign_bend(atom_tuple, bend_data, label="label"):
     return done, printed
 
 
-def assign_torsion(atom_tuple, torsion_data, label="label"):
+def assign_torsion(torsions, atom_tuple, torsion_data, label="label"):
     a0, a1, a2, a3 = atom_tuple
     printed = None
     done = False    
@@ -273,9 +273,9 @@ def assign_bonded_interactions(mol, bonded):
                 if i == j:
                     continue  # skip same neighbor
                 atom_tuple = (n1, a, n2)
-                success, printed = assign_bend(atom_tuple, bend_atoms)
+                success, printed = assign_bend(bends, atom_tuple, bend_atoms)
                 if not success:
-                    success_main, printed_main = assign_bend(atom_tuple, bends_main_atoms, label="main_type")
+                    success_main, printed_main = assign_bend(bends, atom_tuple, bends_main_atoms, label="main_type")
                     if success_main:
                         print("Using main type! ", printed)
                     else:
@@ -306,9 +306,9 @@ def assign_bonded_interactions(mol, bonded):
 
                 atoms_tuple = (a0, a1, a2, a3)
 
-                success, printed = assign_torsion(atoms_tuple, torsion_atoms)
+                success, printed = assign_torsion(torsions, atoms_tuple, torsion_atoms)
                 if not success:
-                    success, printed_main = assign_torsion(atoms_tuple, torsion_main_atoms, label="main_type")
+                    success, printed_main = assign_torsion(torsions, atoms_tuple, torsion_main_atoms, label="main_type")
                     if success:
                         print("Using main type! ", printed)
                     else:
