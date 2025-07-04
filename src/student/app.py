@@ -41,7 +41,8 @@ if "chat" not in st.session_state:
         st.session_state.chat = True
         st.session_state.agent_mode = mode
         
-        setup_path(path) # only relevant for RASPA agent: creates a new subdir
+        st.session_state["subdir"] = setup_path(path) # only relevant for RASPA agent: creates a new subdir
+        
         if st.session_state.get("load_mem", False):
             load_memory(st, memory_path)
 
@@ -85,7 +86,8 @@ if st.session_state.get("chat", False):
 
         empty_line(st, 3)
         
-
+        show_files = st.checkbox("Show file manager", key="file_manager")
+        empty_line(st, 3)
         # Button: Save memory
         if st.button("💾 Save Memory", key="save_memory"):
             save_memory(st, memory_path)
@@ -117,19 +119,28 @@ if st.session_state.get("chat", False):
             st.session_state.clear()
             st.rerun()    
     
-
-
-    ##### Conversation #####
-    if show_mem:
-        st.header("MemoryAgent Conversation")
-        display_chat(st, show_reasoning=show_reasoning, memory=True)
+    if show_files:
+        initial = st.session_state.get("subdir", path)
+        file_manager = StreamlitFileManager(root_path=path, initial_path=initial)
         
+        st.write("root_path:", file_manager.root_path)
+        st.write("initial_path:", file_manager.initial_path)
+        st.write("current_path:", file_manager.current_path)
+
+        file_manager.render()
     else:
-        st.header("🗨️ StudentAgent")
-        load_agent(st, mode, path)
-        load_history(st)                    # TODO: limit conversation history of the agent (how does mllm do it?
-        run_agent(st)
-        display_chat(st, show_reasoning)  
+
+        ##### Conversation #####
+        if show_mem:
+            st.header("MemoryAgent Conversation")
+            display_chat(st, show_reasoning=show_reasoning, memory=True)
+            
+        else:
+            st.header("🗨️ StudentAgent")
+            load_agent(st, mode, path)
+            load_history(st)                    # TODO: limit conversation history of the agent (how does mllm do it?
+            run_agent(st)
+            display_chat(st, show_reasoning)  
 
 
     
