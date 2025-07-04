@@ -143,22 +143,121 @@ def bonded_definitions(stretches, bends, torsions, bonded):
             lines.append(f"{atom1} {atom2} {atom3} {atom4} {torsion_type} {c0} {c1} {c2} {c3}")
     return"\n".join(lines)
 
+
+def assign_bend(atom_tuple, bend_data, label="label"):
+    n1, a, n2 = atom_tuple
+    printed = None
+    done = False
+
+    for al in a.GetProp(label).split("%%"):
+        bends_a = bend_data.get(al, None)
+        if bends_a is None:
+            continue
+
+        done2 = False
+        for n1l in n1.GetProp(label).split("%%"):
+            bends_t = bends_a.get(n1l, None)
+            if bends_t is None:
+                continue
+
+            done3 = False
+            for n2l in n2.GetProp(label).split("%%"):
+                if n1 == n2:
+                    continue
+                b = bends_t.get(n2l, None)
+                if b is None:
+                    continue
+                bends[(n1.GetIdx(), a.GetIdx(), n2.GetIdx())] = b
+                done = True
+                done2 = True
+                done3 = True
+                break  # assigned, break n2l loop
+            if not done3:
+                printed = f"No bends known for atoms with type {a.GetProp(label)} and {n1.GetProp(label)} and {n2.GetProp(label)}"
+            if done2:
+                break  # assigned for this n1
+        if not done2 and printed is None:
+            printed = f"No bends known for atoms with type {a.GetProp(label)} and {n1.GetProp(label)}"
+        if done:
+            break  # assigned for this al
+    if not done and printed is None:
+        printed = f"No bends known for atom with type {a.GetProp(label)}"
+    return done, printed
+
+
+def assign_torsion(atom_tuple, torsion_data, label="label"):
+    a0, a1, a2, a3 = atom_tuple
+    printed = None
+    done = False    
+
+    for l0 in a0.GetProp(label).split("%%"):    
+        t0 = torsion_data.get(l0, None)
+        if t0 is None:
+            print("No torsion for atom ", l0)
+            continue
+        
+        done2 = False
+        for l1 in a1.GetProp(label).split("%%"):
+            done3 = False
+            for l2 in a2.GetProp(label).split("%%"):
+                t1 = t0.get(l1, None)
+                if t1 is None:
+                    continue
+                
+                t2 = t1.get(l2, None)
+                if t2 is None:
+                    continue
+                
+                for l3 in a3.GetProp(label).split("%%"):    
+                    t3 = t2.get(l3, None)
+                    if t3 is None:
+                        continue
+
+                    # torsion of atoms a0 - a1 - a2 - a3
+
+                    if a0 == a3:    # 3-ring has no torsions
+                        continue
+
+                    torsions[(a0.GetIdx(), a1.GetIdx(), a2.GetIdx(), a3.GetIdx())] = t3
+
+                    done = True
+                    done2 = True
+                    done3 = True
+                    break 
+                if done3:
+                    break
+            if not done3 and printed is None:
+                printed = "No torsion for atom "+ l0+ " <-> "+ l1 + " <-> "+ l2
+            if done2:
+                break
+        if not done2 and printed is None:
+            printed = "No torsion for atom " + l0 + " <-> " + l1
+        if done:
+            break
+    return done, printed
+
+
 def assign_bonded_interactions(mol, bonded):
-    _, _, stretches_atoms_bonds, _, bend_atoms, _, torsion_atoms = bonded
+    _, _, stretches_atoms_bonds, _, bend_atoms, bends_main_atoms, _, torsion_atoms, torsion_main_atoms = bonded
 
     bonds = {}
 
     for bond in mol.GetBonds():
-        a1 = bond.GetBeginAtom().GetProp("label")
-        a2 = bond.GetEndAtom().GetProp("label")
-
-        label = stretches_atoms_bonds.get(a1, {}).get(a2, None)
-        if label is not None:
-            bond.SetProp("label", label)
-            bonds[(bond.GetBeginAtom().GetIdx(), bond.GetEndAtom().GetIdx())] = label
+        done = False
+        for a1 in bond.GetBeginAtom().GetProp("label").split("%%"):
+            if done:
+                break
+            for a2 in bond.GetEndAtom().GetProp("label").split("%%"):
+                label = stretches_atoms_bonds.get(a1, {}).get(a2, None)
+                if label is not None:
+                    bond.SetProp("label", label)
+                    bonds[(bond.GetBeginAtom().GetIdx(), bond.GetEndAtom().GetIdx())] = label
+                    done = True
+                    break
+        if done:
             continue
-        
-        print("No bond label could be matched for ", a1, " <-> ", a2)
+        else:
+            print("No bond label could be matched for ", bond.GetBeginAtom().GetProp("label"), " <-> ", bond.GetEndAtom().GetProp("label"))
         
 
     bends = {}
@@ -167,39 +266,30 @@ def assign_bonded_interactions(mol, bonded):
         neighbors = a.GetNeighbors()
         if len(neighbors) < 2:
             continue
-        
-        bends_a = bend_atoms.get(a.GetProp("label"), None)
-        if bends_a is None:
-            print("No bends known for atom with type ", a.GetProp("label"))
-            continue
 
-        for n1 in neighbors:
-            bends_t = bends_a.get(n1.GetProp("label"), None)
-            if bends_t is None:
-                print("No bends known for atoms with type ", a.GetProp("label"), " and ", n1.GetProp("label"))
-                break
-
-            for n2 in neighbors:
-                if n1 == n2:
-                    break
-                b = bends_t.get(n2.GetProp("label"), None)
-                if b is None:
-                    print("No bends known for atoms with type ", a.GetProp("label"), " and ", n1.GetProp("label"), " and ", n2.GetProp("label"))
-                    break
-                
-                bends[(n1.GetIdx(), a.GetIdx(), n2.GetIdx())] = b
+        # All unordered 3-atom bends: each pair of neighbors forms n1-a-n2
+        for i, n1 in enumerate(neighbors):
+            for j, n2 in enumerate(neighbors):
+                if i == j:
+                    continue  # skip same neighbor
+                atom_tuple = (n1, a, n2)
+                success, printed = assign_bend(atom_tuple, bend_atoms)
+                if not success:
+                    success_main, printed_main = assign_bend(atom_tuple, bends_main_atoms, label="main_type")
+                    if success_main:
+                        print("Using main type! ", printed)
+                    else:
+                        for msg in printed_main:
+                            print(msg)
 
     torsions = {}
+
     for bond in mol.GetBonds():
         b_id = bond.GetIdx()
-
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
-        l1 = a1.GetProp("label")
-        l2 = a2.GetProp("label")
-
-        # find all pairs of neighboring bonds
         
+        # find all pairs of neighboring bonds
         b1 = [b for b in a1.GetBonds() if b.GetIdx() != b_id]
         b2 = [b for b in a2.GetBonds() if b.GetIdx() != b_id]
 
@@ -208,37 +298,20 @@ def assign_bonded_interactions(mol, bonded):
 
         for b0 in b1:
             a0 = [a for a in [b0.GetBeginAtom(), b0.GetEndAtom()] if a.GetIdx() != a1.GetIdx()][0]
-            l0 = a0.GetProp("label")
-            
-            t0 = torsion_atoms.get(l0, None)
-            if t0 is None:
-                print("No torsion for atom ", l0)
-                continue
-
-            t1 = t0.get(l1, None)
-            if t1 is None:
-                print("No torsion for atom ",l0, " <-> ", l1)
-                continue
-
-            t2 = t1.get(a2.GetProp("label"), None)
-            if t2 is None:
-                print("No torsion for atom ", l0, " <-> ", l1, " <-> ", l2)
-                continue
-
             for b3 in b2:
                 a3 = [a for a in [b3.GetBeginAtom(), b3.GetEndAtom()] if a.GetIdx() != a2.GetIdx()][0]
-                l3 = a3.GetProp("label")
                 
-                t3 = t2.get(l3, None)
-                if t3 is None:
-                    print("No torsion for atom ", l0, " <-> ", l1, " <-> ", l2, " <-> ", l3)
+                if a0 == a3:    # skip 3-ring
                     continue
 
-                # torsion of atoms a0 - a1 - a2 - a3
+                atoms_tuple = (a0, a1, a2, a3)
 
-                if a0 == a3:    # 3-ring has no torsions
-                    continue
-
-                torsions[(a0.GetIdx(), a1.GetIdx(), a2.GetIdx(), a3.GetIdx())] = t3
+                success, printed = assign_torsion(atoms_tuple, torsion_atoms)
+                if not success:
+                    success, printed_main = assign_torsion(atoms_tuple, torsion_main_atoms, label="main_type")
+                    if success:
+                        print("Using main type! ", printed)
+                    else:
+                        print(printed_main)
 
     return bonds, bends, torsions    

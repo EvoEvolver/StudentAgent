@@ -100,7 +100,12 @@ class MoleculeLoaderTrappe(RaspaTool):
                 mol_def = self.build_molecule_definition(id, res)
             else:
                 res = name
-                mol_def = self.load_unknown_molecule(name)
+                try:
+                    mol_def = self.load_unknown_molecule(name)
+                except Exception as e:
+                    print(name, e)
+                    raise ValueError("No molecule could be generated for ", name, " (only use names recognized by PubChem)")
+                    
                 
             self.make_file(mol_def, f"{res}.def")
             out_names.append(res)
