@@ -17,6 +17,9 @@ from .input_gen.molecule_loader import MoleculeLoaderTrappe
 from .output import output_parser
 from ..utils import quick_search
 
+import math
+import re
+
 # from .input_gen.generate_mol_definition import generate_molecule_def
 
 
@@ -508,7 +511,7 @@ class OutputParser(RaspaTool):
 
 class FrameworkLoader(RaspaTool):
     
-    def __init__(self, path=None, coremof=True, csd_path="CSD-modified/"):
+    def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff = 14.0):
         name = "framework loader"
         description = """
         Load a framework file as framework.cif
@@ -518,6 +521,7 @@ class FrameworkLoader(RaspaTool):
         self.output_file = "framework.cif"
         
         self.coremof = coremof
+        self.cutoff = cutoff
         self.load_local()
         
         if self.coremof is True:
@@ -614,7 +618,8 @@ class FrameworkLoader(RaspaTool):
 
     def get_output(self, name, e=None):
         if e is None:
-            return tool_response(self.name, f"Created framework.cif for this framework: {name}")
+            unit_cells = self.calculate_unit_cells(os.path.join(self.get_path(full=True), "framework.cif"), self.cutoff)
+            return tool_response(self.name, f"Created framework.cif for this framework: {name} (For a cutoff of {self.cutoff} angstrom, use this or more as unit cells: {unit_cells})")
         else:
             return error(e)
 
@@ -626,3 +631,32 @@ class FrameworkLoader(RaspaTool):
 
         with open(file, "w") as f:
             f.writelines(cleaned_lines)
+    
+    def calculate_unit_cells(self, cif_filename, cutoff_angstrom=14.0):
+        # Patterns for cell lengths
+        patterns = {
+            'a': re.compile(r'_cell_length_a\s+([0-9.]+)'),
+            'b': re.compile(r'_cell_length_b\s+([0-9.]+)'),
+            'c': re.compile(r'_cell_length_c\s+([0-9.]+)')
+        }
+        cell_lengths = {}
+        
+        with open(cif_filename, 'r') as f:
+            for line in f:
+                for axis in patterns:
+                    match = patterns[axis].match(line.strip())
+                    if match:
+                        cell_lengths[axis] = float(match.group(1))
+        
+        if len(cell_lengths) != 3:
+            raise ValueError("Could not find all cell lengths in the CIF file.")
+        
+        required_length = 2 * cutoff_angstrom
+        
+        unit_cells = []
+        for axis in ['a', 'b', 'c']:
+            n = math.ceil(required_length / cell_lengths[axis])
+            unit_cells.append(n)
+        
+        print(f"RASPA UnitCells: {unit_cells[0]} {unit_cells[1]} {unit_cells[2]}")
+        return unit_cells
