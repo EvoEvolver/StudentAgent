@@ -39,7 +39,7 @@ class Learn(Tool):
         Learn the knowledge from a given information context.
         The knowlege is automatically stored into your memory.
         You can access it later.
-        ALWAYS use if you encounter interesting knowledge you think you should remember.
+        ALWAYS use if you encounter knowledge you can add to your knowledge (NO general instructions).
         ALWAYS use if asked to remember something.
         """
         super().__init__(name, description)
@@ -112,18 +112,20 @@ class MemoryAgent(Agent):
     
     ####### Calls #######
 
-    def ask(self, question:str):
-        self.set_prompt(type="retrieval", version="v2")
+    def ask(self, question:str, copy=False):
+        self.set_prompt(type="retrieval", version="v3")
         keys = self.extract_keys(question)
 
         input = f"Retrieve all knowledge related to this input: {q(question)}"    
-        input += f"Use these or similar keys as stimuli: {keys}"
+        input += f"These are related keys that are present in the memory: <keys>{keys}</keys>"
 
+        if copy:
+            input += "<important>Copy ALL the recalled information including id, keys and content to the response. YOU MUST include also unrelated knowledge<important>"
         res = self.run(input, remove_tools=self.get_question_mask())
         return res
 
     def learn(self, context:str):
-        recall = self.ask(q(f"What do I know about this: {context}"))
+        recall = self.ask(context, copy=True)
 
         # learn
         self.set_prompt(type="learning", version="v5")
@@ -132,9 +134,9 @@ class MemoryAgent(Agent):
         prompt = prompt.format(new_information = context, recalled=recall)
         update = self.run(prompt)
 
-        self.set_prompt(type="learning", version="v5")
-        prompt = self.get_prompt(type="learning_answer", version="v3", json=False, general=False)
-        prompt = prompt.format(updates=update, new_information=context)
+        # self.set_prompt(type="learning", version="v5")
+        prompt = self.get_prompt(type="learning_answer", version="v4", json=False, general=False)
+        # prompt = prompt.format(updates=update, new_information=context)
         answer = self.run(prompt)
         # answer = self.learning_answer(updates, context)
         return answer
@@ -142,7 +144,7 @@ class MemoryAgent(Agent):
     def extract_keys(self, context):
         keywords = self.memory.get_keywords(topk=50)
 
-        prompt = self.get_prompt("extract_keys", "v2", json=False)
+        prompt = self.get_prompt("extract_keys", "v3", json=False)
         prompt = prompt.format(context=context, keywords=keywords.__str__()[1:-1])
         return self.single_run(prompt)
 

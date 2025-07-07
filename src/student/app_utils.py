@@ -222,8 +222,7 @@ def add_message(st, role, content, html=True):
 
 
 
-### File Manager
-
+### File Manager from https://github.com/janinspark/streamlit_tools/blob/main/StreamlitFileManager.py
 
 import streamlit as st
 import os

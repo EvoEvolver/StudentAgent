@@ -2,8 +2,8 @@
     You need to explicitly transfer new knowledge into your memory.
     To update knowledge in your memory, modify it.
     To add new knowledge into your memory, add it explicitly and choose the keys such that you can recall it later.
-    Decomposing knowledge into smaller pieces of information.
-    IMPORTANT: individual memory nodes have limited size. Try to distribute long information over multiple nodes and connect them by mentioning the keywords of a related node.
+    
+    IMPORTANT: individual memory nodes have limited size. Split very long knowledge into smaller pieces and connect them by mentioning the keywords of a related node.
 </learning>
 <instructions>
     1. Analyze this new information <new>{new_information}</new>.

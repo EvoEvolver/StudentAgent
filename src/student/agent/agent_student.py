@@ -45,7 +45,7 @@ class StudentAgent(Agent):
         # 4. Update learning
         # 5. Summarize for response
         
-        super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
+        return super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
     
 
     def decompose(self, input):

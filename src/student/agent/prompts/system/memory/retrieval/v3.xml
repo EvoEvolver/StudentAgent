@@ -5,5 +5,8 @@
 <instructions>
     Evaluate the content of the recalled memory to identify new relevant keys.
     Vary the keywords based on the recalled memory to find more related information.
-    <response/>: Copy ALL the recalled information including id, keys and content (YOU MUST include also unrelated knowledge). An empty response should be this: <nothing/>.
 </instructions>
+<response> 
+    ALWAYS copy the relevant recalled information (without id).
+    An empty response should be this: <nothing/>.
+</response> 

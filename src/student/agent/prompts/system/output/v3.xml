@@ -10,6 +10,7 @@
     <response> 
         Give a direct answer to the user. Leave <actions/> empty! 
         NEVER give a response IF you call a tool/function!
+        ALWAYS be precise and short.
     </response>
 
 </output>

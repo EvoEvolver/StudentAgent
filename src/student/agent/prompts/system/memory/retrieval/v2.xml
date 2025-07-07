@@ -6,5 +6,6 @@
     Evaluate the content of the recalled memory to identify new potentially relevant keys.
     If no memory is recalled, attempt to select different keywords, if available.
     - <thought/>: reflect if the recalled memory is related to the input.
-    - <response>: ONLY the recalled information. An empty response should be this: <nothing/>
+    - <response/>: Copy ALL the recalled information including id, keys and content (YOU MUST include also unrelated knowledge). An empty response should be this: <nothing/>.
+
 </instructions>
