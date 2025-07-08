@@ -29,5 +29,5 @@ TEMP_PATH = "test/"
 ## Usage
 
 ```bash
-python -m streamlit run student/app.py
+python -m streamlit run src/student/app.py
 ```

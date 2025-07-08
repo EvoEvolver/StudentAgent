@@ -1,0 +1,60 @@
+# critical constants: Temperature [T], Pressure [Pa], and Acentric factor [-]
+587.06
+3307000.0
+0.39
+# Number Of Atoms
+7
+# Number Of Groups
+1
+# Group
+flexible
+# number of atoms
+7
+# atomic positions
+0 [CH3]-CHx
+1 CHx-[CH2]-CHx
+2 CHx-[CH2]-CHx
+3 CHx-[CH2]-CHx
+4 [C]=O
+5 C=[O]
+6 [CH3]-CHx
+# Chiral centers Bond  BondDipoles Bend  UrayBradley InvBend  Torsion Imp. Torsion Bond/Bond Stretch/Bend Bend/Bend Stretch/Torsion Bend/Torsion IntraVDW IntraCoulomb
+               0    6            0    6            0       0        4            0         0            0         0               0            0        5           0
+# Bond stretch: atom n1-n2, type, parameters
+0 1 CHx-CHy 96500 1.54
+1 2 CHx-CHy 96500 1.54
+2 3 CHx-CHy 96500 1.54
+3 4 CHx-(CHy=O) 96500 1.52
+4 5 C=O 96500 1.229
+4 6 CHx-(CHy=O) 96500 1.52
+# Bond bending: atom n1-n2-n3, type, parameters
+2 1 0 CHx-(CH2)-CHy 114.0 62500.0
+3 2 1 CHx-(CH2)-CHy 114.0 62500.0
+4 3 2 CHx-(CH2)-CHy 114.0 62500.0
+5 4 3 CHx-(CHy)=O 121.4 62500.0
+6 4 3 CHx-(C)[=O]-CHy 117.2 62500.0
+6 4 5 CHx-(CHy)=O 121.4 62500.0
+# Torsion: atom n1-n2-n3-n4, type, parameters
+0 1 2 3 CHx-(CH2)-(CH2)-CHy 0.0 355.03 -68.19 791.32
+1 2 3 4 CHx-(CH2)-(CH2)-CHy 0.0 355.03 -68.19 791.32
+2 3 4 5 CHx-(CH2)-(C)=O 2035.58 -736.9 57.84 -293.23
+2 3 4 6 CHx-(C[=O])-(CH2)-CHy -17.26 752.6 14.89 282.1
+# Intra VDW: atom n1-n2
+0 4
+0 5
+0 6
+1 5
+1 6
+# Number of config moves
+9
+# nr fixed, list
+5 0 1 2 3 4
+4 0 1 2 3
+3 0 1 2
+2 0 1
+2 5 4
+2 6 4
+1 0
+1 5
+1 6
+
