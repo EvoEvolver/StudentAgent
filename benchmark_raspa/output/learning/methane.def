@@ -1,0 +1,18 @@
+# critical constants: Temperature [T], Pressure [Pa], and Acentric factor [-]
+189.6
+4465382.253088787
+-0.019686651149056766
+# Number Of Atoms
+1
+# Number Of Groups
+1
+# Group
+flexible
+# number of atoms
+1
+# atomic positions
+0 CH4_0_b
+# Chiral centers Bond  BondDipoles Bend  UrayBradley InvBend  Torsion Imp. Torsion Bond/Bond Stretch/Bend Bend/Bend Stretch/Torsion Bend/Torsion IntraVDW IntraCoulomb
+               0    0            0    0            0       0        0            0         0            0         0               0            0        0           0
+# Bond stretch: atom n1-n2, type, parameters
+

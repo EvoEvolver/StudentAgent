@@ -1,0 +1,45 @@
+SimulationType                MonteCarlo
+
+NumberOfCycles                10000
+NumberOfInitializationCycles  500
+NumberOfEquilibrationCycles   [n_eq]
+
+PrintEvery                    1000
+PrintPropertiesEvery          1000
+
+Forcefield                    local
+UseChargesFromCIFFile         yes
+CutOff                        14.0
+
+ExternalTemperature           [T]
+ExternalPressure              [p]
+
+
+Framework 0
+            FrameworkName                       framework
+            RemoveAtomNumberCodeFromLabel       yes
+            HeliumVoidFraction                  [hvf]
+            UnitCells                           [unit cells]
+
+
+ComputeNumberOfMoleculesHistogram yes
+WriteNumberOfMoleculesHistogramEvery 5000
+NumberOfMoleculesHistogramSize 1100
+NumberOfMoleculesRange 80
+ComputeEnergyHistogram yes
+WriteEnergyHistogramEvery 5000
+EnergyHistogramSize 400
+EnergyHistogramLowerLimit -110000
+EnergyHistogramUpperLimit -20000
+
+Movies yes
+WriteMoviesEvery 100
+
+Component 0 MoleculeName             [molecule name]
+            MoleculeDefinition       local
+            FugacityCoefficient      1.0
+            TranslationProbability   1.0
+            RotationProbability      1.0
+            ReinsertionProbability   1.0
+            SwapProbability 1.0
+            CreateNumberOfMolecules  50

@@ -1,0 +1,31 @@
+SimulationType                MonteCarlo
+NumberOfCycles                10000
+NumberOfInitializationCycles  5000
+NumberOfEquilibrationCycles   1000
+
+PrintEvery                    1000
+PrintPropertiesEvery          1000
+
+Forcefield                    local
+CutOff                        14.0
+
+Movies yes
+WriteMoviesEvery 1000
+
+ExternalTemperature           300
+ExternalPressure              100000
+
+Framework 0
+FrameworkName                 framework
+RemoveAtomNumberCodeFromLabel yes
+HeliumVoidFraction            0.75
+UnitCells                     2 2 2
+
+Component 0 MoleculeName             ethane
+            MoleculeDefinition       local
+            FugacityCoefficient      1.0
+            TranslationProbability   0.5
+            RotationProbability      0.5
+            ReinsertionProbability   0.5
+            SwapProbability          1.0
+            CreateNumberOfMolecules  0

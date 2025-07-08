@@ -1,0 +1,16 @@
+SimulationType        MonteCarlo
+NumberOfCycles        500000
+PrintEvery            10000
+PrintPropertiesEvery  10000
+
+Forcefield            local
+
+Framework 0
+FrameworkName framework
+UnitCells 1 1 1
+ExternalTemperature 298
+
+Component 0 MoleculeName             [molecule name]
+            MoleculeDefinition       local
+            WidomProbability         1.0
+            CreateNumberOfMolecules  0

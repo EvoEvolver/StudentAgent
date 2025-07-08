@@ -1,0 +1,19 @@
+SimulationType                MonteCarlo
+NumberOfCycles                20000
+NumberOfInitializationCycles  0
+PrintEvery                    1000
+PrintPropertiesEvery          1000
+
+Forcefield                    local
+
+Framework 0
+FrameworkName framework
+RemoveAtomNumberCodeFromLabel yes
+UnitCells [unit cells]
+ExternalTemperature 573.0
+
+Component 0 MoleculeName              [molecule name]
+            MoleculeDefinition        local
+            IdealGasRosenbluthWeight  [rosenbluth]
+            WidomProbability          1.0
+            CreateNumberOfMolecules   0
