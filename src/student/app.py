@@ -41,8 +41,8 @@ if "chat" not in st.session_state:
         st.session_state.chat = True
         st.session_state.agent_mode = mode
         
-        st.session_state["subdir"] = setup_path(path) # only relevant for RASPA agent: creates a new subdir
-        
+        #st.session_state["subdir"] = setup_path(path) # only relevant for RASPA agent: creates a new subdir
+        st.session_state["subdir"] = get_subdir(path)
         if st.session_state.get("load_mem", False):
             load_memory(st, memory_path)
 

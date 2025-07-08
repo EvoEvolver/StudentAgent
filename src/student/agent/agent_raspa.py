@@ -52,10 +52,12 @@ class RaspaAgent(StudentAgent):
 
         super().__init__(tools=tools, version=version, provider=provider, verbose=verbose)
 
-        self.reset(path)        # base path
+        self.reset(path)        
         self.path_add = ""      # add onto path for simulations
         self.auto_run = False
         self.add_raspa_prompt()
+        self._advance_to_next_folder()  # Ensure a numbered folder is created on init
+        self.reset(path)
 
     def add_raspa_prompt(self):
         prompt = self._build_prompt("raspa", "v1")
@@ -67,8 +69,8 @@ class RaspaAgent(StudentAgent):
         for tool in self.tools.values():
             if hasattr(tool, "path"):
                 tool.path = path
-        return 
-    
+        return
+
     def set_path_add(self, path_add):
         self.path_add = path_add
         full_path = self.get_full_path()
@@ -83,11 +85,9 @@ class RaspaAgent(StudentAgent):
 
 
     def reset(self, path=None):
-        '''
-        # TODO: fully reset everything except for memory
-        '''
         if path is not None:
             self.setup_path(path)
+            self._advance_to_next_folder()  # Always ensure a numbered folder exists after reset
         for tool in self.tools:
             if hasattr(tool, "has_file"):
                 tool.has_file =False
@@ -101,16 +101,63 @@ class RaspaAgent(StudentAgent):
 
 
     def run(self, prompt, max_iter=15):
-        self.setup()
         remove_tools = self.get_tool_mask()
         
+        # Before running, reset ExecuteRaspa tool's run flag
+        raspa_tool = self._get_execute_raspa_tool()
+        if raspa_tool is not None:
+            raspa_tool._last_run_success = False
+
         # Evaluate input (generate input files)
         res = super().run(prompt, remove_tools=remove_tools, max_iter=max_iter)
-        
-        # Ask for feedback
-        # Run and return output
+
+        # After running, check if ExecuteRaspa was used and succeeded
+        self._auto_advance_folder_on_raspa()
+
         output = res
         return output
+
+    def _get_execute_raspa_tool(self):
+        for tool in self.tools.values():
+            if isinstance(tool, ExecuteRaspa) or getattr(tool, 'name', None) == 'execute raspa':
+                return tool
+        return None
+
+    def _auto_advance_folder_on_raspa(self):
+        """
+        Only advance to a new folder if ExecuteRaspa was actually used and succeeded in this run.
+        """
+        raspa_tool = self._get_execute_raspa_tool()
+        if raspa_tool is None:
+            return
+        # Only auto-advance if auto_run is True and ExecuteRaspa was used successfully
+        if self.auto_run and getattr(raspa_tool, '_last_run_success', False):
+            self._advance_to_next_folder()
+
+    def _advance_to_next_folder(self):
+        """
+        Find the next available folder (numeric) in self.path, create it, and set as path_add.
+        """
+        base_path = self.path
+        os.makedirs(base_path, exist_ok=True)
+        existing_folders = [
+            d for d in os.listdir(base_path)
+            if os.path.isdir(os.path.join(base_path, d)) and d.isdigit()
+        ]
+        if existing_folders:
+            max_num = max(int(folder) for folder in existing_folders)
+            # If the highest-numbered folder is empty, reuse it
+            if not os.listdir(os.path.join(base_path, str(max_num))):
+                next_num = max_num
+            else:
+                next_num = max_num + 1
+        else:
+            next_num = 1
+        new_folder = str(next_num)
+        new_path = os.path.join(base_path, new_folder)
+        os.makedirs(new_path, exist_ok=True)
+        self.set_path_add(new_folder)
+        return new_path
 
 
     def get_tool_mask(self):

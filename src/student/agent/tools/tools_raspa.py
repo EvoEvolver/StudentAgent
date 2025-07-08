@@ -156,11 +156,22 @@ class ExecuteRaspa(RaspaTool):
         Use this to start a RASPA simulation. The output indicates the success of the simulation.
         """
         super().__init__(name, description, path)
-        
+        self._last_run_success = False
 
     def run(self):
         self.get_run_file()
         out = self.run_raspa()
+        
+        if out and isinstance(out, tuple):
+            stdout, stderr = out
+            # Consider success if stderr is empty and stdout contains no obvious error
+            if (stderr is None or stderr.strip() == "") and (stdout is not None and "error" not in stdout.lower()):
+                self._last_run_success = True
+            else:
+                self._last_run_success = False
+        else:
+            self._last_run_success = False
+
         return self.get_output(out)
     
     def get_output(self, out):

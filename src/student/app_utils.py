@@ -103,6 +103,11 @@ def setup_path(path):
         agent.set_path_add(new)
     return new
 
+def get_subdir(path):
+    agent = get_agent(st)
+    if type(agent) == RaspaAgent:
+        return agent.path_add
+    return None
 
 def reset_messages(st):
     agent = get_agent(st)
