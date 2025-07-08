@@ -2,6 +2,8 @@ tests.ipynb
 test_raspa.ipynb
 test_chatmof.ipynb
 test*/
+!benchmark_student/test*
+
 test_streamlit_app.py
 
 __pycache__/
