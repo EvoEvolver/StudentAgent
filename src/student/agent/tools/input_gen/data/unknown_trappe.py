@@ -14,11 +14,20 @@ def load_properties():
     data = pd.read_csv(os.path.join(PATH,"properties/critprop_data_only_smiles_mean_value_expt.csv"), usecols=[0,1,2,4])
     return data
 
+def noble_gas_properties(smiles):
+    if smiles == "[Ar]":
+        return (154.58, 5043000.0, 0.0)
+    elif smiles == "[He]":
+        return (5.2, 228000.0, -0.39)
+
 def get_properties(smiles):
-    data = load_properties() # load data only if required, store for next time
-    properties = data[data["smiles"] == smiles]
-    p = properties.to_dict('records')[0]         # keys = ['smiles', 'Tc (K)', 'Pc (bar)', 'omega (-)']
-    return p['Tc (K)'], p['Pc (bar)']*100000, p['omega (-)']
+    if smiles in ["[He]", "[Ar]"]:
+        return noble_gas_properties(smiles)
+    else:
+        data = load_properties() # load data only if required, store for next time
+        properties = data[data["smiles"] == smiles]
+        p = properties.to_dict('records')[0]         # keys = ['smiles', 'Tc (K)', 'Pc (bar)', 'omega (-)']
+        return p['Tc (K)'], p['Pc (bar)']*100000, p['omega (-)']
 
 
 ###### Parameters ######
@@ -30,10 +39,10 @@ def get_main_type(atom : Atom):
     """
     symbol = atom.GetSymbol()
     if symbol != 'C':
-        if symbol in ['C', 'N', 'O', 'H', 'S', 'P', 'F']:
+        if symbol in ['N', 'O', 'H', 'S', 'P', 'F', 'He', 'Ar']:
             return symbol
         else:
-            return None
+            raise NotImplementedError
 
     num_h = atom.GetTotalNumHs()
     num_f = sum(1 for nbr in atom.GetNeighbors() if nbr.GetSymbol() == 'F')
@@ -65,6 +74,8 @@ def load_smarts(type_to_smarts):
         }
         for main_type, label_dict in type_to_smarts.items() if main_type != "M"
     }
+    compiled_smarts["He"] = {"He" : Chem.MolFromSmarts("[He]")}
+    compiled_smarts["Ar"] = {"Ar" : Chem.MolFromSmarts("[Ar]")}
     return compiled_smarts
 
 
@@ -79,8 +90,7 @@ def assign_atom_types_by_smarts(mol, type_to_smarts):
     # First pass: assign main_type to all atoms
     for atom in mol.GetAtoms():
         main_type = get_main_type(atom)
-        if main_type in type_to_smarts:
-            atom.SetProp("main_type", main_type)
+        atom.SetProp("main_type", main_type)
     
     # Process atoms by main_type
     for main_type, patterns in compiled_smarts.items():
@@ -97,8 +107,13 @@ def assign_atom_types_by_smarts(mol, type_to_smarts):
             matches = mol.GetSubstructMatches(pattern)
             for match in matches:
                 for atom_idx in match:
-                    if atom_idx not in pattern_matches:
-                        pattern_matches[atom_idx] = label  # first match wins
+                    prev = pattern_matches.get(atom_idx, "")
+                    if prev != "":
+                        prev += "%%"
+                    pattern_matches[atom_idx] = prev + label 
+                    
+                    #if atom_idx not in pattern_matches:
+                    #    pattern_matches[atom_idx] = label  # first match wins
 
         # Assign labels
         for atom in atoms_of_type:
@@ -124,7 +139,7 @@ def bonded_definitions(stretches, bends, torsions, bonded):
         for atoms, bond_type in stretches.items():
             atom1, atom2 = atoms
             eq_length = list(stretch_labels[bond_type])[0]
-            lines.append(f"{atom1} {atom2} {bond_type} 96500 {eq_length}")
+            lines.append(f"{atom1} {atom2} FIXED_BOND {eq_length}")
 
     # Bond bending parameters
     if len(bends) > 0:

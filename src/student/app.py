@@ -122,11 +122,6 @@ if st.session_state.get("chat", False):
     if show_files:
         initial = st.session_state.get("subdir", path)
         file_manager = StreamlitFileManager(root_path=path, initial_path=initial)
-        
-        st.write("root_path:", file_manager.root_path)
-        st.write("initial_path:", file_manager.initial_path)
-        st.write("current_path:", file_manager.current_path)
-
         file_manager.render()
     else:
 

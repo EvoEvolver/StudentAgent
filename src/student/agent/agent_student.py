@@ -53,12 +53,16 @@ class StudentAgent(Agent):
         prompt += f"Decompose this context: {c(input)}"
         return self.single_run(prompt)
     
-    def save(self, filename):
-        self.save_conversation(f"{filename}_conversation.txt")
-        self.get_memory_agent().save_memory(f"{filename}_memory.txt")
-        self.get_memory_agent().save_conversation(f"{filename}_conversation_memory.txt")
+    def save(self, folder_name):
+        os.makedirs(folder_name, exist_ok=True)
+        self.save_conversation(os.path.join(folder_name, "conversation.txt"))
+        self.get_memory_agent().save_memory(os.path.join(folder_name,"memory.txt"))
+        self.get_memory_agent().save_conversation(os.path.join(folder_name,"conversation_memory.txt"))
 
     def load(self, filename):
-        self.load_conversation(f"{filename}_conversation.txt")
-        self.get_memory_agent().load_memory(f"{filename}_memory.txt")
-        self.get_memory_agent().load_conversation(f"{filename}_conversation_memory.txt")
+        try:
+            self.load_conversation(os.path.join(folder_name, "conversation.txt"))
+            self.get_memory_agent().load_memory(os.path.join(folder_name,"memory.txt"))
+            self.get_memory_agent().load_conversation(os.path.join(folder_name,"conversation_memory.txt"))
+        except Exception as e:
+            raise e

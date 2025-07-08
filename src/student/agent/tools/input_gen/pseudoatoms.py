@@ -135,10 +135,14 @@ class PseudoAtoms:
         for atom in mol.GetAtoms():
             id = atom.GetIdx()
             main_atom = atom.GetProp("main_type")
-            type_val = atom.GetProp("label")
+            type_val = atom.GetProp("label").split("%%")[0]
 
             if type_val in param_types.keys():
                 epsilon, sigma, charge = param_types[type_val]
+            elif type_val == "He":
+                epsilon, sigma, charge = 10.9, 2.64, 0       # // J.O. Hirschfelder et al., Molecular Theory of Gases and Liquids, Wiley, New York, 1954, p. 1114.
+            elif type_val == "Ar":
+                epsilon, sigma, charge = 124.070, 3.38, 0    # // A. Martin-Calvo et al. , Phys. Chem. Chem. Phys. 2011, 13, 11165-11174.
             else:
                 print("No parameters assigned for atom of type ", type_val)
                 continue
@@ -317,7 +321,7 @@ class PseudoAtomsBag:
                 "relative", # anisotropic-type 
                 "0"        # tinker-type
             ]
-
+            
             flag_format = (
                 "{:11s}"   # type
                 "{:8s}"  # print

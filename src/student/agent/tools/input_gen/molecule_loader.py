@@ -212,6 +212,9 @@ class MoleculeLoaderTrappe(RaspaTool):
 
         with open(os.path.join(PATH,"data/parameters/param_types.pkl"), "rb") as f:
             param_types = pickle.load(f)
+        
+        with open(os.path.join(PATH,"data/parameters/ps_type_to_label.pkl"), "rb") as f:
+            type_to_label = pickle.load(f)
 
         with open(os.path.join(PATH,"data/parameters/bonded.pkl"), "rb") as f:
             bonded = pickle.load(f)
@@ -258,7 +261,7 @@ class MoleculeLoaderTrappe(RaspaTool):
         # Atomic positions
         lines.append("# atomic positions")
         for i, atom in enumerate(mol.GetAtoms()):
-            lines.append(f"{i} {atom.GetProp('label')}")
+            lines.append(f"{i} {type_to_label[atom.GetProp('main_type')][atom.GetProp('label').split('%%')[0]]}")
         
         # Intramolecular interaction flags
         lines.append("# Chiral centers Bond  BondDipoles Bend  UrayBradley InvBend  Torsion Imp. Torsion Bond/Bond Stretch/Bend Bend/Bend Stretch/Torsion Bend/Torsion IntraVDW IntraCoulomb")
@@ -451,7 +454,8 @@ class MoleculeLoaderTrappe(RaspaTool):
                     eq_length = float(length_str)
                     #if family == "small":
                     #    bond_stretches.append((atom1, atom2, "RIGID_BOND", "", ""))
-                    bond_stretches.append((atom1, atom2, "HARMONIC_BOND", default_force_constant, eq_length))
+                    #bond_stretches.append((atom1, atom2, "HARMONIC_BOND", default_force_constant, eq_length))
+                    bond_stretches.append((atom1, atom2, "FIXED_BOND", eq_length))
                     #bond_stretches.append((atom1, atom2, "RIGID_BOND", "", ""))
                     bonds.append((atom1, atom2))
                 except Exception:
@@ -698,7 +702,7 @@ class MoleculeLoaderTrappe(RaspaTool):
         """
         n = mol.GetNumAtoms()
         if n < 2:
-            return "\n".join(["# Number of config moves", str(len(lines) - 1)])
+            return "\n".join(["# Number of config moves", "0"])
         
         degrees = {atom.GetIdx(): len(atom.GetNeighbors()) for atom in mol.GetAtoms()}
         terminals = [idx for idx, deg in degrees.items() if deg == 1]
