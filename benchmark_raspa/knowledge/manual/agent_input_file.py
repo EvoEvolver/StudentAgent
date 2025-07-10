@@ -5,7 +5,7 @@ from typing import List
 from mllm import Chat
 from mllm.utils import p_map
 
-from latex_parsing import split_latex_sections
+from benchmark_raspa.knowledge.manual.latex_parsing import split_latex_sections
 from student.agent.memory import Memory, MemoryNode
 
 def decompose_example(example : str):

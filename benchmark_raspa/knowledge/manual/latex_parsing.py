@@ -8,6 +8,15 @@ from pydantic import BaseModel
 
 
 
+
+def parse_tex(filename):
+    with open(filename) as f:
+            latex_text = f.read()
+    return construct_tree(split_latex_sections(latex_text, depth=0))
+
+
+
+
 class Section(BaseModel):
     title: str
     content: str

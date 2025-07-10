@@ -15,10 +15,21 @@ def load(agent : StudentAgent, filename : str):
     agent.get_memory_agent().load_conversation(f"{filename}/conversation_memory.txt")
 
 
+def read_file(filename):
+    try:
+        with open(filename, 'r') as file:
+            content = file.read()
+        return content
+    except:
+        print(f"Error reading file: {filename}")
+        return None
 
-from latex_parsing import *
+def example_simulation(path):
+    ex = {
+        "input" : read_file(os.path.join(path, "simulation.input")),
+        "output" : read_file(os.path.join(path, "output.txt")),
+        "pre" : read_file(os.path.join(path, "prerequisite.txt")),
+        "annotation" : read_file(os.path.join(path, "annotation.txt")),
+    }
+    return ex
 
-def parse_tex(filename):
-    with open(filename) as f:
-            latex_text = f.read()
-    return construct_tree(split_latex_sections(latex_text, depth=0))
