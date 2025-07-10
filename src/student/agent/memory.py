@@ -261,7 +261,15 @@ class Memory:
             out[id] = node.__str__() 
         return out
 
-
+    def modify_keywords(self, old_keys: Set[str], new_keys: List[str]) -> None:
+        """
+        Modify the keywords in the memory by removing old keys and adding new ones.
+        """
+        for key in old_keys:
+            if key in self.keywords:
+                self.keywords[key] -= 1
+        for key in new_keys:
+            self.update_keywords(key)
         
     
     def modify(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
@@ -272,8 +280,10 @@ class Memory:
             return None, None
         
         if new_stimuli is not None:
+            self.modify_keywords(node.keys, new_stimuli)
             node.remove_keys(node.keys, check=False)
             node.add_keys(new_stimuli)
+            
 
         if new_content is not None:
             node.content = new_content
@@ -304,7 +314,18 @@ class Memory:
                 self.memory[node.id] = node
             except ValueError as e:
                 print(e, "for dictionary: ", d)
+        self.load_keywords()
 
+    def load_keywords(self):
+        """
+        Load keywords from the memory nodes into the keyword dictionary.
+        This is useful after loading a memory from a file.
+        """
+        self.keywords = {}
+        for node in self.memory.values():
+            for key in node.keys:
+                self.update_keywords(key)
+                
 
     def render_html(self, *, max_emb_len: int = 12):
         """

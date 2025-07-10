@@ -59,7 +59,7 @@ class StudentAgent(Agent):
         self.get_memory_agent().save_memory(os.path.join(folder_name,"memory.txt"))
         self.get_memory_agent().save_conversation(os.path.join(folder_name,"conversation_memory.txt"))
 
-    def load(self, filename):
+    def load(self, folder_name):
         try:
             self.load_conversation(os.path.join(folder_name, "conversation.txt"))
             self.get_memory_agent().load_memory(os.path.join(folder_name,"memory.txt"))

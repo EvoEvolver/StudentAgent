@@ -137,7 +137,7 @@ class MemoryAgent(Agent):
         # self.set_prompt(type="learning", version="v5")
         prompt = self.get_prompt(type="learning_answer", version="v4", json=False, general=False)
         # prompt = prompt.format(updates=update, new_information=context)
-        answer = self.run(prompt)
+        answer = self.run(prompt, remove_tools=self.get_all_mask())
         # answer = self.learning_answer(updates, context)
         return answer
     
