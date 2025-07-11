@@ -1,0 +1,37 @@
+SimulationType                MonteCarlo
+NumberOfCycles                50000
+NumberOfInitializationCycles  5000
+PrintEvery                    1000
+
+Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells [int] [int] [int] 
+HeliumVoidFraction [real]
+ExternalTemperature [T]
+ExternalPressure  [p]
+
+Component 0 MoleculeName               [molecule name 0]
+            MoleculeDefinition         local
+            MolFraction                [fraction component 0]
+            TranslationProbability     0.5
+            RegrowProbability          0.5
+            IdentityChangeProbability  1.0
+              NumberOfIdentityChanges  2
+              IdentityChangesList      0 1
+            SwapProbability            1.0
+            CreateNumberOfMolecules    0
+
+Component 1 MoleculeName               [molecule name 1]
+            MoleculeDefinition         local
+            MolFraction                [fraction component 1]
+            TranslationProbability     0.5
+            RegrowProbability          0.5
+            IdentityChangeProbability  1.0
+              NumberOfIdentityChanges  2
+              IdentityChangesList      0 1
+            SwapProbability            1.0
+            CreateNumberOfMolecules    0

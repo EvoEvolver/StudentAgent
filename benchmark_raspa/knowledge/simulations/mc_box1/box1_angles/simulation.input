@@ -4,17 +4,17 @@ NumberOfInitializationCycles     10000
 PrintEvery                       50000
 RestartFile                      no
 
-Forcefield                       ExampleMoleculeForceField
+Forcefield                       local
+CutOff                           14.0
 
 Box 0
-BoxLengths 25 25 25
-ExternalTemperature 298.0
+BoxLengths 30 30 30
+ExternalTemperature [T]
 ExternalPressure 0.0
 ComputeMoleculeProperties yes
 
-component 0 MoleculeName                     2-methylbutane
-            FugacityCoefficient              1.0
-            MoleculeDefinition               ExampleDefinitions
+component 0 MoleculeName                     [molecule name]
+            MoleculeDefinition               local
             TranslationProbability           1.0
             RotationProbability              1.0
             ReinsertionProbability           1.0

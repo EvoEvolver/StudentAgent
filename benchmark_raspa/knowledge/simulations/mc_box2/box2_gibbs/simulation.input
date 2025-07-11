@@ -4,22 +4,23 @@ NumberOfInitializationCycles  10000
 PrintEvery                    1000
 RestartFile                   no
 
-Forcefield                    ExampleMoleculeForceField
+Forcefield                    local
+CutOff                        14.0
 
 Box 0
 BoxLengths 30 30 30
 BoxAngles 90 90 90
-ExternalTemperature 240.0
+ExternalTemperature [T]
 
 Box 1
 BoxLengths 30 30 30
 BoxAngles 90 90 90
-ExternalTemperature 240.0
+ExternalTemperature [T]
 
 GibbsVolumeChangeProbability 0.1
 
-Component 0 MoleculeName             CO2
-            MoleculeDefinition       ExampleDefinitions
+Component 0 MoleculeName             [molecule name]
+            MoleculeDefinition       local
             TranslationProbability   1.0
             RotationProbability      1.0
             ReinsertionProbability   1.0

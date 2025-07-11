@@ -3,15 +3,16 @@ NumberOfCycles        10000
 PrintEvery            100
 PrintPropertiesEvery  100
 
-Forcefield Dubbeldam2007FlexibleIRMOF-1
-CutOff 12.8
+Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
 
 Framework 0
-FrameworkName IRMOF-1
-UnitCells 1 1 1
+FrameworkName framework
+UnitCells [int] [int] [int]
 SurfaceAreaProbeDistance Sigma
 
-Component 0 MoleculeName             argon
-            MoleculeDefinition       ExampleDefinitions
+Component 0 MoleculeName             Argon
+            MoleculeDefinition       local
             SurfaceAreaProbability   1.0
             CreateNumberOfMolecules  0

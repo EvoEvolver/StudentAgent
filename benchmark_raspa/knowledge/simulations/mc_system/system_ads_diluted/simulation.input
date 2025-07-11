@@ -3,18 +3,20 @@ NumberOfCycles                25000
 NumberOfInitializationCycles  5000
 PrintEvery                    1000
 
-Forcefield                    ExampleZeolitesForceField
+Forcefield                    local
+CutOff                        14.0
 RemoveAtomNumberCodeFromLabel yes
 
+
 Framework 0
-FrameworkName MFI_SI
-UnitCells 2 2 2
-HeliumVoidFraction 0.29
-ExternalTemperature 300.0
+FrameworkName framework
+UnitCells [int] [int] [int]
+HeliumVoidFraction [real]
+ExternalTemperature [T]
 ExternalPressure 0.0
 
-Component 0 MoleculeName             methane
-            MoleculeDefinition       ExampleDefinitions
+Component 0 MoleculeName             [molecule name]
+            MoleculeDefinition       local
             TranslationProbability   0.5
             ReinsertionProbability   0.5
             CreateNumberOfMolecules  1

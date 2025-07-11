@@ -4,16 +4,17 @@ NumberOfInitializationCycles  10000
 PrintEvery                    1000
 RestartFile                   no
 
-Forcefield                    Local
+Forcefield                    local
+CutOff                        14.0
 
 Box 0
-BoxLengths 24.83 24.83 24.83
+BoxLengths 30 30 30
 ComputeRDF yes
 WriteRDFEvery 1000
-ExternalTemperature 298.0
+ExternalTemperature [T]
 
-Component 0 MoleculeName             Tip5p
-            MoleculeDefinition       Local
+Component 0 MoleculeName             [molecule name]
+            MoleculeDefinition       local
             TranslationProbability   0.5
             RotationProbability      0.5
             ReinsertionProbability   1.0

@@ -5,12 +5,14 @@ PrintEvery                    1000
 PrintPropertiesEvery          1000
 
 Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
 
 Framework 0
 FrameworkName framework
 RemoveAtomNumberCodeFromLabel yes
-UnitCells [unit cells]
-ExternalTemperature 573.0
+UnitCells [int][int][int]
+ExternalTemperature [T]
 
 Component 0 MoleculeName              [molecule name]
             MoleculeDefinition        local
