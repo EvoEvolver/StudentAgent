@@ -1,0 +1,23 @@
+SimulationType                MonteCarlo
+NumberOfCycles                 25000
+NumberOfInitializationCycles   5000
+PrintEvery                     1000
+RestartFile                    no
+
+CutOff                         14.0
+
+Framework 0
+FrameworkName                  framework
+UnitCells                      2 2 1
+ExternalTemperature            298.0
+ExternalPressure               101325.0
+
+Component 0 MoleculeName             methane
+            MoleculeDefinition       local
+            WidomTestMolecule        yes
+            CreateNumberOfMolecules  0
+
+MoveProbabilities
+TranslationProbability         1.0
+RotationProbability            1.0
+WidomProbability               1.0

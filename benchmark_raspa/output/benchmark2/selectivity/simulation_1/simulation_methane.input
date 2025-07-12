@@ -1,0 +1,23 @@
+SimulationType                MonteCarlo
+NumberOfCycles                25000
+NumberOfInitializationCycles  10000
+PrintEvery                    5000
+RestartFile                   no
+
+Forcefield                    GenericMOFs
+CutOff                        14.0
+
+Framework 0
+FrameworkName                 framework
+UnitCells                     2 2 2
+ExternalTemperature           298.0
+ExternalPressure              100000.0
+
+Component 0 MoleculeName             methane
+            MoleculeDefinition       TraPPE
+            IdealGasRosenbluthWeight 1.0
+            TranslationProbability   0.5
+            RotationProbability      0.5
+            ReinsertionProbability   0.5
+            SwapProbability          1.0
+            CreateNumberOfMolecules  0

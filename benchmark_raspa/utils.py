@@ -26,6 +26,7 @@ def read_file(filename):
 
 def example_simulation(path):
     ex = {
+        "goal" : read_file(os.path.join(path, "goal.txt")),
         "input" : read_file(os.path.join(path, "simulation.input")),
         "output" : read_file(os.path.join(path, "output.txt")),
         "pre" : read_file(os.path.join(path, "prerequisite.txt")),
