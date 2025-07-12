@@ -8,6 +8,7 @@
             - answerable ~ LLM + fact + question + answer
             - pretraining ~ LLM + question
             - LLM + fact + question
+            - LLM + RAG@learning + question
             - LLM + RAG + question
             
         - Metrics:
