@@ -184,8 +184,12 @@ class Memory:
         return self.memory.get(id)
     
     def delete_node(self, id):
+        node : MemoryNode = self.get_node(id)
+        if node is None:
+            return None
+        
         del self.memory[id]
-        return
+        return node
 
     def add(self, node: MemoryNode):
         self.memory[node.id] = node
@@ -274,7 +278,6 @@ class Memory:
     
     def modify(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
         node : MemoryNode = self.get_node(id)
-        deleted=False
 
         if node is None:
             return None, None
@@ -288,11 +291,7 @@ class Memory:
         if new_content is not None:
             node.content = new_content
         
-        if new_content is None and new_stimuli is None:
-            self.delete_node(id)
-            deleted=True
-
-        return node, deleted
+        return node, False
 
 
     def save(self, save_path):

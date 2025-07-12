@@ -130,15 +130,28 @@ class WriteFile(RaspaTool):
             
 
 class InputFile(WriteFile):
-    def __init__(self, path=None):
-        super().__init__(path=path)
+    def __init__(self, path=None, template_filename=None):
+        "src/student/agent/tools/templates/template_simulation.input"
         self.name = "input_file"
         self.description = """
         Use this tool to write the simulation input file.
         You must provide the content as string. The filename is always simulation.input
-        ALWAYS use a template or example as reference
+        ALWAYS use this template and modify based on examples from your memory!
         """
         self.has_file = False
+        if template_filename is None:
+            template_filename = os.path.join(os.path.dirname(__file__), "templates/template_simulation.input")
+        self.add_template(template_filename)
+
+    def add_template(self, template_filename):
+        if template_filename is None or not os.path.exists(template_filename):
+            return False
+        
+        self.template_filename = template_filename
+        with open(self.template_filename, 'r') as file:
+            template = file.read()
+        self.description += f"\n<template>{template}</template>"
+        return True
 
     def run(self, file_content):
         file_name="simulation.input"
@@ -150,28 +163,22 @@ class InputFile(WriteFile):
 
 
 class ExecuteRaspa(RaspaTool):
-    def __init__(self, path=None):
+    def __init__(self, agent, path=None):
         name = "execute raspa"
         description = """
         Use this to start a RASPA simulation. The output indicates the success of the simulation.
         """
         super().__init__(name, description, path)
-        self._last_run_success = False
-
+        self.agent = agent
+        
     def run(self):
         self.get_run_file()
         out = self.run_raspa()
-        
         if out and isinstance(out, tuple):
             stdout, stderr = out
-            # Consider success if stderr is empty and stdout contains no obvious error
             if (stderr is None or stderr.strip() == "") and (stdout is not None and "error" not in stdout.lower()):
                 self._last_run_success = True
-            else:
-                self._last_run_success = False
-        else:
-            self._last_run_success = False
-
+                self.agent._advance_to_next_folder()
         return self.get_output(out)
     
     def get_output(self, out):

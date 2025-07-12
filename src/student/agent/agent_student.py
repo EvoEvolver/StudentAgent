@@ -66,3 +66,10 @@ class StudentAgent(Agent):
             self.get_memory_agent().load_conversation(os.path.join(folder_name,"conversation_memory.txt"))
         except Exception as e:
             raise e
+        
+
+    def render_memory(self):
+        return self.get_memory_agent().render_memory()
+    
+    def memory_size(self):
+        return self.get_memory_agent().memory_size()

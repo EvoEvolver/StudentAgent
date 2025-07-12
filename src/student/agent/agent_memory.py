@@ -70,7 +70,7 @@ class MemoryAgent(Agent):
 
     def add_memory_tools(self):
         add = AddMemory(self.memory)
-        modify = ExtendedModifyMemory(self.memory, self.single_run)# ModifyMemory(self.memory)
+        modify = ModifyMemory(self.memory)# ExtendedModifyMemory(self.memory, self.single_run)
         recall = RecallMemory(self.memory)
         
         self.tools[add.name] = add
@@ -163,6 +163,12 @@ class MemoryAgent(Agent):
                 raise e
         
         self.reset_system_prompt(prompt)
+
+    def render_memory(self):
+        return self.memory.render_html()
+    
+    def memory_size(self):
+        return self.memory.__size__()
 
     ######### Potentially interesting additional features #########
 

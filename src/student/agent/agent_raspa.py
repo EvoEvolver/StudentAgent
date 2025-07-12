@@ -6,6 +6,7 @@ from .tools.tools import Tool
 
 from mllm import Chat
 from typing import List, Dict, Union
+import re
 import json
 import os
 from .utils import *
@@ -38,11 +39,11 @@ class RaspaAgent(StudentAgent):
             framework_loader,
             # TrappeLoader(path),
             MoleculeLoader(path),
-            ExecuteRaspa(),
+            ExecuteRaspa(agent=self),
             InputFile(),
             ReadFile(),
             WriteFile(),
-            InspectFiles(),
+            # InspectFiles(),
             OutputParser()
         ]
         tools = {
@@ -52,11 +53,11 @@ class RaspaAgent(StudentAgent):
 
         super().__init__(tools=tools, version=version, provider=provider, verbose=verbose)
 
-        self.reset(path)        
+        self.reset(path)        # base path
         self.path_add = ""      # add onto path for simulations
         self.auto_run = False
         self.add_raspa_prompt()
-        self._advance_to_next_folder()  # Ensure a numbered folder is created on init
+        self._advance_to_next_folder()
         self.reset(path)
 
     def add_raspa_prompt(self):
@@ -87,7 +88,6 @@ class RaspaAgent(StudentAgent):
     def reset(self, path=None):
         if path is not None:
             self.setup_path(path)
-            self._advance_to_next_folder()  # Always ensure a numbered folder exists after reset
         for tool in self.tools:
             if hasattr(tool, "has_file"):
                 tool.has_file =False
@@ -99,65 +99,64 @@ class RaspaAgent(StudentAgent):
             return True
         return False
 
+    def _file_overview(self):
+        current_directory = self.path_add
+        files_all = [i for i in all_files(current_directory) if i not in ['trappe_molecule_list.json']]
+        file_list = "\n".join(f"- {f}" for f in files_all) if files_all else "Empty"
+        file_overview = f"\n\n<file_overview>\nCurrent directory: {current_directory}\nFiles:\n{file_list}\n</file_overview>"
+        return file_overview
+
+    def remove_file_history(self, message):
+        if isinstance(message, dict) and 'content' in message and isinstance(message['content'], dict):
+            text = message['content'].get('text', '')
+            # Remove <file_overview>...</file_overview> block
+            cleaned_text = re.sub(r'<file_overview>.*?</file_overview>', '', text, flags=re.DOTALL)
+            message['content']['text'] = cleaned_text.strip()
+        return message
+
+    def chat_length(self):
+        return len(self.chat.messages)
 
     def run(self, prompt, max_iter=15):
         remove_tools = self.get_tool_mask()
+        file_overview = self._file_overview()
+        prompt += file_overview
         
-        # Before running, reset ExecuteRaspa tool's run flag
-        raspa_tool = self._get_execute_raspa_tool()
-        if raspa_tool is not None:
-            raspa_tool._last_run_success = False
-
-        # Evaluate input (generate input files)
+        l0 = self.chat_length()
         res = super().run(prompt, remove_tools=remove_tools, max_iter=max_iter)
+        l1 = self.chat_length()
+        self.remove_file_history(self.chat.messages[l0-l1])
+        return res
 
-        # After running, check if ExecuteRaspa was used and succeeded
-        self._auto_advance_folder_on_raspa()
-
-        output = res
-        return output
-
-    def _get_execute_raspa_tool(self):
-        for tool in self.tools.values():
-            if isinstance(tool, ExecuteRaspa) or getattr(tool, 'name', None) == 'execute raspa':
-                return tool
-        return None
-
-    def _auto_advance_folder_on_raspa(self):
-        """
-        Only advance to a new folder if ExecuteRaspa was actually used and succeeded in this run.
-        """
-        raspa_tool = self._get_execute_raspa_tool()
-        if raspa_tool is None:
-            return
-        # Only auto-advance if auto_run is True and ExecuteRaspa was used successfully
-        if self.auto_run and getattr(raspa_tool, '_last_run_success', False):
-            self._advance_to_next_folder()
 
     def _advance_to_next_folder(self):
         """
-        Find the next available folder (numeric) in self.path, create it, and set as path_add.
+        Find the next available folder (simulation_N) in self.path, create it, and set as path_add.
         """
         base_path = self.path
         os.makedirs(base_path, exist_ok=True)
+        prefix = "simulation_"
         existing_folders = [
             d for d in os.listdir(base_path)
-            if os.path.isdir(os.path.join(base_path, d)) and d.isdigit()
+            if os.path.isdir(os.path.join(base_path, d)) and d.startswith(prefix) and d[len(prefix):].isdigit()
         ]
         if existing_folders:
-            max_num = max(int(folder) for folder in existing_folders)
+            nums = [int(d[len(prefix):]) for d in existing_folders]
+            max_num = max(nums)
             # If the highest-numbered folder is empty, reuse it
-            if not os.listdir(os.path.join(base_path, str(max_num))):
+            highest_folder = f"{prefix}{max_num}"
+            if not os.listdir(os.path.join(base_path, highest_folder)):
                 next_num = max_num
             else:
                 next_num = max_num + 1
         else:
             next_num = 1
-        new_folder = str(next_num)
+        new_folder = f"{prefix}{next_num}"
         new_path = os.path.join(base_path, new_folder)
         os.makedirs(new_path, exist_ok=True)
         self.set_path_add(new_folder)
         return new_path
+
 
 
     def get_tool_mask(self):

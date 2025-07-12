@@ -29,9 +29,9 @@ def get_trappe_properties(molecule_id: int):
     """
     molecule_id = int(molecule_id)
     # Incomplete property files for some small molecules are handled separately:
-    if molecule_id == 119: # nitrogen
+    if molecule_id == 117: # nitrogen
         return (126.192, 3395800.0, 0.0372)
-    if molecule_id in [120, 117]: # no trappe data available for the properties!
+    if molecule_id in [120, 119]: # no trappe data available for the properties!
         return None
 
     df = pd.read_csv(StringIO(download_properties(molecule_id)), skiprows=1)
@@ -388,8 +388,8 @@ class MoleculeLoaderTrappe(RaspaTool):
         # Bond stretching parameters
         lines.append("# Bond stretch: atom n1-n2, type, parameters")
         for bond in params['bond_stretches']:
-            atom1, atom2, bond_type, force_constant, eq_length = bond
-            lines.append(f"{atom1} {atom2} {bond_type} {force_constant} {eq_length}")
+            atom1, atom2, bond_type, eq_length = bond
+            lines.append(f"{atom1} {atom2} {bond_type} {eq_length}")
         
         # Bond bending parameters (if available)
         if "bond_bends" in params and params["bond_bends"]:
