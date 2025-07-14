@@ -83,6 +83,8 @@ def run_agent(st):
         st.session_state.history.append(("user", user_input))
         with st.spinner("Thinking…"):
             agent = get_agent(st)
+            agent.active_learning = st.session_state.get("active_learning", False)
+            
             reply = agent.run(prompt=user_input)
             #st.session_state.history.append(new_messages)
         st.session_state.history.append(("assistant", reply))

@@ -65,6 +65,12 @@ if st.session_state.get("chat", False):
             key="show_reasoning"
         )
         show_mem = st.checkbox("Show MemoryAgent conversation")
+        
+        active_learning = st.checkbox(
+            "Enable learning",
+            value=st.session_state.get("active_learning", False),
+            key="active_learning"
+        )
         st.divider()
 
         # Checkbox: manual or automatic raspa usage?
