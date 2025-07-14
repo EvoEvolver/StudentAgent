@@ -1,5 +1,5 @@
 SimulationType        MonteCarlo
-NumberOfCycles        50000
+NumberOfCycles        25000
 PrintEvery            1000
 PrintPropertiesEvery  1000
 

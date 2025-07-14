@@ -1,7 +1,7 @@
 SimulationType                   MonteCarlo
-NumberOfCycles                   5000000
-NumberOfInitializationCycles     10000
-PrintEvery                       50000
+NumberOfCycles                   500000
+NumberOfInitializationCycles     1000
+PrintEvery                       5000
 RestartFile                      no
 
 Forcefield                       local

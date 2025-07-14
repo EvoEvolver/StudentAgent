@@ -19,4 +19,5 @@ Component 0 MoleculeName             [molecule name]
             MoleculeDefinition       local
             TranslationProbability   0.5
             ReinsertionProbability   0.5
+            ...
             CreateNumberOfMolecules  1
