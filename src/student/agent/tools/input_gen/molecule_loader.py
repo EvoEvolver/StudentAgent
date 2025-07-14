@@ -396,14 +396,14 @@ class MoleculeLoaderTrappe(RaspaTool):
             lines.append("# Bond bending: atom n1-n2-n3, type, parameters")
             for bend in params["bond_bends"]:
                 atom1, atom2, atom3, bend_type, force_constant, theta = bend
-                lines.append(f"{atom1} {atom2} {atom3} {bend_type} {force_constant} {theta}")
+                lines.append(f"{atom1} {atom2} {atom3} HARMONIC_BEND {force_constant} {theta}")
         
         # Torsion parameters (if available)
         if "bond_torsions" in params and params["bond_torsions"]:
             lines.append("# Torsion: atom n1-n2-n3-n4, type, parameters")
             for torsion in params["bond_torsions"]:
                 atom1, atom2, atom3, atom4, torsion_type, c0, c1, c2, c3 = torsion
-                lines.append(f"{atom1} {atom2} {atom3} {atom4} {torsion_type} {c0} {c1} {c2} {c3}")
+                lines.append(f"{atom1} {atom2} {atom3} {atom4} TRAPPE_DIHEDRAL {c0} {c1} {c2} {c3}")
         
         # Intra-molecular interactions
         lines.append(self.get_intramol_string(interactions))
@@ -701,7 +701,7 @@ class MoleculeLoaderTrappe(RaspaTool):
         Generates the "nr fixed" section (fixed fragments list) for a molecule.def file.
         """
         n = mol.GetNumAtoms()
-        if n < 2:
+        if n < 3:
             return "\n".join(["# Number of config moves", "0"])
         
         degrees = {atom.GetIdx(): len(atom.GetNeighbors()) for atom in mol.GetAtoms()}

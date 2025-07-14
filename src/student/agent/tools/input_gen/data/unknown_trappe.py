@@ -100,12 +100,18 @@ def assign_atom_types_by_smarts(mol, type_to_smarts):
         ]
         if not atoms_of_type:
             continue
-
-        # Precompute all SMARTS matches for this type
+        
         pattern_matches = {}
+        # Precompute all SMARTS matches for this type
         for label, pattern in patterns.items():
             matches = mol.GetSubstructMatches(pattern)
             for match in matches:
+                atom_idx = match[0] # assumes that the main atom is always in the first position!
+                prev = pattern_matches.get(atom_idx, "")
+                if prev != "":
+                    prev += "%%"
+                pattern_matches[atom_idx] = prev + label 
+                '''
                 for atom_idx in match:
                     prev = pattern_matches.get(atom_idx, "")
                     if prev != "":
@@ -114,7 +120,7 @@ def assign_atom_types_by_smarts(mol, type_to_smarts):
                     
                     #if atom_idx not in pattern_matches:
                     #    pattern_matches[atom_idx] = label  # first match wins
-
+                '''
         # Assign labels
         for atom in atoms_of_type:
             idx = atom.GetIdx()
@@ -147,7 +153,7 @@ def bonded_definitions(stretches, bends, torsions, bonded):
         for atoms, bend_type in bends.items():
             atom1, atom2, atom3 = atoms 
             force_constant, theta = list(bend_labels[bend_type])[0]
-            lines.append(f"{atom1} {atom2} {atom3} {bend_type} {force_constant} {theta}")
+            lines.append(f"{atom1} {atom2} {atom3} HARMONIC_BEND {force_constant} {theta}")
 
     # Torsion parameters
     if len(torsions) > 0:
@@ -155,7 +161,7 @@ def bonded_definitions(stretches, bends, torsions, bonded):
         for atoms, torsion_type in torsions.items():
             atom1, atom2, atom3, atom4 = atoms
             c0, c1, c2, c3 = list(torsion_labels[torsion_type])[0]
-            lines.append(f"{atom1} {atom2} {atom3} {atom4} {torsion_type} {c0} {c1} {c2} {c3}")
+            lines.append(f"{atom1} {atom2} {atom3} {atom4} TRAPPE_DIHEDRAL {c0} {c1} {c2} {c3}")
     return"\n".join(lines)
 
 
