@@ -27,7 +27,7 @@ class RaspaAgent(StudentAgent):
     auto_run : bool
 
 
-    def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=False):
+    def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=False, active_learning=True):
         if csd_path is not None:
             framework_loader = FrameworkLoader(path, coremof=False, csd_path=csd_path)
         else:
@@ -59,6 +59,7 @@ class RaspaAgent(StudentAgent):
         self.add_raspa_prompt()
         self._advance_to_next_folder()
         self.reset(path)
+        self.active_learning = active_learning
 
     def add_raspa_prompt(self):
         prompt = self._build_prompt("raspa", "v1")
@@ -117,7 +118,7 @@ class RaspaAgent(StudentAgent):
     def chat_length(self):
         return len(self.chat.messages)
 
-    def run(self, prompt, max_iter=15):
+    def run(self, prompt, max_iter=25):
         remove_tools = self.get_tool_mask()
         file_overview = self._file_overview()
         prompt += file_overview
@@ -161,6 +162,9 @@ class RaspaAgent(StudentAgent):
 
     def get_tool_mask(self):
         mask = []
+
+        if self.active_learning is False:
+            mask.append("learn")
 
         # self.auto_run controls visibility of the raspa tool:
         if self.auto_run is False:

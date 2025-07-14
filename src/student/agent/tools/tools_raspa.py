@@ -20,7 +20,6 @@ from ..utils import quick_search
 import math
 import re
 
-# from .input_gen.generate_mol_definition import generate_molecule_def
 
 
 class MoleculeLoader(MoleculeLoaderTrappe):
@@ -37,21 +36,12 @@ class MoleculeLoader(MoleculeLoaderTrappe):
         try:
             out = self._run(molecule_names)
         except Exception as e:
-            raise e
-            # return self.get_output(e=e)
-        return self.get_output(filenames=out)
-
-
-    def get_output(self, filenames=None, e=None):
-        if filenames is not None:
-            response = f"""
-            Successfully generated the molecule input files (and force field files) for: 
-            {''.join([file(name) for name in filenames])}
-            """
-            return tool_response(self.name, response)
-        else:
-            return tool_response(self.name, error(e))
-
+            return self.get_output(e=e)
+        response = f"""
+        Successfully generated the molecule input files (and force field files) for: 
+        {', '.join([file(name) for name in out])}
+        """
+        return self.get_output(content=response)
 
 class InspectFiles(RaspaTool):
     def __init__(self, path=None):
@@ -76,29 +66,21 @@ class ReadFile(RaspaTool):
         name = "read_file"
         description = """
         Use this tool to read the content of a text file.
-        You must provide the path to the file.
+        You must provide the path to the file (based on the root directory NOT the current working directory).
         """
         super().__init__(name, description, path)
         
     def run(self, file_name):
-        path = self.get_path(full=True)
-        
+        path = self.get_path(full=False)
         content = None
-        file_name = os.path.join(path, file_name)
-        
-        if os.path.exists(file_name):
-        
-            with open(file_name, "r") as f:
-                content = f.read()
-
-        return self.get_output(file_name, content)
-
-
-    def get_output(self, file_name, content=None):
-        if content is not None:
-            return tool_response(self.name, file(file_name, content))
-        else:
-            return error("File not found {file_name}")
+        file_path = os.path.join(path, file_name)
+        try:
+            if os.path.exists(file_path):
+                with open(file_path, "r") as f:
+                    content = f.read()
+            return self.get_output(content=f"{file(file_path)}:{content}")
+        except Exception as e:
+            return self.get_output(e=e)
             
             
 
@@ -107,31 +89,32 @@ class WriteFile(RaspaTool):
         name = "write_file"
         description = """
         Use this tool to write text into a new file.
-        You must provide a file name and its content string.
+        You must provide a file name (based on the root directory NOT the current working directory) and its content string.
+        IMPORTANT: To edit a (small) file, you must first read a file with another tool and then write it completely new with this tool.
+        IMPORTANT: This will overwrite any existing file with the same name!
         """
         super().__init__(name, description, path)
         
     def run(self, file_content, file_name):
-        path = self.get_path(full=True)
+        path = self.get_path(full=False)
         e = None
         try:
             os.makedirs(path, exist_ok=True)
             with open(os.path.join(path, file_name), "w") as f:
                 f.write(file_content)
-        except Exception as e:
-            pass
-        return self.get_output(file_name, e)
-
-    def get_output(self, file_name, e=None):
+        except Exception as exc:
+            e = exc
         if e is None:
-            return tool_response(self.name, file(file_name))
+            return self.get_output(content=f"Successfully generated: {file(file_name)}")
         else:
-            return error(e)
+            return self.get_output(e=e)
+
             
 
 class InputFile(WriteFile):
     def __init__(self, path=None, template_filename=None):
-        "src/student/agent/tools/templates/template_simulation.input"
+        super().__init__(path)
+        
         self.name = "input_file"
         self.description = """
         Use this tool to write the simulation input file.
@@ -156,10 +139,9 @@ class InputFile(WriteFile):
     def run(self, file_content):
         file_name="simulation.input"
         out = super().run(file_content, file_name)
-
-        if not out.startswith("<error>"):
+        if not (isinstance(out, str) and out.startswith("<error>")):
             self.has_file = True
-        return tool_response(self.name, out)
+        return out
 
 
 class ExecuteRaspa(RaspaTool):
@@ -176,14 +158,18 @@ class ExecuteRaspa(RaspaTool):
         out = self.run_raspa()
         if out and isinstance(out, tuple):
             stdout, stderr = out
-            if (stderr is None or stderr.strip() == "") and (stdout is not None and "error" not in stdout.lower()):
-                self._last_run_success = True
+            if self.check_success:
                 self.agent._advance_to_next_folder()
-        return self.get_output(out)
+            return self.get_output(content=f"<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created! To rerun, you must create all input files again!)")
+        return self.get_output(e = out)
     
-    def get_output(self, out):
-        # TODO
-        return tool_response(self.name, out)
+
+    def check_success(self):
+        path = self.get_path(full=True)
+        if os.path.exists(os.path.join(path, "Output/")):
+            return True
+        else:
+            return False
 
     def get_run_file(self):
         load_dotenv()
@@ -328,37 +314,24 @@ class CoreMofLoader(RaspaTool):
         self.structures : Dict[str, List[str]] = self.get_coremof_structures()
 
     def run(self, mof_name : str, output_file : str = "mol.cif"):
-
         name = self.search_names(mof_name)
         if name is None:
-            return self.get_output("", e="No entry found in coremof names.")
+            return self.get_output(e="No entry found in coremof names.")
         path = self.get_path(full=True)
         out_path = os.path.join(path, output_file)
         datasets = self.get_coremof_datasets(name)
         if datasets is None:
-            return self.get_output(output_file, e=f"<error>No dataset found for {name}</error>")
-        
+            return self.get_output(e=f"No dataset found for {name}")
         errors=[]
-
         for dataset in datasets:
             try:
                 mof = CoRE_MOF.get_structure(dataset, name)
                 mof.to_file(out_path)
                 self.has_file = True
-                return self.get_output(output_file)
-            
+                return self.get_output(content=f"Generated from Coremof: {file(output_file)}")
             except Exception as e:
                 errors.append(e)
-                
-        return self.get_output(output_file, errors)
-        
-
-    def get_output(self, file_name, e=None):
-        if e is None:
-            return tool_response(self.name, file(file_name))
-        else:
-            return error(e)
-
+        return self.get_output(content=None, e=errors)
 
     def get_coremof_structures(self):
         structures = defaultdict(list)
@@ -398,12 +371,12 @@ class OutputParser(RaspaTool):
         name = "output_parser"
         description = """
         Use this tool to parse the raspa output files since they are too long to read directly.
-        Provide the path of the output file you want to read.
+        Provide the path of the output file you want to read (based on the root directory, NOT the current working directory).
         """
         super().__init__(name, description, path)
     
     def run(self, file_path):
-        path = os.path.join(self.get_path(full=True), file_path)
+        path = os.path.join(self.get_path(full=False), file_path)
         
         try:
             with open(path) as in_file:
@@ -414,8 +387,8 @@ class OutputParser(RaspaTool):
             out = self.strip_block_fields(out)
             
         except Exception as e:
-            return error(f"Error with output parsing: {e}, (path={path})")
-        return tool_response(self.name, out.__str__(), LIMIT=7500)
+            return self.get_output(f"Error with output parsing: {e}, (path={path})")
+        return self.get_output(out.__str__(), LIMIT=7500)
     
 
     def filter(self, d: Dict) -> Dict:
@@ -472,7 +445,6 @@ class OutputParser(RaspaTool):
             'Derived units and their conversion factors',
             'Internal conversion factors',
             'Energy conversion factors',
-            'Properties computed',
             'VTK', 'MoleculeDefinitions',
             'Thermo/Baro-stat NHC parameters',
             'Method and settings for electrostatics',
@@ -626,20 +598,14 @@ class FrameworkLoader(RaspaTool):
             name = self.find_mof_local(framework_name)
 
         if name is None:
-            return self.get_output("", e="No framework found with the given name.")
-        
+            return self.get_output(e="No framework found with the given name.")
         if self.coremof:
             out = self.get_cif_coremof(name)
         else:
             out = self.get_cif_local(name)
-        return self.get_output(out)
-
-    def get_output(self, name, e=None):
-        if e is None:
-            unit_cells = self.calculate_unit_cells(os.path.join(self.get_path(full=True), "framework.cif"), self.cutoff)
-            return tool_response(self.name, f"Created framework.cif for this framework: {name} (For a cutoff of {self.cutoff} angstrom, use this or more as unit cells: {unit_cells})")
-        else:
-            return error(e)
+        unit_cells = self.calculate_unit_cells(os.path.join(self.get_path(full=True), "framework.cif"), self.cutoff)
+        response = f"Created framework.cif for this framework: {out} (For a cutoff of {self.cutoff} angstrom, use this or more as unit cells: {unit_cells})"
+        return self.get_output(content=response)
 
     def clean_cif(self, file):
         with open(file, "r") as f:

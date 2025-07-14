@@ -25,9 +25,9 @@ def keyword(s):
 def tool(s):
     return f"<tool name={s}/>"
 
-def tool_response(tool_name, response, LIMIT=1500):
-    #return f"<tool response name={tool_name}>{response[:LIMIT]}</tool response>"
-    return response[:LIMIT]
+def tool_response(tool_name, response, LIMIT=2000):
+    return f"<tool response name={tool_name}>\n{response[:LIMIT]}\n</tool response>"
+    # return response[:LIMIT]
 
 def recalled(s):
     return f"<recalled>{s}</recalled>"

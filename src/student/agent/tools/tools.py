@@ -2,6 +2,7 @@ import os
 from abc import ABC, abstractmethod
 import inspect
 from typing import get_origin, get_args, List, Dict
+from ..utils import error, tool_response
 
 
 class Tool(ABC):
@@ -16,8 +17,11 @@ class Tool(ABC):
     def run(self):
         pass
 
-    def get_output(self):
-        return self.name
+
+    def get_output(self, content=None, e=None, LIMIT=2500):
+        if e is not None:
+            return tool_response(self.name, error(e), LIMIT=LIMIT)
+        return tool_response(self.name, content, LIMIT=LIMIT)
 
     def parse(self, name=None) -> Dict:
         func = self.run

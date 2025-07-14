@@ -40,15 +40,9 @@ class AddMemory(Tool):
     
     def run(self, stimuli: list[str], content: str):
         if len(stimuli) == 0:
-            return self.get_output(None)
+            return self.get_output(e="Error during creation of new memory node. Maybe you forgot to include stimuli!")
         new_node = self._run(stimuli, content)
-        return self.get_output(new_node)
-
-    def get_output(self, new_node):
-        if new_node is None:
-            return error("Error during creation of new memory node. Maybe you forgot to include stimuli!")
-        out = tool_response(self.name, f"Added:\n\t{new_node.__str__()}\n")
-        return out
+        return self.get_output(f"Added:\n\t{new_node.__str__()}\n")
 
 
 class RecallMemory(Tool):
@@ -73,16 +67,12 @@ class RecallMemory(Tool):
 
     def run(self, stimuli: list[str]) -> str:
         res = self.memory.recall(stimuli, max_recall=3, sensitivity=self.sensitivity)
-        return self.get_output(stimuli, res)
-    
-    def get_output(self, stimuli, res: Dict[str, Dict[str, str]]) -> str:
         mem = ""
         for id, i in res.items():
             mem += i
         if mem == "":
             mem = "<no memory found/>"
-        out = tool_response(self.name, f"Recalled: \n\t{mem}")
-        return out
+        return self.get_output(f"Recalled: \n\t{mem}")
 
 
 class ModifyMemory(Tool):
@@ -124,19 +114,14 @@ class ModifyMemory(Tool):
     def run(self, id: str, new_stimuli: List[str] = None, new_content: str = None, delete=False) -> None:
         if delete is True:
             node = self.memory.delete_node(id)
-            return self.get_output(node, deleted=True)
-        else:
-            node, deleted = self.memory.modify(id, new_stimuli, new_content)
-        return self.get_output(node, deleted=deleted)
-
-    def get_output(self, node, deleted=False):
+            return self.get_output("Memory deleted.")
+        
+        node, deleted = self.memory.modify(id, new_stimuli, new_content)
         if node is None:
-            return error("No memory found to modify: Incorrect ID")
-        if deleted:
-            out = tool_response(self.name, "Memory deleted.\n")
-            return out
-        out = tool_response(self.name, f"Modified entry: \n\t{node.__str__()}\n")
-        return out
+            return self.get_output(e="No memory found to modify: Incorrect ID")
+        
+        return self.get_output(f"Modified entry: \n\t{node.__str__()}")
+
 
 class ExtendedModifyMemory(ModifyMemory):
     def __init__(self, memory:Memory, chat):
@@ -151,7 +136,7 @@ class ExtendedModifyMemory(ModifyMemory):
     def run(self, id: str, new_information) -> None:
         node = self.memory.get_node(id)
         if node is None:
-            return self.get_output(None)
+            return self.get_output(e="No memory found to modify: Incorrect ID")
         
         old_stimuli = node.keys
         old_content = node.content

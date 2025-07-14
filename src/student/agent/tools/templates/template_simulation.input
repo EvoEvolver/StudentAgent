@@ -26,13 +26,12 @@ ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
 ...
 ]
 
-Component [int] 
-            MoleculeName           [molecule name] # same as [molecule name].def
+Component [int] MoleculeName       [molecule name] # same as [molecule name].def
             MoleculeDefinition     local
             ...                                    # other component information 
 
 [
-Component [int]                                    # Optional: additional component
+Component [int] MoleculeName        [molecule name]# Optional: additional component
             ...
 ]
                                                 # always empty line in the end!
