@@ -78,9 +78,9 @@ class ReadFile(RaspaTool):
             if os.path.exists(file_path):
                 with open(file_path, "r") as f:
                     content = f.read()
-            return self.get_output(content=f"{file(file_path)}:{content}")
+            return self.get_output(content=f"{file(file_path)}:\n{content}")
         except Exception as e:
-            return self.get_output(e=e)
+            return self.get_output(e="You must provide the path to the file based on the root directory NOT the current working directory)."+e)
             
             
 
