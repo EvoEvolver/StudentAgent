@@ -3,6 +3,7 @@ test_raspa.ipynb
 test_chatmof.ipynb
 test*/
 !benchmark_student/test*
+.DS_Store
 
 test_streamlit_app.py
 
@@ -20,6 +21,7 @@ CSD-modified/cifs/CR/FSR/*
 CSD-modified/NCR_data_CSD_modified_*
 
 checkpoints/
+sessions/
 
 tout/
 Movies/
