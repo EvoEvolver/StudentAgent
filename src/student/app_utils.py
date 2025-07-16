@@ -61,9 +61,10 @@ def save(st):
 def get_path(st, full=False):
     if full and st.session_state.agent_mode == "RASPA":
         agent = get_agent(st)
-        return agent.get_full_path()
+        #print(agent.path_add, agent.path)
+        return agent.path_add
     else:
-        return st.session_state.session.output_path
+        return os.path.join(st.session_state.session.path, st.session_state.session.output_path)
 
 def get_memory_agent(st) -> MemoryAgent:
     agent = get_agent(st)
@@ -524,10 +525,15 @@ class StreamlitFileManager:
                             st.rerun()
                 with col4:
                     if not item['is_directory']:
-                        if st.button("👁️ Preview", key=f"{self.key_prefix}preview_{item['path']}"):
-                            st.session_state[self._get_state_key('preview_path')] = item['path']
-                            st.session_state[self._get_state_key('show_preview')] = True
-                            st.rerun()
+                        cols = st.columns([1, 1])
+                        with cols[0]:
+                            if st.button("👁️", key=f"{self.key_prefix}preview_{item['path']}", help="Preview"):
+                                st.session_state[self._get_state_key('preview_path')] = item['path']
+                                st.session_state[self._get_state_key('show_preview')] = True
+                                st.rerun()
+                        with cols[1]:
+                            with open(item['path'], 'rb') as f:
+                                st.download_button('⬇️', f, file_name=item['name'], help="Download", key=f"{self.key_prefix}download_{item['path']}")
             
             st.divider()
 

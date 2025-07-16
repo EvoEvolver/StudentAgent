@@ -85,13 +85,13 @@ def load_agent(session):
     else:
         agent = Agent(provider=session.provider)
 
-    loading_error = agent.load(session.path+CHECKPOINT_DIR)
+    loading_error = agent.load(os.path.join(session.path, CHECKPOINT_DIR))
     if loading_error is not None:
         print(loading_error)
     return agent
 
 def save_agent(session, agent):
-    agent.save(session.path+CHECKPOINT_DIR)    # overwrite!
+    agent.save(os.path.join(session.path, CHECKPOINT_DIR))    # overwrite!
 
 
 def run_session(session, agent, input):

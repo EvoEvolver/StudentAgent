@@ -63,7 +63,7 @@ class ReadFile(RaspaTool):
     def __init__(self, path=None):
         name = "read_file"
         description = """
-        Use this tool to read the content of a text file.
+        Use this tool to read the content of a text file (not directory!).
         You must provide the path to the file (based on the root directory NOT the current working directory).
         """
         super().__init__(name, description, path)
@@ -73,14 +73,17 @@ class ReadFile(RaspaTool):
         content = None
         file_path = os.path.join(path, file_name)
         try:
-            if os.path.exists(file_path):
+            if os.path.exists(file_path) and os.path.isfile(file_path):
                 with open(file_path, "r") as f:
                     content = f.read()
+            elif os.path.exists(file_path) and not os.path.isfile(file_path):
+                content = "The is a directory, not a file!"
+            else:
+                content = "This path does not exist!"
             return self.get_output(content=f"{file(file_path)}:\n{content}")
         except Exception as e:
             return self.get_output(e="You must provide the path to the file based on the root directory NOT the current working directory)."+e)
-            
-            
+             
 
 class WriteFile(RaspaTool):
     def __init__(self, path=None):
@@ -378,6 +381,7 @@ class OutputParser(RaspaTool):
         name = "output_parser"
         description = """
         Use this tool to parse the raspa output files since they are too long to read directly.
+        Do not use for any .output file!
         Provide the path of the output file you want to read (based on the root directory, NOT the current working directory).
         """
         super().__init__(name, description, path)
