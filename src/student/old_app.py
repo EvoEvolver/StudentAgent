@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from student.app_utils import *
-from student.session_manager import create_session, load_session, save_session, SessionState
+
+path = "output/st/test_henrik/"
+memory_path = "memory/mvp2_memory.txt"
 
 
 if "sidebar_state" not in st.session_state:
@@ -20,31 +22,37 @@ st.set_page_config(
     initial_sidebar_state=st.session_state.sb_state,
 )
 
+
 if "chat" not in st.session_state:
     st.title("Student Agent")
     
-    load_id = st.text_input("Session ID:", key="load_id")
-    if st.button("Load Session"):
-        session = load_session(load_id)
-        if session is None:
-            st.write("Invalid ID")
-        else:
-            setup_agent(st, session)
-            st.rerun()
+    provider = st.radio("Select LLM Provider:", ["Anthropic","OpenAI"], key="provider")
+    mode = st.radio("Select Mode:", ["Student", "RASPA"], key="mode")
 
-    empty_line(st, 3)
-    provider = st.radio("Select LLM Provider:", ["Anthropic","OpenAI"], key="provider_selection")
-    mode = st.radio("Select Mode:", ["Student", "RASPA", "Boring"], key="mode")
-    if st.button("New Session"):
-        new_id = create_session(agent_type=mode, provider=provider)
-        session = load_session(new_id)
-        setup_agent(st, session)
+    load_mem = st.checkbox(
+        "Load memory",
+        value=st.session_state.get("load_mem", True),
+        key="load_mem"
+    )
+
+    load_agent(st, mode, path)
+    
+    if st.button("Start Chat"):
+        st.session_state.chat = True
+        st.session_state.agent_mode = mode
+        
+        #st.session_state["subdir"] = setup_path(path) # only relevant for RASPA agent: creates a new subdir
+        st.session_state["subdir"] = get_subdir(path)
+        if st.session_state.get("load_mem", False):
+            load_memory(st, memory_path)
+
         st.rerun()
 
 
 if st.session_state.get("chat", False):
     mode = st.session_state.agent_mode
     
+
     with st.sidebar:
         
         st.header("Settings")
@@ -56,25 +64,18 @@ if st.session_state.get("chat", False):
             value=st.session_state.get("show_reasoning", True),
             key="show_reasoning"
         )
-        # Checkbox: show conversation of memory agent instead
         show_mem = st.checkbox("Show MemoryAgent conversation")
-
-        # Checkbox: render memory instead of chat
         show_memory = st.checkbox("Show Memory")
 
-        # Change active learning of agent
-        if mode in ["RASPA", "Student"]:
-            active_learning = st.checkbox(
-                "Enable learning",
-                value=st.session_state.get("active_learning", False),
-                key="active_learning"
-            )
-            if active_learning:
-                update_active_learning(st, active_learning)
+        
+        active_learning = st.checkbox(
+            "Enable learning",
+            value=st.session_state.get("active_learning", False),
+            key="active_learning"
+        )
         st.divider()
 
         # Checkbox: manual or automatic raspa usage?
-        show_files = None
         if mode == "RASPA":
             auto = st.checkbox(
                 "RASPA auto run",
@@ -87,25 +88,34 @@ if st.session_state.get("chat", False):
                 # Button: Manually run RASPA
                 if st.button("Run RASPA", key="run_raspa_auto"):
                     run_raspa(st)
+                    # some kind of progress bar for running raspa run             (TODO advanced: parse output, ...)
             else:
                 empty_line(st, 1)
-            
-            # Show file System
-            show_files = st.checkbox("Show file manager", key="file_manager")
 
         empty_line(st, 3)
         
+        show_files = st.checkbox("Show file manager", key="file_manager")
+        empty_line(st, 3)
+        # Button: Save memory
+        if st.button("💾 Save Memory", key="save_memory"):
+            save_memory(st, memory_path)
+            st.success("Memory saved")
         
-        # Button: Save Session
-        if st.button("💾 Save Session", key="save_conversation"):
-            session_id = st.session_state.session_id
-            state = st.session_state.session
-            save_session(session_id, state)
-            save(st)
-            st.success(f"Session saved with Id: {session_id}")
+        empty_line(st, 3)
+
+
+        # Button: Save conversation
+        note = st.text_input("Conversation description", key="note")
+        if st.button("💾 Save Conversation", key="save_conversation"):
+            if note:
+                save_conversation(st, note, path)
+                st.success("Conversation saved")
+            else:
+                st.warning("Please enter a note before saving.")
         else:
             empty_line(st, 2)
         
+            empty_line(st, 2)
         empty_line(st, 3)
 
 
@@ -119,8 +129,7 @@ if st.session_state.get("chat", False):
             st.rerun()    
     
     if show_files:
-        path = get_path(st, full=False)
-        initial = get_path(st, full=True)
+        initial = st.session_state.get("subdir", path)
         file_manager = StreamlitFileManager(root_path=path, initial_path=initial)
         file_manager.render()
     
@@ -135,6 +144,13 @@ if st.session_state.get("chat", False):
         display_memory(st)
     else:
         st.header("🗨️ StudentAgent")
-        load_history(st)
+        load_agent(st, mode, path)
+        load_history(st)                    # TODO: limit conversation history of the agent (how does mllm do it?
         run_agent(st)
         display_chat(st, show_reasoning)  
+
+
+    
+
+# TODO: file manager (view only)
+# checkbox: show_file_manager

@@ -94,9 +94,12 @@ class WriteFile(RaspaTool):
         IMPORTANT: This will overwrite any existing file with the same name!
         """
         super().__init__(name, description, path)
-        
-    def run(self, file_content, file_name):
+    
+    def run(self,file_content, file_name):
         path = self.get_path(full=False)
+        return self._run(file_content,file_name,path)
+
+    def _run(self, file_content, file_name, path):
         e = None
         try:
             os.makedirs(path, exist_ok=True)
@@ -138,7 +141,7 @@ class InputFile(WriteFile):
 
     def run(self, file_content):
         file_name="simulation.input"
-        out = super().run(file_content, file_name)
+        out = super()._run(file_content, file_name, self.get_path(full=True))
         if not (isinstance(out, str) and out.startswith("<error>")):
             self.has_file = True
         return out
@@ -522,7 +525,7 @@ class FrameworkLoader(RaspaTool):
         import pandas as pd
         path = os.path.join(self.csd_path, "CR_data_CSD_modified_20250227.csv")
         cr = pd.read_csv(path)
-        cr = cr[["coreid", "refcode", "name"]]
+        cr = cr[["coreid", "refcode", "name", "VF", 'PV (cm3/g)', 'Density (g/cm3)']]
         cr[["refcode", "type"]] = cr["refcode"].str.split("_", n=2, expand=True)[[0, 1]]
         self.coremof_structures = cr
 
@@ -552,6 +555,9 @@ class FrameworkLoader(RaspaTool):
                 raise RuntimeError("This should not happen")
         coreid = row["coreid"][i]
         typ = row["type"][i]
+        vf = row["VF"][i]
+        pv = row['PV (cm3/g)'][i]
+        density = row['Density (g/cm3)'][i]
         
         filepath = os.path.join(self.cm_path, f"cifs/CR/{typ}/{coreid}.cif")
         path_new = os.path.join(self.get_path(full=True), "framework.cif")
@@ -559,10 +565,11 @@ class FrameworkLoader(RaspaTool):
         
         r = row[row.refcode == name]["refcode"]
         if len(r) > 0:
-            return r[i]
+            return r[i], vf, pv, density
         n = row[row.name == name]["name"]
         if len(n) > 0:
-            return n[i]
+            return n[i], vf, pv, density
+        return None
     
 
     def load_local(self):
@@ -601,6 +608,10 @@ class FrameworkLoader(RaspaTool):
             return self.get_output(e="No framework found with the given name.")
         if self.coremof:
             out = self.get_cif_coremof(name)
+            if out is None:
+                return self.get_output(e="Error loaded framwork from CoreMOF")
+            out, vf, pv, density = out
+            out = f"{out} (void fraction = {vf}, pore volume = {pv} (cm3/g), density = {density} (g/cm3))"
         else:
             out = self.get_cif_local(name)
         unit_cells = self.calculate_unit_cells(os.path.join(self.get_path(full=True), "framework.cif"), self.cutoff)

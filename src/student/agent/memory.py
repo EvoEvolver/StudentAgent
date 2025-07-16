@@ -133,17 +133,12 @@ class MemoryNode:
     
 
     def render_html(self) -> str:
-        """
-        Return a readable HTML representation of a MemoryNode.
-        `max_emb_len` controls how many chars of each embedding to show before adding an ellipsis.
-        """
-        from IPython.display import HTML
         import html
 
         keys_html = "".join(f"<li>{html.escape(k)}</li>" for k in sorted(self.keys))
         content_html = html.escape(self.content).replace("\n", "<br>")
 
-        return HTML(f"""\
+        return f"""\
     <style>
     .memory-node {{
         font-family: system-ui, sans-serif;
@@ -165,7 +160,7 @@ class MemoryNode:
     <strong>Content</strong>
     <p>{content_html}</p>
     </div>
-    """)
+    """
 
 
 
@@ -326,23 +321,13 @@ class Memory:
                 self.update_keywords(key)
                 
 
-    def render_html(self, *, max_emb_len: int = 12):
+    def render_html(self):
         """
         Render an entire Memory object, laying each MemoryNode side-by-side.
-
-        Parameters
-        ----------
-        mem : Memory
-            The Memory instance whose nodes you want to visualize.
-        Returns
-        -------
-        IPython.display.HTML
-            A single HTML object showing all nodes in a flexbox container.
         """
-        from IPython.display import HTML
         import html
         node_snippets = [
-            node.render_html().data
+            node.render_html()
             for node in self.memory.values()
         ]
 
@@ -359,4 +344,8 @@ class Memory:
         {''.join(node_snippets)}
     </div>
     """
-        return HTML(combined_html)
+        return combined_html
+    
+    def render(self):
+        from IPython.display import HTML
+        return HTML(self.render_html())

@@ -166,7 +166,7 @@ class MemoryAgent(Agent):
 
     def render_memory(self):
         return self.memory.render_html()
-    
+
     def memory_size(self):
         return self.memory.__size__()
 

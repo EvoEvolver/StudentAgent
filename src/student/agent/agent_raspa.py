@@ -51,7 +51,7 @@ class RaspaAgent(StudentAgent):
             for tool in raspa_tools
         }
 
-        super().__init__(tools=tools, version=version, provider=provider, verbose=verbose)
+        super().__init__(tools=tools, version=version, provider=provider, verbose=verbose, active_learning = active_learning)
 
         self.reset(path)        # base path
         self.path_add = ""      # add onto path for simulations
@@ -59,7 +59,7 @@ class RaspaAgent(StudentAgent):
         self.add_raspa_prompt()
         self._advance_to_next_folder()
         self.reset(path)
-        self.active_learning = active_learning
+        
 
     def add_raspa_prompt(self):
         prompt = self._build_prompt("raspa", "v1")
@@ -94,7 +94,6 @@ class RaspaAgent(StudentAgent):
                 tool.has_file =False
         return
 
-
     def check_files(self):
         if all([tool.has_file for tool in self.tools if hasattr(tool, "has_file")]):
             return True
@@ -102,7 +101,7 @@ class RaspaAgent(StudentAgent):
 
     def _file_overview(self):
         current_directory = self.path_add
-        files_all = [i for i in all_files(current_directory) if i not in ['trappe_molecule_list.json']]
+        files_all = [i for i in all_files(self.path) if i not in ['trappe_molecule_list.json']]
         file_list = "\n".join(f"- {f}" for f in files_all) if files_all else "Empty"
         file_overview = f"\n\n<file_overview>\nCurrent directory: {current_directory}\nFiles:\n{file_list}\n</file_overview>"
         return file_overview

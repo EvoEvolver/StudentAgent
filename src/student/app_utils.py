@@ -4,6 +4,9 @@ import shutil
 from student.agent.agent_raspa import RaspaAgent
 from student.agent.agent_student import StudentAgent
 from student.agent.agent_memory import MemoryAgent
+from student.agent.agent import Agent
+
+from student.session_manager import load_agent, save_agent
 
 import streamlit as st
 from streamlit.components.v1 import html
@@ -11,30 +14,15 @@ from streamlit.components.v1 import html
 
 ############ Agent utils ############
 
-def load_agent(st, mode, path):
-    if (
-        "agent" not in st.session_state
-        or st.session_state.agent_mode != mode
-    ):
-        st.session_state.agent_mode = mode
-        provider = st.session_state.provider
-        version = "v3"
-        
-        if mode == "RASPA":
-            r = RaspaAgent(path=path, version=version, provider=provider)
-            r.tools["framework loader"].coremof = False
-            print("Not using CoreMOF database!")
-            st.session_state.agent = r
-        else:
-            st.session_state.agent = StudentAgent(version=version, provider=provider)
-
-def load_memory(st, memory_path):
-    agent = get_memory_agent(st)
-    return agent.load_memory(memory_path)
-
-def save_memory(st, memory_path):
-    agent = get_agent(st)
-    return agent.save_memory(memory_path)
+def setup_agent(st, session):
+    if "agent" not in st.session_state:  
+        st.session_state.chat = True
+        st.session_state.agent_mode = session.agent_type
+        st.session_state.provider = session.provider      
+        st.session_state.session_id = session.session_id
+        st.session_state.path = session.path
+        st.session_state.session = session
+        st.session_state.agent = load_agent(session)
 
 def load_history(st):
     if "history" not in st.session_state:
@@ -44,72 +32,42 @@ def set_auto(st, auto):
     agent = get_agent(st)
     agent.set_auto(auto)
 
-def save_conversation(st, note, path):
-    agent = get_agent(st)
-    file = next_note(path)
-    if type(agent) == RaspaAgent:
-        path = agent.get_full_path()
-    
-    path = os.path.join(path, "conversations")
-    os.makedirs(path, exist_ok=True)
-
-    file = os.path.join(path, file)
-    agent.save_conversation(filename=file, note=note)
-    return
-
-
-def next_note(path: str) -> str:
-    """
-    Scan the given directory for files named note_<i>.txt,
-    find the highest i, and return the next filename in sequence.
-    """
-    pattern = re.compile(r"^note_(\d+)\.txt$")
-    max_index = -1
-
-    for fname in os.listdir(path):
-        match = pattern.match(fname)
-        if match:
-            idx = int(match.group(1))
-            if idx > max_index:
-                max_index = idx
-
-    next_index = max_index + 1
-    return f"note_{next_index}.txt"
-
 
 def run_agent(st):
     user_input = st.chat_input("Type your message…")
     if user_input:
         st.session_state.history.append(("user", user_input))
+        
         with st.spinner("Thinking…"):
-            agent = get_agent(st)
-            agent.active_learning = st.session_state.get("active_learning", False)
-            
+            agent = get_agent(st)            
             reply = agent.run(prompt=user_input)
-            #st.session_state.history.append(new_messages)
+            
         st.session_state.history.append(("assistant", reply))
+
+def update_active_learning(st, active_learning: bool):
+    agent = get_agent(st)
+    agent.active_learning = st.session_state.get("active_learning", False)
+    st.session_state.session.active_learning = active_learning
 
 
 def get_agent(st) -> StudentAgent:
     return st.session_state.agent
 
+def save(st):
+    agent = get_agent(st)
+    save_agent(session=st.session_state.session, agent=agent)
+
+
+def get_path(st, full=False):
+    if full and st.session_state.agent_mode == "RASPA":
+        agent = get_agent(st)
+        return agent.get_full_path()
+    else:
+        return st.session_state.session.output_path
+
 def get_memory_agent(st) -> MemoryAgent:
     agent = get_agent(st)
     return agent.get_memory_agent()
-
-
-def setup_path(path):
-    agent = get_agent(st)
-    if type(agent) == RaspaAgent:
-        new, path = next_folder(path)
-        agent.set_path_add(new)
-    return new
-
-def get_subdir(path):
-    agent = get_agent(st)
-    if type(agent) == RaspaAgent:
-        return agent.path_add
-    return None
 
 def reset_messages(st):
     agent = get_agent(st)
@@ -126,31 +84,6 @@ def run_raspa(st):
         else:
             raise Exception("Error running RASPA manually.")
     return True
-
-
-def next_folder(path):
-    os.makedirs(path, exist_ok=True)
-    existing_folders = [
-        d for d in os.listdir(path)
-        if os.path.isdir(os.path.join(path, d)) and d.isdigit()
-    ]
-    if existing_folders:
-        max_num = max(int(folder) for folder in existing_folders)
-        
-        if not os.listdir(os.path.join(path, str(max_num))): # empty
-            next_num = max_num
-
-        next_num = max_num +1
-
-    else:
-        next_num = 1
-    new = str(next_num)
-    new_path = os.path.join(path, new)
-    os.makedirs(new_path, exist_ok=True)
-
-    return new, new_path
-
-    
 
 ############ Streamlit stuff ############
 
@@ -186,6 +119,11 @@ def display_chat(st, show_reasoning=False, memory=False):
                 #add_message(st, role, content, html=True)
                 with st.chat_message(role):
                     st.html(content)
+
+def display_memory(st):
+    agent = get_memory_agent(st)
+    memory_html = agent.render_memory()
+    st.html(memory_html)
 
 
 def add_message(st, role, content, html=True):

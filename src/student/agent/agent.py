@@ -94,6 +94,21 @@ class Agent:
     def reset_id(self):
         self.id = 0
 
+    ########### Checkpointing #######
+    def save(self, folder_name):
+        os.makedirs(folder_name, exist_ok=True)
+        self.save_conversation(os.path.join(folder_name, "conversation.txt"))
+
+    def load(self, folder_name):
+        if len(self.conversation) == 0:
+            return
+        
+        file_path = os.path.join(folder_name, "conversation.txt")
+        if os.path.exists(file_path):
+            try:
+                self.load_conversation(file_path)
+            except Exception as e:
+                return e
  
     ############ Running ############
 
