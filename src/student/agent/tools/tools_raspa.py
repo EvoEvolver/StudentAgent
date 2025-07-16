@@ -7,8 +7,6 @@ from collections import defaultdict
 import re
 
 from dotenv import load_dotenv
-import CoRE_MOF
-from PACMANCharge import pmcharge
 
 from .tools import Tool, RaspaTool
 from ..utils import *
@@ -314,9 +312,10 @@ class CoreMofLoader(RaspaTool):
         """
         super().__init__(name, description, path)
         self.has_file = False
-        self.structures : Dict[str, List[str]] = self.get_coremof_structures()
+        self.structures : Dict[str, List[str]] = None
 
     def run(self, mof_name : str, output_file : str = "mol.cif"):
+        import CoRE_MOF
         name = self.search_names(mof_name)
         if name is None:
             return self.get_output(e="No entry found in coremof names.")
@@ -337,6 +336,7 @@ class CoreMofLoader(RaspaTool):
         return self.get_output(content=None, e=errors)
 
     def get_coremof_structures(self):
+        import CoRE_MOF
         structures = defaultdict(list)
         datasets = {'2014': '2014', '2019-ASR': '2019-ASR', '2019-FSR': '2019-FSR'} # CoRE_MOF.load.__datasets
         for dataset in datasets:
@@ -344,13 +344,17 @@ class CoreMofLoader(RaspaTool):
                 structures[name].append(dataset)
         return dict(structures)
 
-
+    def get_structures(self):
+        if self.structures is None:
+            self.structures = self.get_coremof_structures()
+        return self.structures
+    
     def get_coremof_datasets(self, framework):
-        return self.structures.get(framework, None)
+        return self.get_structures().get(framework, None)
     
 
     def structures_names(self):
-        return self.structures.keys()
+        return self.get_structures().keys()
     
 
     def search_names(self, query, score_cutoff=90):
@@ -519,7 +523,7 @@ class FrameworkLoader(RaspaTool):
         
         if self.coremof is True:
             self.csd_path = csd_path
-            self.load_coremof()
+            self.coremof_structures = None
 
     def load_coremof(self):
         import pandas as pd
@@ -529,8 +533,13 @@ class FrameworkLoader(RaspaTool):
         cr[["refcode", "type"]] = cr["refcode"].str.split("_", n=2, expand=True)[[0, 1]]
         self.coremof_structures = cr
 
+    def get_coremof_structures(self):
+        if self.coremof_structures is None:
+            self.load_coremof()
+        return self.coremof_structures
+
     def find_mof_in_coremof(self, query):
-        cr = self.coremof_structures
+        cr = self.get_coremof_structures()
         search_values = list(cr["refcode"]) + [i for i in cr["name"] if i != "-"]
         matches = quick_search(query, list(search_values))
         if len(matches) == 0:
@@ -538,7 +547,7 @@ class FrameworkLoader(RaspaTool):
         return matches[0][0]
 
     def get_cif_coremof(self, name):
-        cr = self.coremof_structures
+        cr = self.get_coremof_structures()
         row = cr[(cr["refcode"] == name) | (cr["name"] == name)]
         index = row.index
         if len(index) == 0:
@@ -585,6 +594,8 @@ class FrameworkLoader(RaspaTool):
         return matches[0][0]
 
     def get_cif_local(self, structure):
+        from PACMANCharge import pmcharge
+
         filepath = self.raspa_path+structure+".cif"
         path_new = os.path.join(self.get_path(full=True), "framework.cif")
         path_new_mod = os.path.join(self.get_path(full=True), "framework_pacman.cif")
