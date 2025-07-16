@@ -3,9 +3,9 @@ FROM continuumio/miniconda3
 WORKDIR /app
 
 COPY . .
+RUN conda install python=3.11 -y
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-RUN conda install python=3.11 -y
 RUN conda install -c conda-forge raspa2 -y
 RUN pip install -e .
 RUN pip install -r requirements.txt
