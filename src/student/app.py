@@ -92,21 +92,25 @@ if st.session_state.get("chat", False):
             
             # Show file System
             show_files = st.checkbox("Show file manager", key="file_manager")
+            st.divider()
 
         empty_line(st, 3)
         
         
         # Button: Save Session
+        session_id = st.session_state.session_id
+        st.info(f"Session Id: {session_id}")
         if st.button("💾 Save Session", key="save_conversation"):
-            session_id = st.session_state.session_id
             state = st.session_state.session
             save_session(session_id, state)
             save(st)
-            st.success(f"Session saved with Id: {session_id}")
+            st.success(f"Session saved!")
         else:
             empty_line(st, 2)
         
-        empty_line(st, 3)
+        empty_line(st, 2)
+        st.divider()
+        empty_line(st,2)
 
 
         # Button to delete the conversational history for the agent

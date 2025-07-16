@@ -79,6 +79,7 @@ class MoleculeLoaderTrappe(RaspaTool):
 
     def __init__(self, name, description, path=None):
         super().__init__(name, description, path)
+        self.trappe_file_path = os.path.join(os.path.dirname(__file__), "trappe_molecule_list.json")
         self.molecules = self.load_molecule_names()
         self.ps_bag = PseudoAtomsBag()
         self.blacklist = ["methyl acetate", "ethyl acetate", "methyl propionate", "vinyl acetate"]
@@ -138,7 +139,8 @@ class MoleculeLoaderTrappe(RaspaTool):
         url = "http://trappe.oit.umn.edu/scripts/search_select.php"
         # check if the data is already downloaded
         path = self.get_path(full=False)
-        file_path = os.path.join(path, "trappe_molecule_list.json")
+        #file_path = os.path.join(path, "trappe_molecule_list.json")
+        file_path = self.trappe_file_path
         try:
             with open(file_path) as f:
                 return json.load(f)
