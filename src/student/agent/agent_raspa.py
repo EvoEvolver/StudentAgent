@@ -192,7 +192,7 @@ class RaspaAgent(StudentAgent):
 
         # self.auto_run controls visibility of the raspa tool:
         if self.auto_run is False:
-            mask.append("raspa")
+            mask.append("execute raspa")
 
         # all required files need to be present:
         #elif not self.check_files():

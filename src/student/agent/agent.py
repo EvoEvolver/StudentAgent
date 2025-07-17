@@ -296,7 +296,7 @@ class Agent:
 
     def render_content(self, message, no_background=False):
         parsed = json.dumps(message)
-        parsed = json.loads(parsed)["content"]['text']
+        parsed = json.loads(repair_json(parsed))["content"]['text']
         return self.render_message_content(parsed, no_background=no_background)
     
 
@@ -309,10 +309,14 @@ class Agent:
             inner_parts.append(f"<div style='margin-top:5px;'>{escaped_text}</div>")
         else:
             if type(parsed) == str:
-                parsed = json.loads(parsed)
-
+                parsed = json.loads(repair_json(parsed))
             if "react" in parsed:
                 react_trace = parsed["react"]
+                if type(react_trace) != list:
+                    try:
+                        react_trace = json.loads(repair_json(parsed['react']))
+                    except Exception as e:
+                        return                
                 for i, item in enumerate(react_trace):
                     
                     if "thought" in item:

@@ -1,3 +1,4 @@
+import time
 import os
 import re
 import shutil
@@ -11,6 +12,7 @@ from student.session_manager import load_agent, save_agent
 import streamlit as st
 from streamlit.components.v1 import html
 
+MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_memory","mc5_5", "memory.txt")
 
 ############ Agent utils ############
 
@@ -49,9 +51,18 @@ def update_active_learning(st, active_learning: bool):
     agent.active_learning = st.session_state.get("active_learning", False)
     st.session_state.session.active_learning = active_learning
 
-
 def get_agent(st) -> StudentAgent:
     return st.session_state.agent
+
+def get_memory_agent(st) -> MemoryAgent:
+    agent = get_agent(st)
+    return agent.get_memory_agent()
+
+def load_raspa_memory(st) -> None:
+    agent = get_memory_agent(st)
+    agent.load_memory(MEMORY_PATH)
+    #st.write(f"Loaded memory from {MEMORY_PATH}")
+    #time.sleep(5)
 
 def save(st):
     agent = get_agent(st)
@@ -66,9 +77,6 @@ def get_path(st, full=False):
     else:
         return os.path.join(st.session_state.session.path, st.session_state.session.output_path)
 
-def get_memory_agent(st) -> MemoryAgent:
-    agent = get_agent(st)
-    return agent.get_memory_agent()
 
 def reset_messages(st):
     agent = get_agent(st)

@@ -3,9 +3,11 @@ from .agent import RaspaAgent, StudentAgent, Agent
 
 from pydantic import BaseModel
 from typing import Any, List, Dict
+from dotenv import load_dotenv
+load_dotenv()
 
-SESSION_DIR = "./sessions"
-DEFAULT_TYPE = "raspa"
+SESSION_DIR = os.getenv('SESSION_DIR', './sessions')
+DEFAULT_TYPE = os.getenv('DEFAULT_TYPE', 'raspa')
 DEFAULT_PROVIDER = "anthropic"
 CSD_PATH = None
 OUTPUT_PATH = "raspa_output"
@@ -49,20 +51,27 @@ def create_session(session_id=None, agent_type="default", provider="default") ->
     return session_id
 
 
-def load_session(session_id):
-    session_path = os.path.join(SESSION_DIR, session_id)
+def load_session(session_id, session_dir=None):
+    if session_dir is None:
+        session_dir = SESSION_DIR
+    session_path = os.path.join(session_dir, session_id)
     if not os.path.isdir(session_path):
         return None
     try:
         with open(os.path.join(session_path, "state.json"), "r") as f:
             state = json.load(f)
+        if session_dir != SESSION_DIR:
+            state["path"] = os.path.join(session_dir, session_id)
+
         return SessionState(**state)
     except Exception as e:
         print(f"Failed to load session {session_id}: {e}")
         return None
 
-def save_session(session_id, state=None):
-    session_path = os.path.join(SESSION_DIR, session_id)
+def save_session(session_id, state=None, session_dir=None):
+    if session_dir is None:
+        session_dir = SESSION_DIR
+    session_path = os.path.join(session_dir, session_id)
     if not os.path.isdir(session_path):
         raise FileNotFoundError(f"Session {session_id} directory does not exist!")
     
@@ -94,7 +103,7 @@ def save_agent(session, agent):
     agent.save(os.path.join(session.path, CHECKPOINT_DIR))    # overwrite!
 
 
-def run_session(session, agent, input):
+def run_session(session, input):
     agent = load_agent(session)
     
     response = agent.run(input)

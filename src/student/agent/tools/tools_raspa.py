@@ -64,7 +64,7 @@ class ReadFile(RaspaTool):
         name = "read_file"
         description = """
         Use this tool to read the content of a text file (not directory!).
-        You must provide the path to the file (based on the root directory NOT the current working directory).
+        You must provide the path to the file as file name (based on the root directory NOT the current working directory).
         """
         super().__init__(name, description, path)
         
@@ -386,7 +386,7 @@ class OutputParser(RaspaTool):
         """
         super().__init__(name, description, path)
     
-    def run(self, file_path):
+    def _run(self, file_path):
         path = os.path.join(self.get_path(full=False), file_path)
         
         try:
@@ -399,6 +399,10 @@ class OutputParser(RaspaTool):
             
         except Exception as e:
             return self.get_output(f"Error with output parsing: {e}, (path={path})")
+        return out
+
+    def run(self, file_path):
+        out = self._run(file_path)
         return self.get_output(out.__str__(), LIMIT=7500)
     
 
@@ -413,12 +417,24 @@ class OutputParser(RaspaTool):
             if self.check_del_key(key) or self.check_empty_content(value):
                 del d[key]
                 continue
-            
+            if self.check_keep_key(key):
+                continue
+
             if isinstance(value, dict):
                 self.filter(value)
 
         return d
 
+    def check_keep_key(self, key):
+        whitelist = [
+            'Total energy',
+            'Average Widom Rosenbluth factor',
+            'Average Henry coefficient',
+        ]
+        if key in whitelist:
+            return True
+
+        return False
 
     def check_empty_content(self, value):
         content = value
@@ -647,26 +663,55 @@ class FrameworkLoader(RaspaTool):
         patterns = {
             'a': re.compile(r'_cell_length_a\s+([0-9.]+)'),
             'b': re.compile(r'_cell_length_b\s+([0-9.]+)'),
-            'c': re.compile(r'_cell_length_c\s+([0-9.]+)')
+            'c': re.compile(r'_cell_length_c\s+([0-9.]+)'),
+            'alpha': re.compile(r'_cell_angle_alpha\s+([0-9.]+)'),
+            'beta': re.compile(r'_cell_angle_beta\s+([0-9.]+)'),
+            'gamma': re.compile(r'_cell_angle_gamma\s+([0-9.]+)')
         }
-        cell_lengths = {}
+        cell = {}
         
         with open(cif_filename, 'r') as f:
             for line in f:
                 for axis in patterns:
                     match = patterns[axis].match(line.strip())
                     if match:
-                        cell_lengths[axis] = float(match.group(1))
+                        cell[axis] = float(match.group(1))
         
-        if len(cell_lengths) != 3:
+        if len(cell) != 6:
             raise ValueError("Could not find all cell lengths in the CIF file.")
-        
+            
+        # Convert angles to radians
+        alpha, beta, gamma = [math.radians(cell['alpha']), math.radians(cell['beta']), math.radians(cell['gamma'])]
+        a, b, c = cell['a'], cell['b'], cell['c']
+
+        # Build unit cell vectors
+        ax, ay, az = a, 0.0, 0.0
+        bx = b * math.cos(gamma)
+        by = b * math.sin(gamma)
+        bz = 0.0
+        cx = c * math.cos(beta)
+        if abs(by) < 1e-8:
+            cy = 0.0
+        else:
+            cy = (b * c * math.cos(alpha) - bx * cx) / by
+        temp = c**2 - cx**2 - cy**2
+        cz = math.sqrt(temp) if temp > 0 else 0.0
+
+        # Unit cell matrix
+        A = np.array([ax, ay, az])
+        B = np.array([bx, by, bz])
+        C = np.array([cx, cy, cz])
+
+        # Calculate minimum perpendicular distances (cell heights)
+        Wa = np.linalg.norm(np.dot(np.cross(B, C), A)) / np.linalg.norm(np.cross(B, C))
+        Wb = np.linalg.norm(np.dot(np.cross(C, A), B)) / np.linalg.norm(np.cross(C, A))
+        Wc = np.linalg.norm(np.dot(np.cross(A, B), C)) / np.linalg.norm(np.cross(A, B))
+
+        # Calculate required number of unit cells along each direction
         required_length = 2 * cutoff_angstrom
-        
-        unit_cells = []
-        for axis in ['a', 'b', 'c']:
-            n = math.ceil(required_length / cell_lengths[axis])
-            unit_cells.append(n)
-        
-        print(f"RASPA UnitCells: {unit_cells[0]} {unit_cells[1]} {unit_cells[2]}")
-        return unit_cells
+        uc_x = int(math.ceil(required_length / Wa))
+        uc_y = int(math.ceil(required_length / Wb))
+        uc_z = int(math.ceil(required_length / Wc))
+
+        print(f"RASPA UnitCells: {uc_x} {uc_y} {uc_z}")
+        return [uc_x, uc_y, uc_z]
