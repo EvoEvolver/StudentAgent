@@ -1,1 +1,39 @@
-This is rather has no good application but should be instructive.
+Goal: This is rather has no good application but should be instructive.
+
+Explaination (the numbers are taken from an example):
+
+In Monte Carlo, only difference in energies are computed. These differences are continuously added to keep track of the current energies
+(from which average energies etc. are computed). Obviously, the current energy that is kept track off during the simulation should
+be equal to a full recalculation of the energies. The difference between the two signals an error. If the drift is higher than
+say $1e-3$ or $1e-4$ the results of the simulation are in error. This could be due to an error in one of the Monte Carlo moves
+or because the force field is ``wrong'' (a typical error is when one forgets to define required potentials).
+
+The performance of Monte Carlo moves is monitored. Translation moves are usually scaled to achieve an acceptance rate of 50\%.
+Here, the move reached its upper limit of 1 \AA\ because of the low density of the system.
+\begin{tiny}
+\begin{verbatim}
+     Performance of the translation move:
+     ======================================
+     Component 0 [methane]
+         total        332905.000000 333233.000000 333862.000000
+         succesfull   283926.000000 284388.000000 284917.000000
+         accepted   0.852874 0.853421 0.853398
+         displacement 1.000000 1.000000 1.000000
+\end{verbatim}
+\end{tiny}
+
+Averages are computed along with an error bar. The error is computed by dividing the simulation in 5 blocks and calculating the standard deviation.
+The errors in RASPA are computed as the 95\% confidence interval.
+\begin{tiny}
+\begin{verbatim}
+     Total energy:
+     =============
+         Block[ 0]       -18276.83475 [K]
+         Block[ 1]       -18329.57756 [K]
+         Block[ 2]       -18502.81990 [K]
+         Block[ 3]       -18371.38298 [K]
+         Block[ 4]       -19216.89509 [K]
+         ------------------------------------------------------------------------------
+         Average         -18539.50205 [K] +/-          481.43129 [K]
+\end{verbatim}
+\end{tiny}

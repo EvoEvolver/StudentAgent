@@ -1,1 +1,126 @@
-Simulate adsorption and determine the adsorption isotherm / enthalpy of adsorption.
+Goal: Simulate adsorption and determine the adsorption isotherm / enthalpy of adsorption.
+
+Explaination (the numbers are taken from an example based on methane):
+
+Adsorption isotherms can be easily obtained by specifying a list of (increasing) pressures which will be subsequently run.
+If no \verb+FugacityCoefficient+ keyword is specified these pressure are converted to fugacity using the Peng-Robinson equation of state.
+Important: it is essential to specify the `ideal gas Rosenbluth weight' for a component. This value needs to be computed separately
+and depends only on temperature (see other examples). This value is the reference state of the ideal gas. It is convenient to specify
+it in advance, otherwise the correct pressure needs to deduced afterwards and is different from the specified input. For mixtures this
+becomes cumbersome when the ideal gas Rosenbluth weight of the components is different. 
+In this example, $2\times2\times2$ unit cells are required to meet the required that all of the perpendicular cell lengths are larger than 
+twice the cutoff distance. The default cutoff of 12 \AA\ means the perpendicular lengths should be larger than 24 \AA.
+For simulation with frameworks, the keyword 'Framework' is used, instead of 'Box' in the previous examples.
+
+The adsorption can be computed in grand-canonical ensemble. To swap particles in and out of the system
+at constant fugacity, use the swap-move
+\begin{verbatim}
+     SwapProbability          1.0
+\end{verbatim}
+The input for this adsorption example is (simulation input).
+
+
+The energy histogram and the histogram of the number of molecules are computed during the run.
+The can be found in directories 'EnergyHistograms' and 'NumberOfMoleculesHistograms', respectively.
+
+\noindent
+The output-file shows the performance of the various Monte Carlo moves. For adsorption, a good check is that the number of accepted moves
+of the `swap addition' move (41478) and the `swap deletion' move (41476) is the same.
+\begin{tiny}
+\begin{verbatim}
+     Performance of the swap addition move:
+     ======================================
+     Component [methane] total tried: 125026.000000 succesfull growth: 112028.000000 (89.603762 [%]) accepted: 41478.000000 (33.175499 [%])
+     
+     Performance of the swap deletion move:
+     ======================================
+     Component [methane] total tried: 125202.000000 succesfull growth: 117708.000000 (94.014473 [%]) accepted: 41476.000000 (33.127266 [%])
+     
+     Performance of the Reinsertion move:
+     ====================================
+     Component [methane] total tried: 117282.000000 succesfull growth: 105024.000000 (89.548268 [%]) accepted: 26993.000000 (23.015467 [%])
+\end{verbatim}
+\end{tiny}
+
+The output-file shows information on the structure:
+\begin{tiny}
+\begin{verbatim}
+     Number of framework atoms: 2304
+     Number of framework atoms in the unit cell: 288
+     Framework Mass: 46144.748974602669 [g/mol]
+     Framework Density:  1796.342406023652 [kg/m^3]    0.5566867411506 [cm^3/g]
+     Helium void fraction:    0.29000000
+     Available pore volume: 12370.29828530 [A^3]    0.16143915 [cm^3/g]
+     Conversion factor from molecule/unit cell -> kmol/m^3: 0.0389284, kmol/m^3 accesible pore volume: 0.134236
+\end{verbatim}
+\end{tiny}
+We have input the helium void fraction in advance. 
+This value has to be computed separately first (see other examples) or needs to be given in advance.
+This has several advantages. First, the correct available pore volume can be computed.
+Secondly, it allows for automatic computation of excess adsorption.
+At high pressures and temperatures the excess adsorption can be substantially lower than absolute adsorption.
+
+\noindent
+Adsorption results are displayed in various units for both absolute and excess adsorption.
+\begin{tiny}
+\begin{verbatim}
+     Component 0 [methane]
+     -------------------------------------------------------------
+         Block[ 0] 2.77660            [-]
+         Block[ 1] 2.77920            [-]
+         Block[ 2] 2.70020            [-]
+         Block[ 3] 2.88600            [-]
+         Block[ 4] 2.78400            [-]
+         ------------------------------------------------------------------------------
+         Average loading absolute                              2.7852000000 +/-       0.0821082425 [-]
+         Average loading absolute [molecules/unit cell]        0.3481500000 +/-       0.0102635303 [-]
+         Average loading absolute [mol/kg framework]                  0.0603578969 +/-       0.0017793626 [-]
+         Average loading absolute [milligram/gram framework]          0.9682891463 +/-       0.0285453540 [-]
+         Average loading absolute [cm^3 (STP)/gr framework]           1.3528604368 +/-       0.0398825911 [-]
+         Average loading absolute [cm^3 (STP)/cm^3 framework]         2.4302005720 +/-       0.0716427897 [-]
+     
+         Block[ 0] 2.74673            [-]
+         Block[ 1] 2.74933            [-]
+         Block[ 2] 2.67033            [-]
+         Block[ 3] 2.85613            [-]
+         Block[ 4] 2.75413            [-]
+         ------------------------------------------------------------------------------
+         Average loading excess                              2.7553276026 +/-       0.0821082425 [-]
+         Average loading excess [molecules/unit cell]        0.3444159503 +/-       0.0102635303 [-]
+         Average loading excess [mol/kg framework]                    0.0597105340 +/-       0.0017793626 [-]
+         Average loading excess [milligram/gram framework]            0.9579038533 +/-       0.0285453540 [-]
+         Average loading excess [cm^3 (STP)/gr framework]             1.3383504609 +/-       0.0398825911 [-]
+         Average loading excess [cm^3 (STP)/cm^3 framework]           2.4041356871 +/-       0.0716427897 [-]
+\end{verbatim}
+\end{tiny}
+Note that the difference between absolute and excess adsorption is very small at low pressures.
+
+\noindent
+The enthalpy of adsorption can be computed using:
+\begin{align}
+ \Delta H &= \left(\frac{\partial U}{\partial \left\langle N\right\rangle}\right)_{V,T}-
+             \left\langle U_g \right\rangle - RT\\
+  &=\frac{\left\langle U \times N\right\rangle_\mu - \left\langle U\right\rangle_\mu\left\langle N\right\rangle_\mu}
+                {\left\langle N^2\right\rangle_\mu - \left\langle N\right\rangle_\mu^2 }
+              - \left\langle U_g \right\rangle - RT\label{Eq: fluctuation formula}
+\end{align}
+where $N$ is the number of adsorbates in the system.
+Both equations can be used in grand-canonical MC.
+\begin{tiny}
+\begin{verbatim}
+     Total enthalpy of adsorption
+     ----------------------------
+     Block[ 0] -2279.12725        [K]
+     Block[ 1] -2276.89281        [K]
+     Block[ 2] -2285.95920        [K]
+     Block[ 3] -2282.91728        [K]
+     Block[ 4] -2281.21265        [K]
+     ------------------------------------------------------------------------------
+     Average          -2281.22184 +/-           4.320449 [K]
+                        -18.96714 +/-           0.035922 [KJ/MOL]
+     Note: Ug should be subtracted from this value
+     Note: The heat of adsorption Q=-H
+\end{verbatim}
+\end{tiny}
+Since $\left\langle U_g \right\rangle=0$, the enthalpy of adsorption computed from the fluctuation formula
+is -18.96$\pm$0.04 and matches the value 19.0 from the previous example for the limiting case of infinite dilution.

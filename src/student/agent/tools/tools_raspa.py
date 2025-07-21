@@ -90,8 +90,8 @@ class WriteFile(RaspaTool):
         name = "write_file"
         description = """
         Use this tool to write text into a new file.
-        You must provide a file name (based on the root directory NOT the current working directory) and its content string.
-        IMPORTANT: To edit a (small) file, you must first read a file with another tool and then write it completely new with this tool.
+        IMPORTANT: You must provide a file name based on the root directory NOT the current working directory.
+        IMPORTANT: To edit a (small) file, you must first read a file with another tool and then write it completely new with this tool. Dont do this to copy files!
         IMPORTANT: This will overwrite any existing file with the same name!
         """
         super().__init__(name, description, path)
@@ -104,12 +104,13 @@ class WriteFile(RaspaTool):
         e = None
         try:
             os.makedirs(path, exist_ok=True)
-            with open(os.path.join(path, file_name), "w") as f:
+            new_path = os.path.join(path, file_name)
+            with open(new_path, "w") as f:
                 f.write(file_content)
         except Exception as exc:
             e = exc
         if e is None:
-            return self.get_output(content=f"Successfully generated: {file(file_name)}")
+            return self.get_output(content=f"Successfully generated: {file(new_path)}")
         else:
             return self.get_output(e=e)
 

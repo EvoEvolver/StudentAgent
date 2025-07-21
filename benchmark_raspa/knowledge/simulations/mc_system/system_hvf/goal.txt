@@ -1,1 +1,25 @@
-Determine the helium void fraction of a material (which is a prerequisite for several other simulations)
+Goal: Determine the helium void fraction of a material (which is an IMPORTANT prerequisite for several other simulations).
+
+Explaination (the numbers are taken from an instructive example):
+
+The void fraction is the empty space of a structure divided by the total volume. In experiment it is measured
+using helium, because helium does (almost) not adsorb. It would be consistent to also measure this fraction
+using helium at room temperature. In practice it is easily computed from Widom particle insertion as the
+void fraction corresponds to the new Rosenbluth weight.
+
+The Rosenbluth weight, and therefore the helium void fraction in this example is approximately 0.80.
+The pore volume is the void fraction times the unit cell volume. Note that the values dependent
+slightly on the cutoff, and shifted vs. truncated potentials.
+\begin{tiny}
+\begin{verbatim}
+     Average Widom Rosenbluth factor:
+     ================================
+             Block[ 0] 0.803749 [-]
+             Block[ 1] 0.803741 [-]
+             Block[ 2] 0.803497 [-]
+             Block[ 3] 0.803818 [-]
+             Block[ 4] 0.803536 [-]
+             ------------------------------------------------------------------------------
+             [helium] Average Widom:   0.803668 +/- 0.000255 [-]
+\end{verbatim}
+\end{tiny}

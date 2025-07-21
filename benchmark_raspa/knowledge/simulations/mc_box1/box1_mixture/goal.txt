@@ -1,0 +1,23 @@
+Goal: This is rather has no good application but should be instructive.
+
+Explaination (the numbers are taken from an example):
+
+A Monte Carlo run of two different compounds with a different number of molecules in a $30\times30\times30$ \AA\ box. The MC moves are
+translation, rotation, and full reinsertion.
+After 1000 steps of initialization the production run is started.
+
+(simulation input)
+
+The translation and rotation moves leave the internal structure invariant.
+The reinsertion-move regrows the molecule at a random position with a new internal structure.
+\begin{tiny}
+\begin{verbatim}
+     Performance of the Reinsertion move:
+     ====================================
+     Component [propane] total tried: 333613.000000 succesfull growth: 333407.000000 (99.938252 [%]) accepted: 85599.000000 (25.658173 [%])
+     Component [butane] total tried: 332088.000000 succesfull growth: 331383.000000 (99.787707 [%]) accepted: 46465.000000 (13.991773 [%])
+\end{verbatim}
+\end{tiny}
+The acceptance percentages are here high enough. But for dense systems, the insertion acceptance ratios become too small.
+In these cases, other moves (like partial-reinsertion or MC/MD hybrid moves) become essential to properly sample the internal structure of molecules.
+

@@ -1,0 +1,23 @@
+SimulationType                MonteCarlo
+NumberOfCycles                2500
+NumberOfInitializationCycles  1000
+PrintEvery                    500
+
+Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
+
+ComputeRDF                    yes
+WriteRDFEvery                 500
+
+Box 0
+BoxLengths 28.1 28.1 28.1
+ExternalTemperature 298.0
+
+Component 0 MoleculeName       ethane
+            MoleculeDefinition local
+            TranslationProbability 0.5
+            RotationProbability 0.5
+            ReinsertionProbability 1.0
+            CreateNumberOfMolecules 32
+

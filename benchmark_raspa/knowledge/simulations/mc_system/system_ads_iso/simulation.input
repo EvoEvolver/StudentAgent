@@ -15,10 +15,15 @@ ExternalTemperature [T]
 ExternalPressure [p]
 
 ComputeNumberOfMoleculesHistogram yes
-WriteNumberOfMoleculesHistogramEvery 5000
+WriteNumberOfMoleculesHistogramEvery 500
+NumberOfMoleculesHistogramSize 110
+NumberOfMoleculesRange 80
 
 ComputeEnergyHistogram yes
-WriteEnergyHistogramEvery 5000
+WriteEnergyHistogramEvery 500
+EnergyHistogramSize 40
+EnergyHistogramLowerLimit -110000
+EnergyHistogramUpperLimit -20000
 
 Component 0 MoleculeName             [molecule name]
             MoleculeDefinition       local

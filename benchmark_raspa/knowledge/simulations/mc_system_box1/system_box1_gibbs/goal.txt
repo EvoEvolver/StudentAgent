@@ -1,1 +1,17 @@
-Simulate adsorption with a gibbs ensemble approach.
+Goal: Simulate adsorption with a gibbs ensemble approach.
+
+Explaination (based on an instructive example of CO2):
+
+The Gibbs ensemble method can be used to compute adsorption isotherms in nanoporous materials .
+One of the boxes contains the framework, while the other box contains the fluid-phase
+(either gas or liquid) that is in equilibrium with the adsorbed phase.
+For adsorption of a system of n components, the Gibbs phase rule requires that n+1 intensive variables be set,
+if you consider the adsorbent as an additional component.  These n+1 variables are conveniently taken as the
+temperature, the pressure of the fluid phase, and n-1 mole fractions in the fluid phase.
+The system is then simulated using the NpT Gibbs ensemble.
+The fluid-phase box is maintained at constant pressure (and temperature) by applying volume-moves.
+For the simulation of adsorption in a rigid framework the volume
+moves on the adsorbed-phase box are switched off; there is no requirement for mechanical equilibrium.
+The equilibrium constraints are equal temperature in both systems and equal chemical potentials
+in the bulk and in the interior of the framework (similar to the VLE, the chemical potential equilibrium is
+enforced by particle swap moves between the boxes).

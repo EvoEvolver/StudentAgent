@@ -1,0 +1,19 @@
+SimulationType                MonteCarlo
+NumberOfCycles                250
+NumberOfInitializationCycles  100
+PrintEvery                    50
+
+Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 1
+ExternalTemperature 298.0
+
+Component 0 MoleculeName       helium
+            MoleculeDefinition     local
+            WidomProbability       1.0
+            CreateNumberOfMolecules 0
+

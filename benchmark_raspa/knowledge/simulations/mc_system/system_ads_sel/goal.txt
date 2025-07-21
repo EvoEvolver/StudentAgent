@@ -1,1 +1,83 @@
-Simulate adsorption and determine the relative selectivity of the adsorption process between different components.
+Goal: Simulate adsorption and determine the relative selectivity of the adsorption process between different components.
+
+Explaination (based on an instructive example of several hexane-isomers):
+
+Adsorption selectivities are computed by simulating a multiple-component mixture where the molecules compete for adsorption sites.
+In this example, the adsorption of hexane-isomers in the framework at 433 K and 2000 Pa is computed.
+Before running this, the ideal Rosenbluth values for the molecules at the desired temperature need to be computed (see Auxiliary examples).
+The identity-change move is used to try to change the identity to any type of molecule (including itself).
+Also partial-reinsertion moves are defined for all the adsorbates.
+
+\begin{tiny}
+\begin{verbatim}
+Component 0 [hexane]
+-------------------------------------------------------------
+    Average loading absolute [molecules/unit cell]        1.2595631250 +/-       0.0066198404 [-]
+
+Component 1 [2-methylpentane]
+    Average loading absolute [molecules/unit cell]        0.6311325000 +/-       0.0086401923 [-]
+
+Component 2 [3-methylpentane]
+-------------------------------------------------------------
+    Average loading absolute [molecules/unit cell]        0.2982025000 +/-       0.0080754705 [-]
+
+Component 3 [22-dimethylbutane]
+-------------------------------------------------------------
+    Average loading absolute [molecules/unit cell]        0.1239156250 +/-       0.0013021057 [-]
+\end{verbatim}
+\end{tiny}
+
+\begin{tiny}
+\begin{verbatim}
+     Performance of the swap addition move:
+     ======================================
+     Component [hexane] total tried: 343107.000000 succesfull growth: 225219.000000 (65.641039 [%]) accepted: 20776.000000 (6.055254 [%])
+     Component [2-methylpentane] total tried: 341490.000000 succesfull growth: 212073.000000 (62.102258 [%]) accepted: 10655.000000 (3.120150 [%])
+     Component [3-methylpentane] total tried: 342604.000000 succesfull growth: 205370.000000 (59.943842 [%]) accepted: 10411.000000 (3.038785 [%])
+     Component [22-dimethylbutane] total tried: 341932.000000 succesfull growth: 193866.000000 (56.697238 [%]) accepted: 9767.000000 (2.856416 [%])
+     
+     Performance of the swap deletion move:
+     ======================================
+     Component [hexane] total tried: 342845.000000 succesfull growth: 342845.000000 (100.000000 [%]) accepted: 20563.000000 (5.997754 [%])
+     Component [2-methylpentane] total tried: 342464.000000 succesfull growth: 341147.000000 (99.615434 [%]) accepted: 10612.000000 (3.098720 [%])
+     Component [3-methylpentane] total tried: 342281.000000 succesfull growth: 313715.000000 (91.654226 [%]) accepted: 10675.000000 (3.118783 [%])
+     Component [22-dimethylbutane] total tried: 342573.000000 succesfull growth: 218648.000000 (63.825228 [%]) accepted: 9761.000000 (2.849320 [%])
+     
+     Performance of the Reinsertion move:
+     ====================================
+     Component [hexane] total tried: 682800.000000 succesfull growth: 459936.000000 (67.360281 [%]) accepted: 9769.000000 (1.430726 [%])
+     Component [2-methylpentane] total tried: 679289.000000 succesfull growth: 434051.000000 (63.897840 [%]) accepted: 4340.000000 (0.638903 [%])
+     Component [3-methylpentane] total tried: 627118.000000 succesfull growth: 385061.000000 (61.401682 [%]) accepted: 4115.000000 (0.656176 [%])
+     Component [22-dimethylbutane] total tried: 436366.000000 succesfull growth: 252934.000000 (57.963728 [%]) accepted: 3080.000000 (0.705830 [%])
+\end{verbatim}
+\end{tiny}
+
+\begin{tiny}
+\begin{verbatim}
+     Performance of the partial reinsertion move:
+     ============================================
+     Component [hexane] total tried: 683886.000000 succesfull growth: 661852.000000 (96.778118 [%]) accepted: 158568.000000 (23.186321 [%])
+     Component [2-methylpentane] total tried: 681914.000000 succesfull growth: 679831.000000 (99.694536 [%]) accepted: 256922.000000 (37.676599 [%])
+     Component [3-methylpentane] total tried: 627634.000000 succesfull growth: 625746.000000 (99.699188 [%]) accepted: 176488.000000 (28.119573 [%])
+     Component [22-dimethylbutane] total tried: 437324.000000 succesfull growth: 435874.000000 (99.668438 [%]) accepted: 210354.000000 (48.100264 [%])
+     
+     Performance of the identity change move:
+     ======================================
+     Component [hexane]->[hexane] total tried: 170814.000000 succesfull growth: 153200.000000 (89.688199 [%]) accepted: 11192.000000 (6.552156 [%])
+     Component [hexane]->[2-methylpentane] total tried: 171350.000000 succesfull growth: 143781.000000 (83.910709 [%]) accepted: 5675.000000 (3.311935 [%])
+     Component [hexane]->[3-methylpentane] total tried: 170612.000000 succesfull growth: 137177.000000 (80.402902 [%]) accepted: 5576.000000 (3.268234 [%])
+     Component [hexane]->[22-dimethylbutane] total tried: 171284.000000 succesfull growth: 136622.000000 (79.763434 [%]) accepted: 4771.000000 (2.785432 [%])
+     Component [2-methylpentane]->[hexane] total tried: 170176.000000 succesfull growth: 162611.000000 (95.554602 [%]) accepted: 5714.000000 (3.357700 [%])
+     Component [2-methylpentane]->[2-methylpentane] total tried: 169789.000000 succesfull growth: 163167.000000 (96.099865 [%]) accepted: 9153.000000 (5.390809 [%])
+     Component [2-methylpentane]->[3-methylpentane] total tried: 170132.000000 succesfull growth: 156426.000000 (91.943902 [%]) accepted: 4905.000000 (2.883056 [%])
+     Component [2-methylpentane]->[22-dimethylbutane] total tried: 170500.000000 succesfull growth: 164951.000000 (96.745455 [%]) accepted: 8378.000000 (4.913783 [%])
+     Component [3-methylpentane]->[hexane] total tried: 156737.000000 succesfull growth: 143803.000000 (91.747960 [%]) accepted: 5459.000000 (3.482904 [%])
+     Component [3-methylpentane]->[2-methylpentane] total tried: 156602.000000 succesfull growth: 140396.000000 (89.651473 [%]) accepted: 4772.000000 (3.047215 [%])
+     Component [3-methylpentane]->[3-methylpentane] total tried: 156796.000000 succesfull growth: 135085.000000 (86.153346 [%]) accepted: 8233.000000 (5.250772 [%])
+     Component [3-methylpentane]->[22-dimethylbutane] total tried: 156055.000000 succesfull growth: 134198.000000 (85.994041 [%]) accepted: 3891.000000 (2.493352 [%])
+     Component [22-dimethylbutane]->[hexane] total tried: 109564.000000 succesfull growth: 104319.000000 (95.212844 [%]) accepted: 4638.000000 (4.233142 [%])
+     Component [22-dimethylbutane]->[2-methylpentane] total tried: 108833.000000 succesfull growth: 104601.000000 (96.111474 [%]) accepted: 8506.000000 (7.815644 [%])
+     Component [22-dimethylbutane]->[3-methylpentane] total tried: 109359.000000 succesfull growth: 100691.000000 (92.073812 [%]) accepted: 3902.000000 (3.568065 [%])
+     Component [22-dimethylbutane]->[22-dimethylbutane] total tried: 109054.000000 succesfull growth: 106124.000000 (97.313258 [%]) accepted: 7485.000000 (6.863572 [%])
+\end{verbatim}
+\end{tiny}

@@ -26,7 +26,7 @@ class Item(BaseModel):
     title: str
     content: str
     children: list[Item]
-
+            
 
 class TypeAttr(Attr):
     def __init__(self, node, type: str):
@@ -75,26 +75,87 @@ def split_latex_sections(latex_text: str, depth: int = 0) -> list[Section]:
 
     return sections
 
-def split_latex_items(latex_text: str) -> list[Item]:
-    itemize_pattern = r'\\begin\{itemize\}(.*?)\\end\{itemize\}'
-    itemize_matches = re.findall(itemize_pattern, latex_text, re.DOTALL)
+from typing import List
+import re
 
-    items = []
-    # the double for loop concatenates items from different itemize blocks
-    for block in itemize_matches:
-        item_pattern = r'\\item\{(.*?)\}(.*?)(?=(\\item|$))'
-        item_matches = re.findall(item_pattern, block, re.DOTALL)
+# ... your other code and classes unchanged ...
 
-        for title, body, _ in item_matches:
-            child_items = split_latex_items(body)
-            content = body.strip()
-            items.append(Item(
-                title=title.strip(),
-                content=content,
-                children=child_items
-            ))
+def split_latex_items(latex_text: str) -> List[Item]:
+    """
+    Parse itemize blocks and their nested structure robustly.
+    """
 
-    return items
+    def find_itemize_blocks(s):
+        # Finds (start, end) indices of each top-level itemize block
+        blocks = []
+        pattern = re.compile(r'\\begin\{itemize\}|\\end\{itemize\}', re.DOTALL)
+        stack = []
+        for m in pattern.finditer(s):
+            if m.group() == r'\begin{itemize}':
+                stack.append(m.start())
+            elif m.group() == r'\end{itemize}':
+                if stack:
+                    start = stack.pop()
+                    if not stack:
+                        blocks.append((start, m.end()))
+        return blocks
+
+    def parse_items(block):
+        # Returns a list of Items from one itemize block (without \begin{}...\end{})
+        items = []
+        item_starts = []
+        # Find all top-level \item{
+        depth = 0
+        i = 0
+        while i < len(block):
+            if block[i:i+7] == r'\begin{':
+                depth += 1
+                i = block.find('}', i) + 1
+            elif block[i:i+5] == r'\end{':
+                depth -= 1
+                i = block.find('}', i) + 1
+            elif block[i:i+6] == r'\item{':
+                if depth == 0:
+                    item_starts.append(i)
+                i += 6
+            else:
+                i += 1
+        # Now, split block by these starts
+        for idx, start in enumerate(item_starts):
+            next_start = item_starts[idx+1] if idx+1 < len(item_starts) else len(block)
+            item_str = block[start:next_start]
+            # Parse the item title and body
+            # Find the closing brace for the item title
+            brace_count = 0
+            j = 6  # after \item{
+            while j < len(item_str):
+                if item_str[j] == '{':
+                    brace_count += 1
+                elif item_str[j] == '}':
+                    if brace_count == 0:
+                        break
+                    else:
+                        brace_count -= 1
+                j += 1
+            title = item_str[6:j].strip()
+            body = item_str[j+1:].strip()
+            # Remove \\ at the start of body
+            if body.startswith('\\'):
+                body = body[1:].lstrip()
+            # Recursively find nested itemize blocks
+            child_items = []
+            for sub_start, sub_end in find_itemize_blocks(body):
+                sub_block = body[sub_start+len(r'\begin{itemize}') : sub_end-len(r'\end{itemize}')]
+                child_items += parse_items(sub_block)
+            items.append(Item(title=title, content=body, children=child_items))
+        return items
+
+    results = []
+    # Find all top-level itemize blocks
+    for start, end in find_itemize_blocks(latex_text):
+        block = latex_text[start+len(r'\begin{itemize}'): end-len(r'\end{itemize}')]
+        results += parse_items(block)
+    return results
 
 
 def construct_tree(sections: list[Section]) -> list[Node]:

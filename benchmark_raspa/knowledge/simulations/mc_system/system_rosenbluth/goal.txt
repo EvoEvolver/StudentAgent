@@ -1,1 +1,23 @@
-Determine the ideal Rosenbluth weight of a system (which is a prerequisite for other simulations)
+Goal: Determine the ideal Rosenbluth weight of a system (which is an IMPORTANT prerequisite for other simulations). 
+
+Explaination (the numbers are taken from an instructive example):
+
+To compare simulation values to experiments a reference state should be chosen. A convenient reference
+state is the ideal gas. The reference Rosenbluth value can be computed from a simulation of a single chain at
+the desired temperature. Note that for Rosenbluth weights several chains can be computed simultaneously,
+since they are computed from Widom insertions where the molecule is never actually inserted in the system.
+The output contains 
+\begin{tiny}
+\begin{verbatim}
+     Average Widom Rosenbluth factor:
+     ================================
+             [C5] Average Widom:   0.0668555 +/- 0.000131 [-]
+             [C6] Average Widom:   0.0175062 +/- 0.000067 [-]
+             [C7] Average Widom:   0.00462547 +/- 0.000010 [-]
+             [C8] Average Widom:   0.00122842 +/- 0.000005 [-]
+             [C9] Average Widom:   0.000328228 +/- 0.000001 [-]
+\end{verbatim}
+\end{tiny}
+which is printed every `PrintPropertiesEvery' cycles. The `Rosenbluth factor new' are the values of interest.
+The average and error estimated from block averages is printed at the end
+of the simulation.

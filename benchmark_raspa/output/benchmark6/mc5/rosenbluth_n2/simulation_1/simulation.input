@@ -1,0 +1,24 @@
+SimulationType                MonteCarlo
+NumberOfCycles                1000
+NumberOfInitializationCycles  100
+PrintEvery                    100
+
+Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 1
+ExternalTemperature 298.0
+ExternalPressure 1e5
+
+Component 0 MoleculeName       methane
+            MoleculeDefinition     local
+            CreateNumberOfMolecules 32
+            TranslationProbability 0.5
+            RotationProbability    0.5
+            ReinsertionProbability 0.5
+            CBMCProbability        0.5
+            IdealGasRosenbluthWeight
+

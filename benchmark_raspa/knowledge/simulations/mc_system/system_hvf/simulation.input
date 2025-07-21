@@ -1,7 +1,7 @@
 SimulationType        MonteCarlo
-NumberOfCycles        25000
-PrintEvery            1000
-PrintPropertiesEvery  1000
+NumberOfCycles        2500
+PrintEvery            100
+PrintPropertiesEvery  100
 
 Forcefield                    local
 CutOff                        14.0

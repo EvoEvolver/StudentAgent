@@ -1,1 +1,61 @@
-This is rather has no good application but should be instructive.
+Goal: This is rather has no good application but should be instructive.
+
+Explaination (based on an instructive eample of CO2):
+
+The Gibbs ensemble is way of computing coexistence without interfaces. It is one the most used methods
+to study vapor-liquid and liquid-liquid equilibria, it is not suitable for very dense systems. The 
+conditions for coexistence of two or more phases I, II, \dots is that the pressure and temperature 
+of all the phases must be equal, as well as the chemical potential of all the species. The Gibbs
+ensemble example for the single component CO$_2$ is listed below. two boxes will be used, one will
+correspond to the liquid phase, the other one to the gas phase. The `GibbsVolumeChange' move
+changes the individual volume leaving the total volume in tact, the `GibbsSwap' move
+swaps particles from one box to the other. One of the practical problems is to make sure both
+boxes remain larger than twice the cutoff length. If not, the program will exit with an error message,
+and the simulation should be restarted with a bigger volume. 
+Note that RASPA uses orientational biased insertions for small rigid molecules like CO$_2$.
+For this example about 10000-20000 cycles are needed to equilibrate properly.
+
+In the high density phase, the acceptance probabilities of the reinsertion-move and Gibbs swap-move are low.
+The Gibbs volume change is adjusted to achieve roughly 50\% acceptance.
+\begin{tiny}
+\begin{verbatim}
+     Performance of the Reinsertion move:
+     ====================================
+     Component [CO2] total tried: 1730548.000000 succesfull growth: 1421729.000000 (82.154843 [%]) accepted: 18572.000000 (1.073186 [%])
+     
+     Performance of the Gibbs volume change move:
+     ============================================
+     total tried: 346089.000000 accepted: 206146.000000 (59.564447 [%])
+         maximum volume change 0.049783
+     
+     Performance of the Gibbs swap move:
+     ============================================
+     Component [CO2] transfered to system [0] total tried: 1729616.000000 accepted: 83910.000000 (4.851366 [%])
+\end{verbatim}
+\end{tiny}
+
+The computed densities are
+\begin{tiny}
+\begin{verbatim}
+     Average density component 0 [CO2]
+     -------------------------------------------------------------
+         Block[ 0]           33.53583 [kg/m^3]
+         Block[ 1]           33.36214 [kg/m^3]
+         Block[ 2]           34.55914 [kg/m^3]
+         Block[ 3]           34.05442 [kg/m^3]
+         Block[ 4]           34.14516 [kg/m^3]
+         ------------------------------------------------------------------------------
+         Average             33.93134 [kg/m^3] +/-            0.60035 [kg/m^3]
+     
+     Average density component 0 [CO2]
+     -------------------------------------------------------------
+         Block[ 0]         1104.22167 [kg/m^3]
+         Block[ 1]         1103.62933 [kg/m^3]
+         Block[ 2]         1101.86174 [kg/m^3]
+         Block[ 3]         1107.16121 [kg/m^3]
+         Block[ 4]         1106.36198 [kg/m^3]
+         ------------------------------------------------------------------------------
+         Average           1104.64719 [kg/m^3] +/-            2.65080 [kg/m^3]
+\end{verbatim}
+\end{tiny}
+The experimental densities at 240K are 33.295 and 1088.9 kg/m$^3$ respectively.

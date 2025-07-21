@@ -1,1 +1,9 @@
-Measure the density of a molecule.
+Goal: Measure the density of a molecule.
+
+Explaination (based on an instructive example of propane - the molecule specific values are not important you should not memorize them):
+
+The density of propane at 250K and 10 bar is about 559.53 kg/m$^3$ (NIST database). In this example the density is
+computed using Monte Carlo in the NPT-ensemble. Given the pressure $P$, the temperature $T$, and the amount of molecules $N$,
+the density is computed.
+The simulation for propane gives $568.77\pm 1.99$ kg/m$^3$.
+The measured pressure for this short simulation is $10.08\pm1.98$ bar.
