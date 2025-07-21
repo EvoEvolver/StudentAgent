@@ -41,6 +41,8 @@ if "chat" not in st.session_state:
     empty_line(st, 3)
     provider = st.radio("Select LLM Provider:", ["Anthropic","OpenAI"], key="provider_selection")
     mode = st.radio("Select Mode:", ["Student", "RASPA", "Boring"], key="mode")
+    
+    load_raspa_agent = False
     if mode == "RASPA":
         load_raspa_agent = st.checkbox("Load RASPA Agent memory")
     if st.button("New Session"):
