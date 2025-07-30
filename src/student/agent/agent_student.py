@@ -62,7 +62,7 @@ class StudentAgent(Agent):
         os.makedirs(folder_name, exist_ok=True)
         
         super().save(folder_name)
-        self.get_memory_agent().save_memory(os.path.join(folder_name,"memory.txt"))
+        self.get_memory_agent().save_memory(os.path.join(folder_name,"memory.parquet"))
         self.get_memory_agent().save_conversation(os.path.join(folder_name,"conversation_memory.txt"))
 
     def load(self, folder_name):
@@ -70,7 +70,7 @@ class StudentAgent(Agent):
             return
         super().load(folder_name)
         
-        mem_path = os.path.join(folder_name,"memory.txt")
+        mem_path = os.path.join(folder_name,"memory.parquet")
         mem_conv_path = os.path.join(folder_name,"conversation_memory.txt")
         if os.path.exists(mem_path) and os.path.exists(mem_conv_path):
             try:

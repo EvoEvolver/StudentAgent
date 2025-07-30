@@ -1,8 +1,9 @@
+import pandas as pd
 import json
 import uuid
 import numpy as np
 from mllm import Chat, get_embeddings
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Iterable
 
 
 class MemoryNode:
@@ -104,19 +105,39 @@ class MemoryNode:
         return score_final
 
 
-    def to_dict(self):
-        return {
-            "id": self.id,
+    def to_dict(self, include_embeddings: bool=True) -> dict:
+        d = {
+            "id":      self.id,
             "content": self.content,
-            "keys": list(self.keys),
+            "keys":    list(self.keys),
         }
+        if include_embeddings:
+            d["embeddings"] = self.embeddings
+        return d
 
-    def _from_dict(self, d):
+    def _from_dict(self, d: dict) -> None:
         self.content = d["content"]
-        self.add_keys(d["keys"])
-        if "id" in d.keys():
-            self.id = d["id"]
-    
+        #self.add_keys(d["keys"])
+        self.id = d.get("id", self.id)
+
+        raw_keys = d.get("keys", [])
+        if isinstance(raw_keys, (list, tuple, set, np.ndarray)):
+            key_list = list(raw_keys)
+
+        elif isinstance(raw_keys, str):
+            try:
+                decoded = json.loads(raw_keys)
+                key_list = list(decoded) if isinstance(decoded, Iterable) else [raw_keys]
+            except json.JSONDecodeError:
+                key_list = [raw_keys]
+
+        else:
+            raise NotImplementedError("Wrong key type")
+
+        self.add_keys(key_list)
+        self.embeddings = [list(vec) for vec in d.get("embeddings", [])]
+        return
+
     @classmethod
     def from_dict(cls, d):
         new_node = MemoryNode()  
@@ -289,8 +310,8 @@ class Memory:
         return node, False
 
 
-    def save(self, save_path):
-        # save the memory to a file
+    def save_text(self, save_path):
+        # save the memory to a .txt file
         memory_list = []
         for node in self.memory.values():
             memory_list.append(node.to_dict())
@@ -298,7 +319,11 @@ class Memory:
         with open(save_path, "w") as f:
             json.dump(memory_list, f)
 
-    def load(self, load_path):
+    def save(self, save_path: str, include_embeddings=True) -> None:
+        rows = [n.to_dict(include_embeddings=include_embeddings) for n in self.memory.values()]
+        pd.DataFrame(rows).to_parquet(save_path, compression="zstd")
+
+    def load_text(self, load_path):
         # load the memory from a file
         with open(load_path) as f:
             memory_list = json.load(f)
@@ -309,6 +334,17 @@ class Memory:
             except ValueError as e:
                 print(e, "for dictionary: ", d)
         self.load_keywords()
+
+    def load(self, load_path: str, clear=False) -> None:
+        df = pd.read_parquet(load_path)
+        if clear is True:
+            self.memory.clear()
+        for _, row in df.iterrows():
+            node = MemoryNode.from_dict(row.to_dict())
+            self.memory[node.id] = node
+
+        self.load_keywords()
+
 
     def load_keywords(self):
         """
