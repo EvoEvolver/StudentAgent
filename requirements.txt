@@ -1,6 +1,5 @@
 MinimalLLM
 phonopy==2.41.1
-fibers @ git+https://github.com/EvoEvolver/Fibers.git
 streamlit
 nltk
 rank_bm25
