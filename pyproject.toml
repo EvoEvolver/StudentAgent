@@ -10,5 +10,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools_scm]
+
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

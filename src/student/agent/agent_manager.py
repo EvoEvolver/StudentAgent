@@ -263,6 +263,8 @@ class ManagerAgent(Agent):
                 # Update todo list after task completion
                 self.update_todo_list_after_task(next_action, result)
 
+                self.print_progress("todo list", f"{self.current_todo_list}")
+
                 results['completed_tasks'].append({
                     'task': next_action,
                     'result': result,
