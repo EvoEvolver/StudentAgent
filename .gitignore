@@ -23,7 +23,9 @@ CSD-modified/NCR_data_CSD_modified_*
 checkpoints/
 sessions/
 !benchmark_raspa/sessions/
-!benchmark_raspa/sessions/*
+!benchmark_raspa/sessions/b1_matching
+!benchmark_raspa/sessions/b1_matching/benchmark_2
+!benchmark_raspa/sessions/b1_matching/benchmark_2/*
 
 tout/
 Movies/
