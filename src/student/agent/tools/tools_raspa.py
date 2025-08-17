@@ -65,6 +65,7 @@ class ReadFile(RaspaTool):
         description = """
         Use this tool to read the content of a text file (not directory!).
         You must provide the path to the file as file name (based on the root directory NOT the current working directory).
+        For long documents, this tool only reads the beginning.
         """
         super().__init__(name, description, path)
         
@@ -202,111 +203,6 @@ class ExecuteRaspa(RaspaTool):
         return out
 
 
-'''
-class TrappeLoader(RaspaTool):
-
-    def __init__(self, path=None):
-        name = "molecule definition generator"
-        description = """
-        Load the molecule data using Trappe and generate the molecule definition files and corresponding force field files..
-        """
-        super().__init__(name, description, path)
-        self.has_file = False
-        self.molecules = self.load_molecule_names()
-    
-
-    def run(self, molecule_names : List[str]):
-        if type(molecule_names) == str:
-            molecule_names = [molecule_names]
-
-        molecule_names = [name.replace(" ", "_") for name in molecule_names]
-        
-        res = self.search_names(molecule_names)
-        ids = [self.get_molecule_id(name) for name in res]
-        if len(ids) == 0:
-            return self.get_output(e="No corresponding molecules found. Try a different name!")
-
-        out_path = self.get_path(full=True)
-
-        try:
-            # filenames = generate_molecule_def(molecule_ids=ids, names=molecule_names, output_dir=out_path)
-            self.has_file = True
-        except Exception as e:
-            #echo(f"There was some error with the molecule file generation: {e}")
-            return self.get_output(e=e)
-        
-        return self.get_output(filenames=filenames)
-    
-    
-    def get_output(self, filenames=None, e=None):
-        if filenames is not None:
-            response = f"""
-            Successfully generated the molecule input files (and force field files) for: 
-            {''.join([file(name) for name in filenames])}
-            """
-            return tool_response(self.name, response)
-        else:
-            return error(e)
-
-
-    def _load_trappe_names(self):
-        # URL to scrape
-        url = "http://trappe.oit.umn.edu/scripts/search_select.php"
-        # check if the data is already downloaded
-        path = self.get_path(full=False)
-        file_path = os.path.join(path, "trappe_molecule_list.json")
-        try:
-            with open(file_path) as f:
-                return json.load(f)
-        except FileNotFoundError:
-            pass
-        os.makedirs(path, exist_ok=True)
-        res_dict = json.loads(request_by_post(url))['search']
-        
-        with open(file_path, "w") as f:
-            json.dump(res_dict, f)
-
-        return res_dict
-    
-    def load_molecule_names(self, families=["UA", "small"]):
-        mols = self._load_trappe_names()
-        molecules = {}
-        for m in mols:
-            if m['family'] in families:
-                name = m["name"].replace("<em>", "").replace("</em>", "")
-                molecules[name] =  m["molecule_ID"] 
-        return molecules
-
-    def get_molecule_id(self, mol):
-        return self.molecules.get(mol, None)
-
-    def molecule_names(self):
-        return self.molecules.keys()
-    
-    def _search_name(self, query, score_cutoff=90):
-        candidates = self.molecule_names()
-        matches = quick_search(query, candidates, limit=5, score_cutoff=score_cutoff)
-        
-        if len(matches) == 0:
-            return None
-        best_match = matches[0]
-        return best_match[0]
-
-    def search_names(self, names, score_curoff = 90):
-        res = []
-        for name in names:
-            res.append(self._search_name(name, score_curoff))
-        return res
-    
-    def init_memory_prompt(self):
-        prompt = f""""
-        This is a list of molecule names you might want to use for {tool(self.name)} but which can only be found with alternative names:
-        {mol_name("carbon dioxide", ["CO2", "carbon", "co2", "co", "carbon oxide"])}
-        {mol_name("nitrogen", ["N2", "dinitrogen"])}
-        """
-        return prompt
-    
-'''
 class CoreMofLoader(RaspaTool):
     
     def __init__(self, path=None):
@@ -375,7 +271,8 @@ class CoreMofLoader(RaspaTool):
 
 
 _BLOCK_RE = re.compile(r'^Block\s*\[\s*\d+\s*\]$')
-
+_PLUSMINUS_TOKENS = {"+/-", "±"}
+_UNIT_TOKEN_RE = re.compile(r'^\[[^\]]+\]$')
 
 class OutputParser(RaspaTool):
     def __init__(self, path=None):
@@ -397,6 +294,9 @@ class OutputParser(RaspaTool):
             
             out = self.filter(out)
             out = self.strip_block_fields(out)
+            out = self.filter(out)
+
+            out = json.dumps(out, separators=(',', ':'), ensure_ascii=False, default=self._json_default)
             
         except Exception as e:
             return self.get_output(f"Error with output parsing: {e}, (path={path})")
@@ -404,14 +304,26 @@ class OutputParser(RaspaTool):
 
     def run(self, file_path):
         out = self._run(file_path)
-        return self.get_output(out.__str__(), LIMIT=7500)
+        return self.get_output(out, LIMIT=7500)
     
+    def _json_default(self, obj):
+        # Make numpy scalars serializable; fallback to str for unknowns
+        try:
+            import numpy as np
+            if isinstance(obj, (np.floating, np.integer)):
+                return obj.item()
+        except Exception:
+            pass
+        return str(obj)
 
     def filter(self, d: Dict) -> Dict:
         """
         Remove keys for which check_del_key(key) or check_empty_content(value) is True.
         If a value is a dict, recurse into it.
         """
+        if not isinstance(d, dict):
+            return d
+
         for key in list(d.keys()):
             value = d[key]
 
@@ -421,8 +333,28 @@ class OutputParser(RaspaTool):
             if self.check_keep_key(key):
                 continue
 
+            # Recurse into containers first so we can prune after
             if isinstance(value, dict):
                 self.filter(value)
+                if self.check_empty_content(value):
+                    del d[key]
+                    continue
+
+            elif isinstance(value, list):
+                # Clean list items (recurse into dict elements)
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        self.filter(item)
+                # Remove empty items
+                value[:] = [v for v in value if not self.check_empty_content(v)]
+                # Drop the list itself if it became empty
+                if not value:
+                    del d[key]
+                    continue
+
+            # 3) whitelist does not protect empties; it only prevents key-based deletion
+            if self.check_keep_key(key):
+                continue
 
         return d
 
@@ -444,21 +376,64 @@ class OutputParser(RaspaTool):
         k = 'Block[0]'
         if type(content) == dict:
             content = value.get(k, None)
-            if self.is_empty(content):
+            if content is not None and self.is_empty(content):
                 return True
             
         return False
 
 
     def is_empty(self, content):
+        if content is None:
+            return True
+
         if type(content) == float and (content == 0 or np.isnan(content) or np.isinf(content)):
             return True
+        
+        # Strings (also catch "[]"/"{}" produced by some parsers)
+        if isinstance(content, str):
+            s = content.strip()
+            return s == '' or s == '[]' or s == '{}'
+
+        # Floats (treat NaN/inf as empty; keep 0.0 as valid)
+        if isinstance(content, float):
+            return math.isnan(content) or math.isinf(content)
+        
+        
+        if isinstance(content, (list, tuple, set)):
+            if len(content) == 0:
+                return True
+
+            has_number = any(
+                isinstance(x, (int, float, np.integer, np.floating)) and not (
+                    isinstance(x, float) and (math.isnan(x) or math.isinf(x))
+                )
+                for x in content
+            )
+            if not has_number:
+                if all(isinstance(x, str) and (x.strip() in _PLUSMINUS_TOKENS or _UNIT_TOKEN_RE.match(x.strip()))
+                    for x in content):
+                    return True
+
+            # Treat lists that contain **only** "+/-" (or "±") as empty
+            # e.g., ["+/-"] → empty; but [0.12, "+/-", 0.01] stays non-empty.
+            #if all(isinstance(x, str) and x.strip() in _PLUSMINUS_TOKENS for x in content):
+            #    return True
+
+            # Consider empty if all elements are empty
+            return all(self.is_empty(v) for v in content)
+        # Dicts
+        if isinstance(content, dict):
+            if len(content) == 0:
+                return True
+            # Consider empty if all values are empty
+            return all(self.is_empty(v) for v in content.values())
+
         try:
             c = content[0]
             return self.is_empty(c)
+    
         except Exception as e:
             return False
-        
 
     def check_del_key(self, key):
         if type(key) != str:
@@ -482,6 +457,11 @@ class OutputParser(RaspaTool):
             'Minimization parameters',
             'dcTST parameters',
             'Cbmc parameters',
+            "Simulation",
+            "Dimensions",
+            "Random number seed",
+            "RASPA directory set to",
+            "Properties computed",
         ]
         if key in blacklist:
             return True
@@ -526,10 +506,9 @@ class OutputParser(RaspaTool):
         return obj
 
 
-
 class FrameworkLoader(RaspaTool):
     
-    def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff = 14.0):
+    def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff = 12.8):
         name = "framework loader"
         description = """
         Load a framework file as framework.cif

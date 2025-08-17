@@ -90,7 +90,9 @@ class MoleculeLoaderTrappe(RaspaTool):
         self.ps_bag = PseudoAtomsBag()
 
     def _run(self, molecule_names : List[str]):
-        molecule_names = [name.replace(" ", "_") for name in molecule_names]
+
+        molecule_names = self._sanitize_names(molecule_names)
+
         out_names = []
         for name in molecule_names:
 
@@ -107,7 +109,7 @@ class MoleculeLoaderTrappe(RaspaTool):
                     print(name, e)
                     raise ValueError("No molecule could be generated for ", name, " (only use names recognized by PubChem)")
                     
-                
+            res = res.replace(" ", "_")
             self.make_file(mol_def, f"{res}.def")
             out_names.append(res)
         self.make_ff_ps_files()
@@ -123,6 +125,11 @@ class MoleculeLoaderTrappe(RaspaTool):
     ################################################################################
     ################################      Utils          ###########################
     ################################################################################
+
+    def _sanitize_names(self, molecule_names: List[str]) -> List[str]:
+        for name in molecule_names:
+            name = name.replace(" ", "_")
+        return molecule_names
 
     def make_file(self, content, file_name):
         if self.make_files is False:
@@ -175,6 +182,14 @@ class MoleculeLoaderTrappe(RaspaTool):
         candidates = self.molecule_names()
         matches = quick_search(query, candidates, limit=5, score_cutoff=score_cutoff)
         matches = [i for i in matches if i not in self.blacklist]
+
+        edge_cases = quick_search(query, ["co2", "n2"], limit=1, score_cutoff=score_cutoff)
+        if len(edge_cases) > 0:
+            x = edge_cases[0][0]
+            if x == "co2":
+                return "carbon dioxide"
+            if x == "n2":
+                return "nitrogen"
 
         if len(matches) == 0:
             return None
@@ -332,7 +347,9 @@ class MoleculeLoaderTrappe(RaspaTool):
         
         atoms = ps.get_atoms_main()
         bonds = params['bonds']
-        mol = self.align_mol_indeces(mol, atoms, bonds, verbose=self.verbose)
+
+        if name != "carbon dioxide":
+            mol = self.align_mol_indeces(mol, atoms, bonds, verbose=self.verbose)
 
         interactions = self.get_intramol_interactions(mol)
         n_vdw = len(interactions['vdw'])

@@ -52,14 +52,15 @@ def mol_name(name, wrong_names : List[str]):
     return f"<use_name name={name}>{''.join(w_names)}</name>"
 
 
-from rapidfuzz import process, fuzz
+from rapidfuzz import process, fuzz, utils
 def quick_search(query, candidates, limit=10, score_cutoff=80):
     return process.extract(
         query,
         candidates,
         scorer=fuzz.WRatio,
         limit=limit,
-        score_cutoff=score_cutoff
+        score_cutoff=score_cutoff,
+        processor=utils.default_process
     )
 
 

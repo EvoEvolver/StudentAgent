@@ -108,7 +108,11 @@ def empty_line(st, n):
 
 
 def render_content(st, message):
-    return st.session_state.agent.render_content(message, no_background=True)
+    content = st.session_state.agent.render_content(message, no_background=True)
+    if not content or content.strip() == "":
+        return "<p>Empty.</p>"         # Return a default message if content is empty
+
+    return content
 
 
 def display_chat(st, show_reasoning=False, memory=False):
@@ -118,16 +122,24 @@ def display_chat(st, show_reasoning=False, memory=False):
             
     else:
         agent = get_agent(st) if memory is False else get_memory_agent(st)
+        
         messages = agent.get_conversation()
+        if st.session_state.show_conversation is False:
+            messages = agent.get_chat()
+
         for message in messages:
             if message == "reset":
                 st.info("🔄 Conversation has been reset.")
             else:
-                role = message['role']
-                content = render_content(st, message)
-                #add_message(st, role, content, html=True)
-                with st.chat_message(role):
-                    st.html(content)
+                role = message.get('role', 'unknown')
+                try:
+                    content = render_content(st, message)
+                    # Only display if we have valid content
+                    if content and content.strip():
+                        with st.chat_message(role):
+                            st.html(content)
+                except Exception as e:
+                    st.write(f"Error displaying message: {str(e)}")
 
 def display_memory(st):
     agent = get_memory_agent(st)

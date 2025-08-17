@@ -4,17 +4,21 @@ NumberOfInitializationCycles  [int]
 PrintEvery                    [int]
 
 Forcefield                    local               # ALWAYS local
-CutOff                        14.0                # ALWAYS this value
+ChargeMethod                  Ewald    
+EwaldPrecision                1e-6     
+CutOffVDW                      12.8
+CutOffCoulomb                  12.8            # ALWAYS this value
 RemoveAtomNumberCodeFromLabel yes
 
 ...                                                # Optional: Add here if properties should be computed
 
 [                                                  # Optional: box specifications (NEVER use a .cif file for a box!)
 Box [int]
-BoxLengths [real] [real] [real]                    # in Angström (MUST BE twice the CutOff)
+BoxLengths [real] [real] [real]                    # in Angström (MUST BE "MORE THAN" twice the CutOff, so a minimum of 30A)
 ExternalTemperature [real]                         # in Kelvin
 ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
 ]
+
 
 [                                                  # Optional: framework specifications
 Framework [int]                                 
@@ -26,12 +30,12 @@ ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
 ...
 ]
 
-Component [int] MoleculeName       [molecule name] # same as [molecule name].def
+Component [int] MoleculeName       [molecule name] # ALWAYS the same as the [molecule name].def filename (NO empty space in the name allowed!)
             MoleculeDefinition     local
             ...                                    # other component information 
 
 [
-Component [int] MoleculeName        [molecule name]# Optional: additional component
+Component [int]                                    # Optional: additional component
             ...
 ]
                                                 # always empty line in the end!

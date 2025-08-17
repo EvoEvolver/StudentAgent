@@ -30,6 +30,7 @@ class Agent:
         self.reset_id()
         self.setup_provider(provider)
         self.verbose = verbose
+        self.max_message_content = 4000
         
     ############ General Setup ############
     def setup_provider(self, provider="openai"):
@@ -82,6 +83,8 @@ class Agent:
             self.system_prompt = sys_prompt
         self.reset_chat()
 
+    def reset_conversation(self):
+        self.conversation = []
 
     def reset_chat(self):
         self.chat = Chat(system_message=self.system_prompt, dedent=False)
@@ -113,10 +116,10 @@ class Agent:
  
     ############ Running ############
 
-    def single_run(self, prompt, expensive=False, parse=None):
+    def single_run(self, prompt, expensive=False, cache=True, parse=None):
         chat = Chat(dedent=True)
         chat += prompt
-        res = chat.complete(cache=True, expensive=expensive, parse=parse) # TODO: check cache
+        res = chat.complete(cache=cache, expensive=expensive, parse=parse)
         return res
 
 
@@ -162,14 +165,17 @@ class Agent:
         }
         return options
 
-    def add_message(self, message: Union[Dict[str, str], List[Dict[str, str]]]):
+    def add_message(self, message: Union[Dict[str, str], List[Dict[str, str]]], max_message_content=10000):
         if isinstance(message, list):
             for m in message:
-                self.add_message(m)
+                self.add_message(m, max_message_content=max_message_content)
             return
         if message is None:
             return
         assert "content" in message and "role" in message, "Message must contain 'content' and 'role'"
+        assert type(message["content"]), dict
+        if message["content"]["type"] == "text" and len(message["content"]["text"]) > max_message_content:
+            message["content"]["text"] = message["content"]["text"][:max_message_content]
         self.chat.messages.append(message)
 
 
@@ -180,6 +186,10 @@ class Agent:
         new_messages = self.chat.messages[-n_messages:] if n_messages > 0 else []
         self.conversation[-1].extend(new_messages)
 
+    def get_chat(self):
+        if len(self.conversation) == 0:
+            return []
+        return self.conversation[-1]
 
     def get_conversation(self):
         conv = []    
@@ -216,7 +226,7 @@ class Agent:
                 if success is False:
                     done = False
                 n += 1
-        self.add_message(tool_messages)
+        self.add_message(tool_messages, max_message_content=self.max_message_content)
         return done, n
 
     
@@ -488,5 +498,3 @@ class Agent:
         }
 
         return schema
-
-

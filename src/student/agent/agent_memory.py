@@ -20,9 +20,9 @@ class Ask(Tool):
     def __init__(self, agent:Agent):
         name="ask memory"
         description="""
-        Retrive related knowledge to a question from your memory.
-        ALWAYS use if you encounter a task or question.
-        Your memory could relevant information for everything.
+        Retrive related knowledge to a question from memory.
+        Formulate precise questions by including relevant information.
+        ALWAYS use if you encounter a task or question. Your memory could contain relevant information for everything.
         """
         super().__init__(name, description)
         self.agent = agent
@@ -36,9 +36,8 @@ class Learn(Tool):
     def __init__(self, agent:Agent):
         name="learn"
         description="""
-        Learn the knowledge from a given information context.
-        The knowlege is automatically stored into your memory.
-        You can access it later.
+        Learn knowledge from a given information context.
+        Knowlege is automatically stored into your memory for later access.
         ALWAYS use if you encounter knowledge you can add to your knowledge (NO general instructions).
         ALWAYS use if asked to remember something.
         """
@@ -50,6 +49,24 @@ class Learn(Tool):
         return tool_response(self.name, res)
 
 
+class OfflineLearn(Learn):
+    def __init__(self, learning_path:str):
+        super().__init__(agent=None)
+        self.learning_path = learning_path
+
+    def run(self, context:str):
+        self._store(context)
+        return tool_response(self.name, "Stored for future learning.")
+
+    def _store(self, context:str):
+        """
+        Store the context in a file for later learning.
+        This is used to store information that can be learned later.
+        """
+        file = self.learning_path
+        with open(file, "a") as f:
+            f.write(context + "\n")
+        print(f"Stored context in {file} for future learning.")
 
 
 class MemoryAgent(Agent):

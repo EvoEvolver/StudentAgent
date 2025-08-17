@@ -69,6 +69,8 @@ if st.session_state.get("chat", False):
             value=st.session_state.get("show_reasoning", True),
             key="show_reasoning"
         )
+        show_conversation = st.checkbox("Show conversation", value=st.session_state.get("show_conversation", True), key="show_conversation")
+
         # Checkbox: show conversation of memory agent instead
         show_mem = st.checkbox("Show MemoryAgent conversation")
 

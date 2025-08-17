@@ -99,8 +99,11 @@ def load_agent(session):
         print(loading_error)
     return agent
 
-def save_agent(session, agent):
+def save_agent(session, agent, note=None):
     agent.save(os.path.join(session.path, CHECKPOINT_DIR))    # overwrite!
+    if note is not None:
+        with open(os.path.join(session.path, "note.txt"), "w") as f:
+            f.write(note)
 
 
 def run_session(session, input):

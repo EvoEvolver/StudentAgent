@@ -47,9 +47,12 @@ class StudentAgent(Agent):
         return super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
     
 
-    def get_tool_mask(self):
+    def get_tool_mask(self, no_memory=False):
         mask = []
         if self.active_learning is False:
+            mask.append("learn")
+        if no_memory is True:
+            mask.append("ask memory")
             mask.append("learn")
         return mask
 

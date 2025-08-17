@@ -3,9 +3,7 @@ import json
 import uuid
 import numpy as np
 from mllm import Chat, get_embeddings
-from typing import Dict, List, Set, Iterable
-
-
+from typing import Dict, List, Set, Iterable, Tuple
 class MemoryNode:
     id : str
     keys : Set[str]
@@ -65,7 +63,7 @@ class MemoryNode:
             return False
 
 
-    def _get_embedding_score(self, query : List[str], keys: List[str]=None, sensitivity=0.4):
+    def _get_cosine_similarity(self, query : List[str], keys: List[str]=None):
         q_emb = np.array(get_embeddings(query))
         
         if keys is None:
@@ -82,8 +80,8 @@ class MemoryNode:
         q = np.linalg.norm(q_emb, axis=1, keepdims=True)
         k = np.linalg.norm(k_emb, axis=1)
 
-        norm = q * k + (q-k)**2 + 1
-        similarity = 2 * similarity / norm
+        norm = q * k + (q-k)**2 + 1            
+        similarity = 2 * similarity / norm  # strictly equal to cosine similarity for normalized vectors!
         '''
         for i in range(len(query)):
             q = np.linalg.norm(q_emb[i])
@@ -93,7 +91,10 @@ class MemoryNode:
                 similarity[i][j] /= k * q +((q-k)**2 + 1)
                 similarity[i][j] *= 2
         '''     
-
+        return similarity
+    
+    def _get_embedding_score(self, query : List[str], keys: List[str]=None, sensitivity=0.4):
+        similarity = self._get_cosine_similarity(query, keys)
         similarity = similarity * (similarity > sensitivity) # filter out bad matches
         return similarity 
 
@@ -103,6 +104,110 @@ class MemoryNode:
         scores_max = np.max(scores_emb, axis=0) # max score per key # len(keys)
         score_final = np.mean(scores_max) # average over keys
         return score_final
+
+
+
+    def _get_similarity_raw(self, query: List[str], keys: List[str] = None) -> np.ndarray:
+        q_emb = np.array(get_embeddings(query))
+        if keys is None:
+            keys = self.keys
+            if self.embeddings == []:
+                if self.set_embeddings() is False:
+                    return np.zeros((len(query), 0))
+            k_emb = np.array(self.embeddings)
+        else:
+            k_emb = np.array(get_embeddings(keys))
+
+        similarity = np.dot(q_emb, k_emb.T)                # (q, k)
+        q = np.linalg.norm(q_emb, axis=1, keepdims=True)   # (q, 1)
+        k = np.linalg.norm(k_emb, axis=1)                  # (k,)
+        norm = q * k + (q - k) ** 2 + 1                    # broadcasts -> (q, k)
+        similarity = 2 * similarity / norm                 # equals cosine if vectors are L2-normalised
+        return similarity                                   # DO NOT threshold here
+
+
+    def _scale_and_threshold(self, sim: np.ndarray, tau: float) -> np.ndarray:
+        """
+        Build \tilde S = max(0, (sim - tau)/(1 - tau)), clipped to [0, 1].
+        Works well when sim <= 1 (cosine); clipping protects if sim can exceed 1.
+        """
+        if tau >= 1.0:
+            raise ValueError("tau must be < 1.")
+        S = (sim - tau) / (1.0 - tau)
+        S = np.clip(S, 0.0, 1.0)   # zeros out <= tau; caps huge values
+        return S
+
+
+    def _greedy_max_weight_matching(self, W: np.ndarray) -> List[Tuple[int, int, float]]:
+        """
+        Greedy 1-to-1 matching on nonnegative weight matrix W (q x k).
+        Sort edges by weight desc, take an edge if both endpoints are unused.
+        """
+        if W.size == 0:
+            return []
+        q, k = W.shape
+        used_q = np.zeros(q, dtype=bool)
+        used_k = np.zeros(k, dtype=bool)
+        order = np.argsort(W, axis=None)[::-1]  # descending by weight
+        matches = []
+        for idx in order:
+            i, j = np.unravel_index(idx, W.shape)
+            w = W[i, j]
+            if w <= 0.0:
+                break  # remaining are <= 0
+            if not used_q[i] and not used_k[j]:
+                used_q[i] = True
+                used_k[j] = True
+                matches.append((i, j, float(w)))
+        return matches
+
+
+    def get_score_matching(
+            self,
+            query: List[str],
+            keys: List[str] = None,
+            tau: float = 0.4,
+            return_tuple: bool = True,
+            epsilon_max: float = 1e-3
+        ):
+        """
+        Maximum-weight one-to-one matching scorer.
+
+        Steps:
+        1) \tilde S = max(0, (sim - tau)/(1 - tau)) in [0,1]
+        2) greedy maximum-weight matching (each query/key used at most once)
+        3) score by tuple (m, mean_weight, max_weight):
+                - primary: coverage m (# matched pairs)
+                - secondary: quality = mean weight over matched pairs
+                - optional tie-break: max weight seen
+        4) also return a scalar 'score_scalar' that respects the same ordering:
+                score_scalar = m + mean_weight + epsilon_max * max_weight
+            (lexicographic-compatible for sorting across entries)
+        """
+        sim = self._get_similarity_raw(query, keys)              # (q, k)
+        Stilde = self._scale_and_threshold(sim, tau)             # (q, k) in [0,1]
+        matches = self._greedy_max_weight_matching(Stilde)       # list of (i, j, w)
+
+        m = len(matches)
+        if m == 0:
+            score_tuple = (0, 0.0, 0.0)
+            score_scalar = 0.0
+        else:
+            weights = np.array([w for (_, _, w) in matches], dtype=float)
+            mean_w = float(weights.mean())
+            max_w = float(weights.max())
+            score_tuple = (m, mean_w, max_w)
+            # Scalar consistent with "rank by m, then mean, then max"
+            score_scalar = m + mean_w + epsilon_max * max_w
+
+        if return_tuple:
+            return {"score_tuple": score_tuple,
+                    "score_scalar": score_scalar,
+                    "matches": matches}  # matches help with debugging/UX
+        else:
+            return float(score_scalar)
+
+
 
 
     def to_dict(self, include_embeddings: bool=True) -> dict:
@@ -192,6 +297,7 @@ class Memory:
     def __init__(self):
         self.memory : Dict[str, MemoryNode] = {}
         self.keywords : Dict[str, int] = {}
+        self.score_matching = True
     
     def __size__(self) -> int:
         return len(self.memory.keys())
@@ -237,22 +343,25 @@ class Memory:
                 node.set_embeddings()
         return nodes
     
-    def get_scores(self, nodes, queries: List[str], sensitivity=0.01):
+    def get_scores(self, nodes, queries: List[str], sensitivity: float = 0.01) -> np.ndarray:
         scores = []
         for node in nodes:
-            node_scores = node.get_score(queries, sensitivity=sensitivity)
-            node_scores = np.array(node_scores)
-            scores.append(node_scores)
+            if self.score_matching is True:
+                s = node.get_score_matching(
+                    query=queries,
+                    tau=sensitivity,    
+                    return_details=False       
+                )
+                scores.append(s)
+            else:
+                node_scores = node.get_score(queries, sensitivity=sensitivity)
+                node_scores = np.array(node_scores)
+                scores.append(node_scores)
 
         scores = np.array(scores) # m
-
-        #score_summation_for_src = np.sum(scores, axis=0)
-
-        #score_norm_factor_for_src = score_summation_for_src + (score_summation_for_src == 0.0)
-        #scores = scores / score_norm_factor_for_src
-        #scores = np.sum(scores, axis=1)
         return scores
-
+    
+    """
     def _recall(self, queries: List[str], max_recall=5, sensitivity=0.3, thres=0.3) -> Dict[str, float]:
         nodes = self.get_nodes()
         if len(nodes) == 0:
@@ -270,9 +379,62 @@ class Memory:
 
             node : MemoryNode = nodes[top_k_indices[i]]
             excited_nodes[node.id] = s
-        
         return excited_nodes
-    
+    """
+
+    def _recall(
+        self,
+        queries: List[str],
+        max_recall: int = 5,
+        sensitivity: float = 0.3,
+        thres: float = 0.3,          # mean-weight threshold for matching mode
+        min_matches: int = 1         # require at least this many matched pairs
+    ) -> Dict[str, float]:
+        """
+        Returns {node_id: score_scalar}.
+        - Matching mode: rank by tuple (m, mean_w, max_w) desc; filter by min_matches and mean_w >= thres.
+        - Non-matching: rank by numeric score desc; filter by score > thres.
+        """
+        nodes = self.get_nodes()
+        if not nodes:
+            return {}
+
+        excited_nodes: Dict[str, float] = {}
+
+        if getattr(self, "score_matching", False):
+            scored = []
+            for node in nodes:
+                res = node.get_score_matching(query=queries, tau=sensitivity, return_tuple=True)
+                m, mean_w, max_w = res["score_tuple"]         # tuple used for ranking
+                score_scalar = float(res["score_scalar"])
+                scored.append((node, (m, mean_w, max_w), score_scalar))
+
+            
+            scored.sort(key=lambda x: x[1], reverse=True) # Lexicographic sort: highest coverage first, then mean weight, then max weight
+
+            taken = 0
+            for node, (m, mean_w, _), score_scalar in scored:
+                if m < min_matches or mean_w < thres:
+                    continue
+                excited_nodes[node.id] = score_scalar
+                taken += 1
+                if taken >= max_recall:
+                    break
+
+            return excited_nodes
+
+        scores = self.get_scores(nodes, queries, sensitivity)
+        top_k_indices = np.argsort(-scores)
+
+        for idx in top_k_indices[:max_recall]:
+            s = float(scores[idx])
+            if s <= thres:
+                break
+            node: MemoryNode = nodes[idx]
+            excited_nodes[node.id] = s
+
+        return excited_nodes
+
     def recall(self, queries: List[str], max_recall=5, sensitivity=0.3, thres=0.3) -> Dict[str, str]:
         excited_nodes = self._recall(queries, max_recall=max_recall, sensitivity=sensitivity, thres=thres)
         out = {}

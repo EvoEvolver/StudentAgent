@@ -46,7 +46,7 @@ class AddMemory(Tool):
 
 
 class RecallMemory(Tool):
-    def __init__(self, memory: Memory):
+    def __init__(self, memory: Memory, max_recall: int = 3):
         name = "recall"
         description = """
         Recall knowledge from your memory based on a list of stimuli to use your knowledge.
@@ -55,18 +55,14 @@ class RecallMemory(Tool):
         AFTER recalling, extract new keywords from the content, especially highlighted as xml: <keyword/>
         """
         #The sensitivity value [0,1] controls the memory search. A smaller value returns less strict matches and is therefore prefered such as 0.1
-        old="""
-            You must provide a list of search keywords and a sensitivity value (a float between 0 and 1) that controls how loosely related the results can be. 
-            A higher sensitivity retrieves more results even if the match is weaker. 
-            The tool returns up to 3 memory items that are most similar to the given stimuli. 
-            The output is a dictionary mapping a memory ID (which can be used with the modify tool) to the memory content.
-        """
+        
         super().__init__(name, description)
         self.memory = memory
         self.sensitivity = 0.2
+        self.max_recall = max_recall
 
     def run(self, stimuli: list[str]) -> str:
-        res = self.memory.recall(stimuli, max_recall=3, sensitivity=self.sensitivity)
+        res = self.memory.recall(stimuli, max_recall=self.max_recall, sensitivity=self.sensitivity)
         mem = ""
         for id, i in res.items():
             mem += i
