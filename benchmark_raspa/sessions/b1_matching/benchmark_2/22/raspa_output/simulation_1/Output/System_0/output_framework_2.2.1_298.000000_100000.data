@@ -5,9 +5,9 @@ Compiled as a 64-bits application
 Compiler: gcc Clang 16.0.6
 Compile Date = Jul 13 2024, Compile Time = 20:26:33
 
-Sun Aug 17 02:28:32 2025
+Sun Aug 17 03:16:05 2025
 Simulation started on Sunday, August 17.
-The start time was 02:28 AM.
+The start time was 03:16 AM.
 
 Cpu data:    arm64
 Cpu Model:   Mac14,13
@@ -29,8 +29,8 @@ Number of equilibration cycles: 0
 Print every: 100
 Triclinic boundary condition applied
 Timestep: 0.000500
-	Degrees of freedom:                        342
-	Translational Degrees of freedom:          342
+	Degrees of freedom:                        7704
+	Translational Degrees of freedom:          7704
 	Rotational Degrees of freedom:             0
 	Degrees of freedom Framework:              0
 
@@ -130,8 +130,8 @@ External temperature: 298 [K]
 Beta: 0.00403598 [energy unit]
 Number of isotherm points: 5
 	 point   0: External Pressure: 10000 [Pa]
-		 point   1: External Pressure: 50000 [Pa]
-	 point   2: External Pressure: 100000 [Pa]
+	 point   1: External Pressure: 50000 [Pa]
+		 point   2: External Pressure: 100000 [Pa]
 	 point   3: External Pressure: 500000 [Pa]
 	 point   4: External Pressure: 1e+06 [Pa]
 
@@ -350,13 +350,13 @@ Component 0 [carbon_dioxide] (Adsorbate molecule)
 	Fluid is a vapour
 
 	MolFraction:           1.0000000000 [-]
-	Compressibility:       0.9974986922 [-]
+	Compressibility:       0.9949910851 [-]
 
-	Density of the bulk fluid phase:       0.8903250657 [kg/m^3]
+	Density of the bulk fluid phase:       1.7851377805 [kg/m^3]
 
 	Binary mixture EOS parameters:  (0): 0.000000
 
-	Amount of excess molecules:       1.2937699312 [-]
+	Amount of excess molecules:       2.5940610597 [-]
 
 	Conversion factor molecules/unit cell -> mol/kg:       0.0729460051 [-]
 	Conversion factor molecules/unit cell -> mg/g:       3.2102807380 [-]
@@ -365,17 +365,17 @@ Component 0 [carbon_dioxide] (Adsorbate molecule)
 	Conversion factor mol/kg -> cm^3 STP/gr:      22.4139757476 [-]
 	Conversion factor mol/kg -> cm^3 STP/cm^3:      16.8549324549 [-]
 
-	Partial pressure:     50000.00000000000000 [Pa]
-	                        375.00000000000000 [Torr]
-	                          0.50000000000000 [bar]
-	                          0.49346163335801 [atm]
+	Partial pressure:    100000.00000000000000 [Pa]
+	                        750.00000000000000 [Torr]
+	                          1.00000000000000 [bar]
+	                          0.98692326671601 [atm]
 
-	Fugacity coefficient:       0.9975033793 [-]
+	Fugacity coefficient:       0.9950098691 [-]
 
-	Partial fugacity:     49875.16896381803235 [Pa]
-	                        374.06376722863524 [Torr]
-	                          0.49875168963818 [bar]
-	                          0.49222964681784 [atm]
+	Partial fugacity:     99500.98690513828478 [Pa]
+	                        746.25740178853709 [Torr]
+	                          0.99500986905138 [bar]
+	                          0.98199839037886 [atm]
 
 	Molecule contains 3 number of atoms
 		atom:    0  is of type:    2 [     C_co2] (group: 0)
@@ -672,11 +672,11 @@ Current Atom Status
 ===========================================================================
 Number of framework atoms        : 4560
 Number of cations molecules      : 0
-Number of adsorbate molecules    : 38
-Component    0 :   38 molecules
+Number of adsorbate molecules    : 856
+Component    0 :  856 molecules
 Pseudo Atoms    0 [    UNIT]:    0 atoms
-Pseudo Atoms    1 [   O_co2]:   76 atoms
-Pseudo Atoms    2 [   C_co2]:   38 atoms
+Pseudo Atoms    1 [   O_co2]: 1712 atoms
+Pseudo Atoms    2 [   C_co2]:  856 atoms
 Pseudo Atoms    3 [     CH4]:    0 atoms
 Pseudo Atoms    4 [      Zn]:  192 atoms
 Pseudo Atoms    5 [       O]:  624 atoms
@@ -685,543 +685,6 @@ Pseudo Atoms    7 [       H]: 1152 atoms
 
 
 Current (initial full energy) Energy Status
-===========================================================================
-
-Internal energy:
-Host stretch energy:                                            0.00000000
-Host UreyBradley energy:                                        0.00000000
-Host bend energy:                                               0.00000000
-Host inversion-bend energy:                                     0.00000000
-Host torsion energy:                                            0.00000000
-Host improper torsion energy:                                   0.00000000
-Host out-of-plane energy:                                       0.00000000
-Host stretch/stretch energy:                                    0.00000000
-Host bend/bend energy:                                          0.00000000
-Host stretch/bend energy:                                       0.00000000
-Host stretch/torsion energy:                                    0.00000000
-Host bend/torsion energy:                                       0.00000000
-
-Adsorbate stretch energy:                                       0.00000000
-Adsorbate UreyBradley energy:                                   0.00000000
-Adsorbate bend energy:                                          0.00000000
-Adsorbate inversion-bend energy:                                0.00000000
-Adsorbate torsion energy:                                       0.00000000
-Adsorbate improper torsion energy:                              0.00000000
-Adsorbate out-of-plane energy:                                  0.00000000
-Adsorbate stretch/stretch energy:                               0.00000000
-Adsorbate bend/bend energy:                                     0.00000000
-Adsorbate stretch/bend energy:                                  0.00000000
-Adsorbate stretch/torsion energy:                               0.00000000
-Adsorbate bend/torsion energy:                                  0.00000000
-Adsorbate intra VDW energy:                                     0.00000000
-Adsorbate intra charge-charge Coulomb energy:                   0.00000000
-Adsorbate intra charge-bonddipole Coulomb energy:               0.00000000
-Adsorbate intra bonddipole-bonddipole Coulomb energy:           0.00000000
-
-Cation stretch energy:                                          0.00000000
-Cation UreyBradley energy:                                      0.00000000
-Cation bend energy:                                             0.00000000
-Cation inversion-bend energy:                                   0.00000000
-Cation torsion energy:                                          0.00000000
-Cation improper torsion energy:                                 0.00000000
-Cation out-of-plane energy:                                     0.00000000
-Cation stretch/stretch energy:                                  0.00000000
-Cation bend/bend energy:                                        0.00000000
-Cation stretch/bend energy:                                     0.00000000
-Cation stretch/torsion energy:                                  0.00000000
-Cation bend/torsion energy:                                     0.00000000
-Cation intra VDW energy:                                        0.00000000
-Cation intra charge-charge Coulomb energy:                      0.00000000
-Cation intra charge-bonddipole Coulomb energy:                  0.00000000
-Cation intra bonddipole-bonddipole Coulomb energy:              0.00000000
-
-Host/Host energy:                                             0.00000000
-	Host/Host VDW energy:                                         0.00000000
-	Host/Host Coulomb energy:                                     0.00000000
-	Host/Host charge-charge Real energy:                          0.00000000
-	Host/Host charge-charge Fourier energy:                       0.00000000
-	Host/Host charge-bonddipole Real energy:                      0.00000000
-	Host/Host charge-bonddipole Fourier energy:                   0.00000000
-	Host/Host bondipole-bonddipole Real energy:                   0.00000000
-	Host/Host bondipole-bonddipole Fourier energy:                0.00000000
-
-Host/Adsorbate energy:                                   -16030.69854430
-	Host/Adsorbate VDW energy:                               -16030.69854430
-	Host/Adsorbate Coulomb energy:                                0.00000000
-	Host/Adsorbate charge-charge Real energy:                     0.00000000
-	Host/Adsorbate charge-charge Fourier energy:                  0.00000000
-	Host/Adsorbate charge-bonddipole Real energy:                 0.00000000
-	Host/Adsorbate charge-bonddipole Fourier energy:              0.00000000
-	Host/Adsorbate bondipole-bonddipole Real energy:              0.00000000
-	Host/Adsorbate bondipole-bonddipole Fourier energy:           0.00000000
-
-Host/Cation energy:                                           0.00000000
-	Host/Cation VDW energy:                                       0.00000000
-	Host/Cation Coulomb energy:                                   0.00000000
-	Host/Cation charge-charge Real energy:                        0.00000000
-	Host/Cation charge-charge Fourier energy:                     0.00000000
-	Host/Cation charge-bonddipole Real energy:                    0.00000000
-	Host/Cation charge-bonddipole Fourier energy:                 0.00000000
-	Host/Cation bondipole-bonddipole Real energy:                 0.00000000
-	Host/Cation bondipole-bonddipole Fourier energy:              0.00000000
-
-Adsorbate/Adsorbate energy:                                  -130189.37079512
-	Adsorbate/Adsorbate VDW energy:                                -8488.31620810
-	Adsorbate/Adsorbate Coulomb energy:                          -121701.05458702
-	Adsorbate/Adsorbate charge-charge Real energy:                -98493.54721693
-	Adsorbate/Adsorbate charge-charge Fourier energy:             -23207.50737008
-	Adsorbate/Adsorbate charge-bonddipole Real energy:                 0.00000000
-	Adsorbate/Adsorbate charge-bonddipole Fourier energy:              0.00000000
-	Adsorbate/Adsorbate bondipole-bonddipole Real energy:              0.00000000
-	Adsorbate/Adsorbate bondipole-bonddipole Fourier energy:           0.00000000
-
-Adsorbate/Cation energy:                                           0.00000000
-	Adsorbate/Cation VDW energy:                                       0.00000000
-	Adsorbate/Cation Coulomb energy:                                   0.00000000
-	Adsorbate/Cation charge-charge Real energy:                        0.00000000
-	Adsorbate/Cation charge-charge Fourier energy:                     0.00000000
-	Adsorbate/Cation charge-bonddipole Real energy:                    0.00000000
-	Adsorbate/Cation charge-bonddipole Fourier energy:                 0.00000000
-	Adsorbate/Cation bondipole-bonddipole Real energy:                 0.00000000
-	Adsorbate/Cation bondipole-bonddipole Fourier energy:              0.00000000
-
-Cation/Cation energy:                                           0.00000000
-	Cation/Cation VDW energy:                                       0.00000000
-	Cation/Cation Coulomb energy:                                   0.00000000
-	Cation/Cation charge-charge Real energy:                        0.00000000
-	Cation/Cation charge-charge Fourier energy:                     0.00000000
-	Cation/Cation charge-bonddipole Real energy:                    0.00000000
-	Cation/Cation charge-bonddipole Fourier energy:                 0.00000000
-	Cation/Cation bondipole-bonddipole Real energy:                 0.00000000
-	Cation/Cation bondipole-bonddipole Fourier energy:              0.00000000
-
-Polarization energy:
-	Host polarization energy:                                     0.00000000
-	Adsorbate polarization energy:                                0.00000000
-	Cation polarization energy:                                   0.00000000
-	Host back-polarization energy:                                     0.00000000
-	Adsorbate back-polarization energy:                                0.00000000
-	Cation back-polarization energy:                                   0.00000000
-
-Tail-correction energy:                                  -28851.30097959
-
-Distance constraints energy:                                  0.00000000
-Angle constraints energy:                                     0.00000000
-Dihedral constraints energy:                                  0.00000000
-Inversion-bend constraints energy:                            0.00000000
-Out-of-plane distance constraints energy:                     0.00000000
-Exclusion constraints energy:                                 0.00000000
-
-===================================================================
-Total energy: -175071.370319003647
-	Total Van der Waals: -24519.014752
-	Total Coulomb: -121701.054587
-
-	Total Polarization: 0.000000
-
-
-
-
-
-
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Starting simulation
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-[Init] Current cycle: 0 out of 100
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]
-Box-lengths:  49.64340  49.64340  56.73430 Box-angles:   90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 38/0/0, density:  22.93375 [kg/m^3]
-	absolute adsorption:   9.50000 [mol/uc],         0.6930 [mol/kg],             30.4977 [mg/g]
-	                                                15.5326 [cm^3 STP/g],         11.6802 [cm^3 STP/cm^3]
-	excess adsorption:     9.17656 [mol/uc],         0.6694 [mol/kg],             29.4593 [mg/g]
-	                                                15.0038 [cm^3 STP/g],         11.2826 [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 342 0 342 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:          38 (38 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction
-
-Current total potential energy:           -175071.3703190036 [K]
-	Current Host-Host energy:                     0.0000000000 [K]
-	Current Host-Adsorbate energy:           -16030.6985442996 [K]
-	Current Host-Cation energy:                   0.0000000000 [K]
-	Current Adsorbate-Adsorbate energy:     -130189.3707951178 [K]
-	Current Cation-Cation energy:                 0.0000000000 [K]
-	Current Adsorbate-Cation energy:              0.0000000000 [K]
-
-
-
-Average Properties at Current cycle: 0 out of 1000
-========================================================================================
-
-Framework surface area:       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
-	Framework 0 individual surface area:       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
-	Cation surface area:                       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
-Compressibility:       0.0000000000 [-]
-Henry coefficients
-	Component 0: 0 [mol/kg/Pa] (Rosenbluth factor new: 0 [-])
-Energy <U_gh>_1-<U_h>_0 from Widom
-
-
-Current cycle: 0 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 55/0/0 (avg.  55.00000), density:  33.19359 (avg.  33.19359) [kg/m^3]
-	absolute adsorption:  13.75000 (avg.  13.75000) [mol/uc],   1.0030075700 (avg.   1.0030075700) [mol/kg],  44.1413601474 (avg.  44.1413601474) [mg/g]
-	                      22.4813873483 (avg.  22.4813873483) [cm^3 STP/g],   16.9056248438 (avg.  16.9056248438) [cm^3 STP/cm^3]
-	excess adsorption:    13.4265575172 (avg.  13.4265575172) [mol/uc],   0.9794137330 (avg.   0.9794137330) [mol/kg],  43.1030189751 (avg.  43.1030189751) [mg/g]
-	                      21.9525556580 (avg.  21.9525556580) [cm^3 STP/g],   16.5079523149 (avg.  16.5079523149) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 495 0 495 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:          55 (55 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:           -236628.7263202287 [K]  (avg.     -236628.7263202287)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -21626.0626335627 [K]  (avg.      -21626.0626335627)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:     -185346.4455859196 [K]  (avg.     -185346.4455859196)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 100 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 109/0/0 (avg.  77.62376), density:  65.78366 (avg.  46.84748) [kg/m^3]
-	absolute adsorption:  27.25000 (avg.  19.40594) [mol/uc],   1.9877786387 (avg.   1.4155858413) [mol/kg],  87.4801501104 (avg.  62.2985172918) [mg/g]
-	                      44.5540221993 (avg.  31.7289067166) [cm^3 STP/g],   33.5038746905 (avg.  23.8596037400) [cm^3 STP/cm^3]
-	excess adsorption:    26.9265575172 (avg.  19.0824981113) [mol/uc],   1.9641848017 (avg.   1.3919920043) [mol/kg],  86.4418089380 (avg.  61.2601761194) [mg/g]
-	                      44.0251905091 (avg.  31.2000750263) [cm^3 STP/g],   33.1062021616 (avg.  23.4619312111) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 981 0 981 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         109 (109 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:           -434097.0201477027 [K]  (avg.     -323542.1262206107)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -38837.7381918013 [K]  (avg.      -28434.9818373240)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:     -362997.8160043541 [K]  (avg.     -264365.7129870658)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 200 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 608/0/0 (avg. 165.78109), density: 366.94004 (avg. 100.05217) [kg/m^3]
-	absolute adsorption: 152.00000 (avg.  41.44527) [mol/uc],  11.0877927736 (avg.   3.0232671413) [mol/kg], 487.9626721753 (avg. 133.0509636213) [mg/g]
-	                     248.5215183228 (avg.  67.7634363835) [cm^3 STP/g],  186.8839982736 (avg.  50.9569634596) [cm^3 STP/cm^3]
-	excess adsorption:   151.6765575172 (avg.  41.1218311490) [mol/uc],  11.0641989366 (avg.   2.9996733043) [mol/kg], 486.9243310030 (avg. 132.0126224489) [mg/g]
-	                     247.9926866326 (avg.  67.2346046933) [cm^3 STP/g],  186.4863257447 (avg.  50.5592909307) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 5472 0 5472 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         608 (608 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -2511360.8737288048 [K]  (avg.     -657258.2361888324)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:          -167183.9762061170 [K]  (avg.      -60567.3495917912)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -2284353.7231653044 [K]  (avg.     -561375.0707887317)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 300 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 761/0/0 (avg. 347.51163), density: 459.27857 (avg. 209.73015) [kg/m^3]
-	absolute adsorption: 190.25000 (avg.  86.87791) [mol/uc],  13.8779774683 (avg.   6.3373962445) [mol/kg], 610.7559104037 (avg. 278.9024713248) [mg/g]
-	                     311.0606504008 (avg. 142.0462457274) [cm^3 STP/g],  233.9123728392 (avg. 106.8163856412) [cm^3 STP/cm^3]
-	excess adsorption:   189.9265575172 (avg.  86.5544644939) [mol/uc],  13.8543836313 (avg.   6.3138024075) [mol/kg], 609.7175692313 (avg. 277.8641301524) [mg/g]
-	                     310.5318187105 (avg. 141.5174140372) [cm^3 STP/g],  233.5147003103 (avg. 106.4187131122) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 6849 0 6849 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         761 (761 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -3498021.0001258152 [K]  (avg.    -1496478.0701565337)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:          -142687.5184863060 [K]  (avg.      -92060.2237524817)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -3285798.8535129237 [K]  (avg.    -1358765.9282279084)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 400 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 806/0/0 (avg. 455.80050), density: 486.43696 (avg. 275.08463) [kg/m^3]
-	absolute adsorption: 201.50000 (avg. 113.95012) [mol/uc],  14.6986200256 (avg.   8.3122063755) [mol/kg], 646.8715687061 (avg. 365.8118903790) [mg/g]
-	                     329.4545127766 (avg. 186.3095921092) [cm^3 STP/g],  247.7442477114 (avg. 140.1016770100) [cm^3 STP/cm^3]
-	excess adsorption:   201.1765575172 (avg. 113.6266822055) [mol/uc],  14.6750261886 (avg.   8.2886125385) [mol/kg], 645.8332275338 (avg. 364.7735492066) [mg/g]
-	                     328.9256810864 (avg. 185.7807604190) [cm^3 STP/g],  247.3465751825 (avg. 139.7040044811) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 7254 0 7254 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         806 (806 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -3779040.7292044521 [K]  (avg.    -2027267.3314319255)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -95805.2891181849 [K]  (avg.      -98545.5623767051)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -3610731.9016365479 [K]  (avg.    -1876773.5806507303)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 500 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 831/0/0 (avg. 528.74251), density: 501.52496 (avg. 319.10658) [kg/m^3]
-	absolute adsorption: 207.75000 (avg. 132.18563) [mol/uc],  15.1545325574 (avg.   9.6424135470) [mol/kg], 666.9358233186 (avg. 424.3529777919) [mg/g]
-	                     339.6733252077 (avg. 216.1248233917) [cm^3 STP/g],  255.4286226404 (avg. 162.5222290376) [cm^3 STP/cm^3]
-	excess adsorption:   207.4265575172 (avg. 131.8621862597) [mol/uc],  15.1309387204 (avg.   9.6188197100) [mol/kg], 665.8974821462 (avg. 423.3146366196) [mg/g]
-	                     339.1444935174 (avg. 215.5959917015) [cm^3 STP/g],  255.0309501115 (avg. 162.1245565087) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 7479 0 7479 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         831 (831 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -3922347.6370775136 [K]  (avg.    -2394549.1723910277)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -70830.9504221806 [K]  (avg.      -95219.0253225696)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -3777341.6379043944 [K]  (avg.    -2243075.8964700256)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 600 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 834/0/0 (avg. 579.59235), density: 503.33552 (avg. 349.79546) [kg/m^3]
-	absolute adsorption: 208.50000 (avg. 144.89809) [mol/uc],  15.2092420612 (avg.  10.5697365570) [mol/kg], 669.3435338721 (avg. 465.1635361355) [mg/g]
-	                     340.8995826994 (avg. 236.9098188463) [cm^3 STP/g],  256.3507476319 (avg. 178.1521957336) [cm^3 STP/cm^3]
-	excess adsorption:   208.1765575172 (avg. 144.5746440397) [mol/uc],  15.1856482242 (avg.  10.5461427200) [mol/kg], 668.3051926997 (avg. 464.1251949631) [mg/g]
-	                     340.3707510092 (avg. 236.3809871560) [cm^3 STP/g],  255.9530751030 (avg. 177.7545232047) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 7506 0 7506 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         834 (834 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -3958199.5508497762 [K]  (avg.    -2653516.9407772333)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -64611.1862453549 [K]  (avg.      -89917.2827959399)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -3819211.6730648414 [K]  (avg.    -2504326.0909010451)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 700 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 848/0/0 (avg. 616.72183), density: 511.78479 (avg. 372.20384) [kg/m^3]
-	absolute adsorption: 212.00000 (avg. 154.18046) [mol/uc],  15.4645530790 (avg.  11.2468483639) [mol/kg], 680.5795164551 (avg. 494.9625496476) [mg/g]
-	                     346.6221176608 (avg. 252.0865864657) [cm^3 STP/g],  260.6539975921 (avg. 189.5648695042) [cm^3 STP/cm^3]
-	excess adsorption:   211.6765575172 (avg. 153.8570140079) [mol/uc],  15.4409592420 (avg.  11.2232545269) [mol/kg], 679.5411752827 (avg. 493.9242084752) [mg/g]
-	                     346.0932859705 (avg. 251.5577547754) [cm^3 STP/g],  260.2563250632 (avg. 189.1671969753) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 7632 0 7632 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         848 (848 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -4037637.3858103240 [K]  (avg.    -2844417.2265397203)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -46147.6109866116 [K]  (avg.      -85328.5922080313)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -3916169.0758716450 [K]  (avg.    -2697604.1451202966)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 800 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 850/0/0 (avg. 645.35331), density: 512.99183 (avg. 389.48350) [kg/m^3]
-	absolute adsorption: 212.50000 (avg. 161.33833) [mol/uc],  15.5010260816 (avg.  11.7689864292) [mol/kg], 682.1846568241 (avg. 517.9413237611) [mg/g]
-	                     347.4396226553 (avg. 263.7897763971) [cm^3 STP/g],  261.2687475865 (avg. 198.3654713261) [cm^3 STP/cm^3]
-	excess adsorption:   212.1765575172 (avg. 161.0148846083) [mol/uc],  15.4774322446 (avg.  11.7453925922) [mol/kg], 681.1463156517 (avg. 516.9029825887) [mg/g]
-	                     346.9107909650 (avg. 263.2609447068) [cm^3 STP/g],  260.8710750575 (avg. 197.9677987972) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 7650 0 7650 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         850 (850 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -4055818.1766570513 [K]  (avg.    -2993275.5603806861)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -31908.9336106245 [K]  (avg.      -79755.6681691033)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -3948453.2814916200 [K]  (avg.    -2850324.3956280099)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-Current cycle: 900 out of 1000
-========================================================================================================
-
-Net charge: 0 (F: 0, A: 0, C: 0)
-Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
-               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
-               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
-Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
-Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
-Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
-
-Loadings per component:
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 845/0/0 (avg. 667.46282), density: 509.97423 (avg. 402.82703) [kg/m^3]
-	absolute adsorption: 211.25000 (avg. 166.86570) [mol/uc],  15.4098435752 (avg.  12.1721865496) [mol/kg], 678.1718059016 (avg. 535.6857578632) [mg/g]
-	                     345.3958601690 (avg. 272.8270941188) [cm^3 STP/g],  259.7318726007 (avg. 205.1613821225) [cm^3 STP/cm^3]
-	excess adsorption:   210.9265575172 (avg. 166.5422622897) [mol/uc],  15.3862497382 (avg.  12.1485927126) [mol/kg], 677.1334647292 (avg. 534.6474166908) [mg/g]
-	                     344.8670284788 (avg. 272.2982624286) [cm^3 STP/g],  259.3342000717 (avg. 204.7637095936) [cm^3 STP/cm^3]
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Degrees of freedom: 7605 0 7605 0
-Number of Framework-atoms:   4560
-Number of Adsorbates:         845 (845 integer, 0 fractional, 0 reaction)
-Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
-
-Current total potential energy:          -4071762.1359847644 [K]  (avg.    -3110373.7242133594)
-	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
-	Current Host-Adsorbate energy:           -53203.7726027071 [K]  (avg.      -75815.1850551157)
-	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Adsorbate energy:    -3943440.3687711544 [K]  (avg.    -2970043.0785367358)
-	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
-	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
-
-
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Finishing simulation
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-
-Current (running energy) Energy Status
 ===========================================================================
 
 Internal energy:
@@ -1302,11 +765,11 @@ Host/Cation energy:                                           0.00000000
 	Host/Cation bondipole-bonddipole Real energy:                 0.00000000
 	Host/Cation bondipole-bonddipole Fourier energy:              0.00000000
 
-Adsorbate/Adsorbate energy:                                 -4024810.30665298
+Adsorbate/Adsorbate energy:                                 -4024810.30665323
 	Adsorbate/Adsorbate VDW energy:                              -189947.53220438
-	Adsorbate/Adsorbate Coulomb energy:                         -3834862.77444860
-	Adsorbate/Adsorbate charge-charge Real energy:              -3173039.87258985
-	Adsorbate/Adsorbate charge-charge Fourier energy:            -661822.90185875
+	Adsorbate/Adsorbate Coulomb energy:                         -3834862.77444885
+	Adsorbate/Adsorbate charge-charge Real energy:              -3173039.87258990
+	Adsorbate/Adsorbate charge-charge Fourier energy:            -661822.90185895
 	Adsorbate/Adsorbate charge-bonddipole Real energy:                 0.00000000
 	Adsorbate/Adsorbate charge-bonddipole Fourier energy:              0.00000000
 	Adsorbate/Adsorbate bondipole-bonddipole Real energy:              0.00000000
@@ -1350,9 +813,546 @@ Out-of-plane distance constraints energy:                     0.00000000
 Exclusion constraints energy:                                 0.00000000
 
 ===================================================================
-Total energy: -4136328.139053585008
+Total energy: -4136328.139053841587
 	Total Van der Waals: -225603.008641
 	Total Coulomb: -3834862.774449
+
+	Total Polarization: 0.000000
+
+
+
+
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Starting simulation
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+[Init] Current cycle: 0 out of 100
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]
+Box-lengths:  49.64340  49.64340  56.73430 Box-angles:   90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 856/0/0, density: 516.61295 [kg/m^3]
+	absolute adsorption: 214.00000 [mol/uc],        15.6104 [mol/kg],            687.0001 [mg/g]
+	                                               349.8921 [cm^3 STP/g],        263.1130 [cm^3 STP/cm^3]
+	excess adsorption:   213.35148 [mol/uc],        15.5631 [mol/kg],            684.9182 [mg/g]
+	                                               348.8318 [cm^3 STP/g],        262.3156 [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7704 0 7704 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         856 (856 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction
+
+Current total potential energy:          -4136328.1390538416 [K]
+	Current Host-Host energy:                     0.0000000000 [K]
+	Current Host-Adsorbate energy:           -35655.4764361487 [K]
+	Current Host-Cation energy:                   0.0000000000 [K]
+	Current Adsorbate-Adsorbate energy:    -4024810.3066532305 [K]
+	Current Cation-Cation energy:                 0.0000000000 [K]
+	Current Adsorbate-Cation energy:              0.0000000000 [K]
+
+
+
+Average Properties at Current cycle: 0 out of 1000
+========================================================================================
+
+Framework surface area:       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
+	Framework 0 individual surface area:       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
+	Cation surface area:                       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
+Compressibility:       0.0000000000 [-]
+Henry coefficients
+	Component 0: 0 [mol/kg/Pa] (Rosenbluth factor new: 0 [-])
+Energy <U_gh>_1-<U_h>_0 from Widom
+
+
+Current cycle: 0 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 861/0/0 (avg. 861.00000), density: 519.63055 (avg. 519.63055) [kg/m^3]
+	absolute adsorption: 215.25000 (avg. 215.25000) [mol/uc],  15.7016275956 (avg.  15.7016275956) [mol/kg], 691.0129288536 (avg. 691.0129288536) [mg/g]
+	                     351.9359001249 (avg. 351.9359001249) [cm^3 STP/g],  264.6498725552 (avg. 264.6498725552) [cm^3 STP/cm^3]
+	excess adsorption:   214.6014847351 (avg. 214.6014847351) [mol/uc],  15.6543209978 (avg.  15.6543209978) [mol/kg], 688.9310127903 (avg. 688.9310127903) [mg/g]
+	                     350.8755711888 (avg. 350.8755711888) [cm^3 STP/g],  263.8525230444 (avg. 263.8525230444) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7749 0 7749 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         861 (861 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4162127.3848693478 [K]  (avg.    -4162127.3848693478)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:           -29403.9279126650 [K]  (avg.      -29403.9279126650)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4056521.7439200357 [K]  (avg.    -4056521.7439200357)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 100 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 878/0/0 (avg. 868.59406), density: 529.89039 (avg. 524.21372) [kg/m^3]
+	absolute adsorption: 219.50000 (avg. 217.14851) [mol/uc],  16.0116481172 (avg.  15.8401166696) [mol/kg], 704.6566219901 (avg. 697.1076945121) [mg/g]
+	                     358.8846925780 (avg. 355.0399908713) [cm^3 STP/g],  269.8752475070 (avg. 266.9840965436) [cm^3 STP/cm^3]
+	excess adsorption:   218.8514847351 (avg. 216.4999995866) [mol/uc],  15.9643415194 (avg.  15.7928100718) [mol/kg], 702.5747059268 (avg. 695.0257784488) [mg/g]
+	                     357.8243636419 (avg. 353.9796619351) [cm^3 STP/g],  269.0778979961 (avg. 266.1867470327) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7902 0 7902 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         878 (878 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4245687.2466352331 [K]  (avg.    -4198841.4163787300)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:           -11116.2493994051 [K]  (avg.      -19529.0011891086)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4157210.7437175848 [K]  (avg.    -4102593.7961259643)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 200 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 873/0/0 (avg. 871.55224), density: 526.87279 (avg. 525.99904) [kg/m^3]
+	absolute adsorption: 218.25000 (avg. 217.88806) [mol/uc],  15.9204656108 (avg.  15.8940635120) [mol/kg], 700.6437710676 (avg. 699.4818410990) [mg/g]
+	                     356.8409300918 (avg. 356.2491540883) [cm^3 STP/g],  268.3383725212 (avg. 267.8933669283) [cm^3 STP/cm^3]
+	excess adsorption:   217.6014847351 (avg. 217.2395444366) [mol/uc],  15.8731590130 (avg.  15.8467569142) [mol/kg], 698.5618550043 (avg. 697.3999250357) [mg/g]
+	                     355.7806011557 (avg. 355.1888251522) [cm^3 STP/g],  267.5410230103 (avg. 267.0960174174) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7857 0 7857 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         873 (873 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4234293.8541809805 [K]  (avg.    -4217178.7644333281)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:           -17430.8356449009 [K]  (avg.      -16642.7871581450)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4139844.2704701000 [K]  (avg.    -4123615.7224343815)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 300 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 881/0/0 (avg. 873.52492), density: 531.70095 (avg. 527.18959) [kg/m^3]
+	absolute adsorption: 220.25000 (avg. 218.38123) [mol/uc],  16.0663576210 (avg.  15.9300382594) [mol/kg], 707.0643325436 (avg. 701.0650537558) [mg/g]
+	                     360.1109500697 (avg. 357.0554912033) [cm^3 STP/g],  270.7973724984 (avg. 268.4997188652) [cm^3 STP/cm^3]
+	excess adsorption:   219.6014847351 (avg. 217.7327139710) [mol/uc],  16.0190510232 (avg.  15.8827316615) [mol/kg], 704.9824164803 (avg. 698.9831376925) [mg/g]
+	                     359.0506211336 (avg. 355.9951622672) [cm^3 STP/g],  270.0000229876 (avg. 267.7023693543) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7929 0 7929 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         881 (881 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4278043.8963223314 [K]  (avg.    -4231368.5800699275)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:           -10773.8882219563 [K]  (avg.      -15535.4750322569)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4189704.5480100620 [K]  (avg.    -4138778.2341037197)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 400 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 882/0/0 (avg. 875.69576), density: 532.30447 (avg. 528.49973) [kg/m^3]
+	absolute adsorption: 220.50000 (avg. 218.92394) [mol/uc],  16.0845941223 (avg.  15.9696268524) [mol/kg], 707.8669027281 (avg. 702.8073081485) [mg/g]
+	                     360.5197025670 (avg. 357.9428289684) [cm^3 STP/g],  271.1047474956 (avg. 269.1669819275) [cm^3 STP/cm^3]
+	excess adsorption:   219.8514847351 (avg. 218.2754248847) [mol/uc],  16.0372875245 (avg.  15.9223202546) [mol/kg], 705.7849866648 (avg. 700.7253920852) [mg/g]
+	                     359.4593736308 (avg. 356.8825000323) [cm^3 STP/g],  270.3073979848 (avg. 268.3696324166) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7938 0 7938 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         882 (882 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4284424.6212504506 [K]  (avg.    -4244668.3461943259)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:           -12312.1545748179 [K]  (avg.      -14374.1890828559)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4194478.5538445087 [K]  (avg.    -4153090.9502109583)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 500 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 882/0/0 (avg. 876.89421), density: 532.30447 (avg. 529.22302) [kg/m^3]
+	absolute adsorption: 220.50000 (avg. 219.22355) [mol/uc],  16.0845941223 (avg.  15.9914824052) [mol/kg], 707.8669027281 (avg. 703.7691491713) [mg/g]
+	                     360.5197025670 (avg. 358.4326987986) [cm^3 STP/g],  271.1047474956 (avg. 269.5353557935) [cm^3 STP/cm^3]
+	excess adsorption:   219.8514847351 (avg. 218.5750376293) [mol/uc],  16.0372875245 (avg.  15.9441758074) [mol/kg], 705.7849866648 (avg. 701.6872331080) [mg/g]
+	                     359.4593736308 (avg. 357.3723698625) [cm^3 STP/g],  270.3073979848 (avg. 268.7380062827) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7938 0 7938 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         882 (882 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4288079.7390249530 [K]  (avg.    -4252214.3001788724)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:            -8598.0559620913 [K]  (avg.      -13710.9100892264)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4201847.7702317368 [K]  (avg.    -4161218.3038271624)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 600 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 884/0/0 (avg. 877.97005), density: 533.51151 (avg. 529.87231) [kg/m^3]
+	absolute adsorption: 221.00000 (avg. 219.49251) [mol/uc],  16.1210671248 (avg.  16.0111019325) [mol/kg], 709.4720430970 (avg. 704.6325849463) [mg/g]
+	                     361.3372075615 (avg. 358.8724504067) [cm^3 STP/g],  271.7194974899 (avg. 269.8660416002) [cm^3 STP/cm^3]
+	excess adsorption:   220.3514847351 (avg. 218.8439972143) [mol/uc],  16.0737605270 (avg.  15.9637953347) [mol/kg], 707.3901270338 (avg. 702.5506688830) [mg/g]
+	                     360.2768786253 (avg. 357.8121214706) [cm^3 STP/g],  270.9221479791 (avg. 269.0686920894) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7956 0 7956 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         884 (884 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4300855.9569902997 [K]  (avg.    -4259366.7862657448)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:            -4761.5465929780 [K]  (avg.      -12415.6461339208)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4218323.5162593964 [K]  (avg.    -4169592.5115186260)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 700 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 888/0/0 (avg. 879.05421), density: 535.92559 (avg. 530.52662) [kg/m^3]
+	absolute adsorption: 222.00000 (avg. 219.76355) [mol/uc],  16.1940131299 (avg.  16.0308731877) [mol/kg], 712.6823238350 (avg. 705.5026981189) [mg/g]
+	                     362.9722175504 (avg. 359.3156028426) [cm^3 STP/g],  272.9489974786 (avg. 270.1992847722) [cm^3 STP/cm^3]
+	excess adsorption:   221.3514847351 (avg. 219.1150368036) [mol/uc],  16.1467065321 (avg.  15.9835665899) [mol/kg], 710.6004077718 (avg. 703.4207820557) [mg/g]
+	                     361.9118886143 (avg. 358.2552739064) [cm^3 STP/g],  272.1516479677 (avg. 269.4019352613) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7992 0 7992 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         888 (888 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4326650.7431428712 [K]  (avg.    -4266773.7649302930)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:            -1101.5701203508 [K]  (avg.      -11051.8406003185)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4247504.0129702808 [K]  (avg.    -4178289.1280958815)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 800 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 887/0/0 (avg. 879.87391), density: 535.32207 (avg. 531.02133) [kg/m^3]
+	absolute adsorption: 221.75000 (avg. 219.96848) [mol/uc],  16.1757766287 (avg.  16.0458216358) [mol/kg], 711.8797536505 (avg. 706.1605643707) [mg/g]
+	                     362.5634650532 (avg. 359.6506569954) [cm^3 STP/g],  272.6416224814 (avg. 270.4512398550) [cm^3 STP/cm^3]
+	excess adsorption:   221.1014847351 (avg. 219.3199616390) [mol/uc],  16.1284700308 (avg.  15.9985150380) [mol/kg], 709.7978375873 (avg. 704.0786483075) [mg/g]
+	                     361.5031361170 (avg. 358.5903280593) [cm^3 STP/g],  271.8442729706 (avg. 269.6538903441) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7983 0 7983 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         887 (887 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4338504.3537866091 [K]  (avg.    -4274076.4199536564)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:            -9247.4423975984 [K]  (avg.      -10900.4430586328)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4251280.3557279371 [K]  (avg.    -4185687.1033337903)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
+Current cycle: 900 out of 1000
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box:  49.64340 -24.82170   0.00000 [A]   Average Box:  49.64340 -24.82170   0.00000 [A]
+               0.00000  42.99245   0.00000 [A]                  0.00000  42.99245   0.00000 [A]
+               0.00000   0.00000  56.73430 [A]                  0.00000   0.00000  56.73430 [A]
+Box-lengths:   49.64340  49.64340  56.73430 [A] Average:  49.64340  49.64340  56.73430 [A]
+Box-angles:   90.00000  90.00000 120.00000 [degrees] Average:  90.00000  90.00000 120.00000 [degrees]
+Volume: 121087.51555 [A^3] Average Volume: 121087.51555 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (carbon_dioxide), current number of integer/fractional/reaction molecules: 888/0/0 (avg. 880.76471), density: 535.92559 (avg. 531.55894) [kg/m^3]
+	absolute adsorption: 222.00000 (avg. 220.19118) [mol/uc],  16.1940131299 (avg.  16.0620666795) [mol/kg], 712.6823238350 (avg. 706.8754925001) [mg/g]
+	                     362.9722175504 (avg. 360.0147730116) [cm^3 STP/g],  272.9489974786 (avg. 270.7250489697) [cm^3 STP/cm^3]
+	excess adsorption:   221.3514847351 (avg. 219.5426612057) [mol/uc],  16.1467065321 (avg.  16.0147600817) [mol/kg], 710.6004077718 (avg. 704.7935764369) [mg/g]
+	                     361.9118886143 (avg. 358.9544440754) [cm^3 STP/g],  272.1516479677 (avg. 269.9276994588) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 7992 0 7992 0
+Number of Framework-atoms:   4560
+Number of Adsorbates:         888 (888 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:          -4350411.1525446279 [K]  (avg.    -4281949.6984821381)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:            -4719.3036640720 [K]  (avg.      -10504.8472726208)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:    -4267646.6888283165 [K]  (avg.    -4193894.9955956824)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Finishing simulation
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+Current (running energy) Energy Status
+===========================================================================
+
+Internal energy:
+Host stretch energy:                                            0.00000000
+Host UreyBradley energy:                                        0.00000000
+Host bend energy:                                               0.00000000
+Host inversion-bend energy:                                     0.00000000
+Host torsion energy:                                            0.00000000
+Host improper torsion energy:                                   0.00000000
+Host out-of-plane energy:                                       0.00000000
+Host stretch/stretch energy:                                    0.00000000
+Host bend/bend energy:                                          0.00000000
+Host stretch/bend energy:                                       0.00000000
+Host stretch/torsion energy:                                    0.00000000
+Host bend/torsion energy:                                       0.00000000
+
+Adsorbate stretch energy:                                       0.00000000
+Adsorbate UreyBradley energy:                                   0.00000000
+Adsorbate bend energy:                                          0.00000000
+Adsorbate inversion-bend energy:                                0.00000000
+Adsorbate torsion energy:                                       0.00000000
+Adsorbate improper torsion energy:                              0.00000000
+Adsorbate out-of-plane energy:                                  0.00000000
+Adsorbate stretch/stretch energy:                               0.00000000
+Adsorbate bend/bend energy:                                     0.00000000
+Adsorbate stretch/bend energy:                                  0.00000000
+Adsorbate stretch/torsion energy:                               0.00000000
+Adsorbate bend/torsion energy:                                  0.00000000
+Adsorbate intra VDW energy:                                     0.00000000
+Adsorbate intra charge-charge Coulomb energy:                   0.00000000
+Adsorbate intra charge-bonddipole Coulomb energy:               0.00000000
+Adsorbate intra bonddipole-bonddipole Coulomb energy:           0.00000000
+
+Cation stretch energy:                                          0.00000000
+Cation UreyBradley energy:                                      0.00000000
+Cation bend energy:                                             0.00000000
+Cation inversion-bend energy:                                   0.00000000
+Cation torsion energy:                                          0.00000000
+Cation improper torsion energy:                                 0.00000000
+Cation out-of-plane energy:                                     0.00000000
+Cation stretch/stretch energy:                                  0.00000000
+Cation bend/bend energy:                                        0.00000000
+Cation stretch/bend energy:                                     0.00000000
+Cation stretch/torsion energy:                                  0.00000000
+Cation bend/torsion energy:                                     0.00000000
+Cation intra VDW energy:                                        0.00000000
+Cation intra charge-charge Coulomb energy:                      0.00000000
+Cation intra charge-bonddipole Coulomb energy:                  0.00000000
+Cation intra bonddipole-bonddipole Coulomb energy:              0.00000000
+
+Host/Host energy:                                             0.00000000
+	Host/Host VDW energy:                                         0.00000000
+	Host/Host Coulomb energy:                                     0.00000000
+	Host/Host charge-charge Real energy:                          0.00000000
+	Host/Host charge-charge Fourier energy:                       0.00000000
+	Host/Host charge-bonddipole Real energy:                      0.00000000
+	Host/Host charge-bonddipole Fourier energy:                   0.00000000
+	Host/Host bondipole-bonddipole Real energy:                   0.00000000
+	Host/Host bondipole-bonddipole Fourier energy:                0.00000000
+
+Host/Adsorbate energy:                                     -754.85354684
+	Host/Adsorbate VDW energy:                                 -754.85354684
+	Host/Adsorbate Coulomb energy:                                0.00000000
+	Host/Adsorbate charge-charge Real energy:                     0.00000000
+	Host/Adsorbate charge-charge Fourier energy:                  0.00000000
+	Host/Adsorbate charge-bonddipole Real energy:                 0.00000000
+	Host/Adsorbate charge-bonddipole Fourier energy:              0.00000000
+	Host/Adsorbate bondipole-bonddipole Real energy:              0.00000000
+	Host/Adsorbate bondipole-bonddipole Fourier energy:           0.00000000
+
+Host/Cation energy:                                           0.00000000
+	Host/Cation VDW energy:                                       0.00000000
+	Host/Cation Coulomb energy:                                   0.00000000
+	Host/Cation charge-charge Real energy:                        0.00000000
+	Host/Cation charge-charge Fourier energy:                     0.00000000
+	Host/Cation charge-bonddipole Real energy:                    0.00000000
+	Host/Cation charge-bonddipole Fourier energy:                 0.00000000
+	Host/Cation bondipole-bonddipole Real energy:                 0.00000000
+	Host/Cation bondipole-bonddipole Fourier energy:              0.00000000
+
+Adsorbate/Adsorbate energy:                                 -4295844.33047120
+	Adsorbate/Adsorbate VDW energy:                              -167614.01788102
+	Adsorbate/Adsorbate Coulomb energy:                         -4128230.31259019
+	Adsorbate/Adsorbate charge-charge Real energy:              -3417511.58666780
+	Adsorbate/Adsorbate charge-charge Fourier energy:            -710718.72592237
+	Adsorbate/Adsorbate charge-bonddipole Real energy:                 0.00000000
+	Adsorbate/Adsorbate charge-bonddipole Fourier energy:              0.00000000
+	Adsorbate/Adsorbate bondipole-bonddipole Real energy:              0.00000000
+	Adsorbate/Adsorbate bondipole-bonddipole Fourier energy:           0.00000000
+
+Adsorbate/Cation energy:                                           0.00000000
+	Adsorbate/Cation VDW energy:                                       0.00000000
+	Adsorbate/Cation Coulomb energy:                                   0.00000000
+	Adsorbate/Cation charge-charge Real energy:                        0.00000000
+	Adsorbate/Cation charge-charge Fourier energy:                     0.00000000
+	Adsorbate/Cation charge-bonddipole Real energy:                    0.00000000
+	Adsorbate/Cation charge-bonddipole Fourier energy:                 0.00000000
+	Adsorbate/Cation bondipole-bonddipole Real energy:                 0.00000000
+	Adsorbate/Cation bondipole-bonddipole Fourier energy:              0.00000000
+
+Cation/Cation energy:                                           0.00000000
+	Cation/Cation VDW energy:                                       0.00000000
+	Cation/Cation Coulomb energy:                                   0.00000000
+	Cation/Cation charge-charge Real energy:                        0.00000000
+	Cation/Cation charge-charge Fourier energy:                     0.00000000
+	Cation/Cation charge-bonddipole Real energy:                    0.00000000
+	Cation/Cation charge-bonddipole Fourier energy:                 0.00000000
+	Cation/Cation bondipole-bonddipole Real energy:                 0.00000000
+	Cation/Cation bondipole-bonddipole Fourier energy:              0.00000000
+
+Polarization energy:
+	Host polarization energy:                                     0.00000000
+	Adsorbate polarization energy:                                0.00000000
+	Cation polarization energy:                                   0.00000000
+	Host back-polarization energy:                                     0.00000000
+	Adsorbate back-polarization energy:                                0.00000000
+	Cation back-polarization energy:                                   0.00000000
+
+Tail-correction energy:                                  -78319.83036751
+
+Distance constraints energy:                                  0.00000000
+Angle constraints energy:                                     0.00000000
+Dihedral constraints energy:                                  0.00000000
+Inversion-bend constraints energy:                            0.00000000
+Out-of-plane distance constraints energy:                     0.00000000
+Exclusion constraints energy:                                 0.00000000
+
+===================================================================
+Total energy: -4374919.014385557733
+	Total Van der Waals: -168368.871428
+	Total Coulomb: -4128230.312590
 
 	Total Polarization: 0.000000
 
@@ -1372,7 +1372,7 @@ Bead: 1
 	maximum bond length change          : 0.300000
 	bond length change acceptence       : 0.000000 [%]
 	maximum change bend angle           : 3.141593
-	change bend angle acceptence        : 69.210754 [%]
+	change bend angle acceptence        : 72.682235 [%]
 
 Bead: 2
 	maximum bond length change          : 0.300000
@@ -1390,11 +1390,11 @@ Random rotation move was OFF for all components
 
 Performance of the swap addition move:
 ======================================
-Component [carbon_dioxide] total tried: 342600.000000 succesfull growth: 302900.000000 (88.412142 [%]) accepted: 2687.000000 (0.784297 [%])
+Component [carbon_dioxide] total tried: 441438.000000 succesfull growth: 370716.000000 (83.979177 [%]) accepted: 633.000000 (0.143395 [%])
 
 Performance of the swap deletion move:
 ======================================
-Component [carbon_dioxide] total tried: 342958.000000 succesfull growth: 342958.000000 (100.000000 [%]) accepted: 1886.000000 (0.549922 [%])
+Component [carbon_dioxide] total tried: 440494.000000 succesfull growth: 440494.000000 (100.000000 [%]) accepted: 602.000000 (0.136665 [%])
 
 Reinsertion move was OFF for all components
 
@@ -1460,10 +1460,10 @@ Gibbs Widom move was OFF for all components
 
 Total CPU timings:
 ===========================================
-initialization:               16.4839 [s]
+initialization:            380.055982 [s]
 equilibration:                      0 [s]
-production run:           2864.370804 [s]
-total time:               2880.854704 [s]
+production run:           6540.305563 [s]
+total time:               6920.361545 [s]
 
 Production run CPU timings of the MC moves:
 ===========================================
@@ -1477,8 +1477,8 @@ Component: 0 (carbon_dioxide)
 	reinsertion in-place:                                0 [s]
 	reinsertion in-plane:                                0 [s]
 	identity switch:                                     0 [s]
-	swap (insertion):                          1414.125555 [s]
-	swap (deletion):                            1448.98641 [s]
+	swap (insertion):                          3217.703846 [s]
+	swap (deletion):                            3320.24367 [s]
 	swap lambda (CFMC):                                  0 [s]
 	swap lambda (CB/CFMC):                               0 [s]
 	Widom:                                               0 [s]
@@ -1504,8 +1504,8 @@ Total all components:
 	reinsertion in-place:                                0 [s]
 	reinsertion in-plane:                                0 [s]
 	identity switch:                                     0 [s]
-	swap (insertion):                          1414.125555 [s]
-	swap (deletion):                            1448.98641 [s]
+	swap (insertion):                          3217.703846 [s]
+	swap (deletion):                            3320.24367 [s]
 	swap lambda (CFMC):                                  0 [s]
 	swap lambda (CB/CFMC):                               0 [s]
 	Widom:                                               0 [s]
@@ -1551,8 +1551,8 @@ Particles moves:
 	reinsertion in-place:                                0 [s]
 	reinsertion in-plane:                                0 [s]
 	identity switch:                                     0 [s]
-	swap (insertion):                          1414.125555 [s]
-	swap (deletion):                            1448.98641 [s]
+	swap (insertion):                          3217.703846 [s]
+	swap (deletion):                            3320.24367 [s]
 	swap lambda (CFMC):                                  0 [s]
 	swap lambda (CB/CFMC):                               0 [s]
 	Widom:                                               0 [s]
@@ -1650,8 +1650,8 @@ Host/Host energy:                                             0.00000000
 	Host/Host bondipole-bonddipole Real energy:                   0.00000000
 	Host/Host bondipole-bonddipole Fourier energy:                0.00000000
 
-Host/Adsorbate energy:                                   -35655.47643615
-	Host/Adsorbate VDW energy:                               -35655.47643615
+Host/Adsorbate energy:                                     -754.85354684
+	Host/Adsorbate VDW energy:                                 -754.85354684
 	Host/Adsorbate Coulomb energy:                                0.00000000
 	Host/Adsorbate charge-charge Real energy:                     0.00000000
 	Host/Adsorbate charge-charge Fourier energy:                  0.00000000
@@ -1670,11 +1670,11 @@ Host/Cation energy:                                           0.00000000
 	Host/Cation bondipole-bonddipole Real energy:                 0.00000000
 	Host/Cation bondipole-bonddipole Fourier energy:              0.00000000
 
-Adsorbate/Adsorbate energy:                                 -4024810.30665317
-	Adsorbate/Adsorbate VDW energy:                              -189947.53220438
-	Adsorbate/Adsorbate Coulomb energy:                         -3834862.77444879
-	Adsorbate/Adsorbate charge-charge Real energy:              -3173039.87258990
-	Adsorbate/Adsorbate charge-charge Fourier energy:            -661822.90185889
+Adsorbate/Adsorbate energy:                                 -4295844.33047112
+	Adsorbate/Adsorbate VDW energy:                              -167614.01788102
+	Adsorbate/Adsorbate Coulomb energy:                         -4128230.31259010
+	Adsorbate/Adsorbate charge-charge Real energy:              -3417511.58666783
+	Adsorbate/Adsorbate charge-charge Fourier energy:            -710718.72592228
 	Adsorbate/Adsorbate charge-bonddipole Real energy:                 0.00000000
 	Adsorbate/Adsorbate charge-bonddipole Fourier energy:              0.00000000
 	Adsorbate/Adsorbate bondipole-bonddipole Real energy:              0.00000000
@@ -1708,7 +1708,7 @@ Polarization energy:
 	Adsorbate back-polarization energy:                                0.00000000
 	Cation back-polarization energy:                                   0.00000000
 
-Tail-correction energy:                                  -75862.35596446
+Tail-correction energy:                                  -78319.83036751
 
 Distance constraints energy:                                  0.00000000
 Angle constraints energy:                                     0.00000000
@@ -1718,9 +1718,9 @@ Out-of-plane distance constraints energy:                     0.00000000
 Exclusion constraints energy:                                 0.00000000
 
 ===================================================================
-Total energy: -4136328.139053785708
-	Total Van der Waals: -225603.008641
-	Total Coulomb: -3834862.774449
+Total energy: -4374919.014385472052
+	Total Van der Waals: -168368.871428
+	Total Coulomb: -4128230.312590
 
 	Total Polarization: 0.000000
 
@@ -1786,8 +1786,8 @@ Host/Host energy-drift:                                              0
 		Host/Host Fourier charge-bonddipole energy-drift:                0
 		Host/Host Real bonddipole-bonddipole energy-drift:               0
 		Host/Host Fourier bonddipole-bonddipole energy-drift:            0
-Host/Adsorbate energy-drift:                                         2.82219e-09
-	Host/Adsorbate VDW energy-drift:                                   2.82219e-09
+Host/Adsorbate energy-drift:                                         -2.76531e-09
+	Host/Adsorbate VDW energy-drift:                                   -2.76531e-09
 	Host/Adsorbate Coulomb energy-drift:                               0
 		Host/Adsorbate Real charge-charge energy-drift:                  0
 		Host/Adsorbate Fourier charge-charge energy-drift:               0
@@ -1804,11 +1804,11 @@ Host/Cation energy-drift:                                            0
 		Host/Cation Fourier charge-bonddipole energy-drift:              0
 		Host/Cation Real bonddipole-bonddipole energy-drift:             0
 		Host/Cation Fourier bonddipole-bonddipole energy-drift:          0
-Adsorbate/Adsorbate energy-drift:                                     1.94902e-07
-	Adsorbate/Adsorbate VDW energy-drift:                               6.12568e-09
-	Adsorbate/Adsorbate Coulomb energy-drift:                           1.88741e-07
-		Adsorbate/Adsorbate Real charge-charge energy-drift:              5.32059e-08
-		Adsorbate/Adsorbate Fourier charge-charge energy-drift:           1.38195e-07
+Adsorbate/Adsorbate energy-drift:                                     -7.95288e-08
+	Adsorbate/Adsorbate VDW energy-drift:                               -3.25536e-09
+	Adsorbate/Adsorbate Coulomb energy-drift:                           -8.00889e-08
+		Adsorbate/Adsorbate Real charge-charge energy-drift:              2.80031e-08
+		Adsorbate/Adsorbate Fourier charge-charge energy-drift:           -9.77308e-08
 		Adsorbate/Adsorbate Real charge-bonddipole energy-drift:          0
 		Adsorbate/Adsorbate Fourier charge-bonddipole energy-drift:       0
 		Adsorbate/Adsorbate Real bonddipole-bonddipole energy-drift:      0
@@ -1850,7 +1850,7 @@ Out-of-plane distance constraints energy-drift:                    0
 Exclusion constraints energy-drift:                 0
 
 ===================================================================
-Total energy-drift: 2.00502e-07
+Total energy-drift: -8.62496e-08
 
 
 
@@ -1861,13 +1861,13 @@ Average properties of the system[0]:
 
 Average temperature:
 ====================
-	Block[ 0]           69.62232 [K]
-	Block[ 1]           10.07907 [K]
-	Block[ 2]            9.05371 [K]
-	Block[ 3]            8.88924 [K]
-	Block[ 4]            8.84188 [K]
+	Block[ 0]          223.60994 [K]
+	Block[ 1]          221.50448 [K]
+	Block[ 2]          220.82383 [K]
+	Block[ 3]          220.06090 [K]
+	Block[ 4]          218.92061 [K]
 	------------------------------------------------------------------------------
-	Average             21.29724 [K] +/-           33.54345 [K]
+	Average            220.98395 [K] +/-            2.17715 [K]
 
 Average Pressure:
 =================
@@ -1958,23 +1958,23 @@ Average Surface Area:
 
 Average density:
 =================
-	Block[ 0]           98.71773 [kg/m^3]
-	Block[ 1]          450.39476 [kg/m^3]
-	Block[ 2]          499.50618 [kg/m^3]
-	Block[ 3]          508.69779 [kg/m^3]
-	Block[ 4]          511.42268 [kg/m^3]
+	Block[ 0]          525.99467 [kg/m^3]
+	Block[ 1]          530.98578 [kg/m^3]
+	Block[ 2]          532.61830 [kg/m^3]
+	Block[ 3]          534.46507 [kg/m^3]
+	Block[ 4]          537.25333 [kg/m^3]
 	------------------------------------------------------------------------------
-	Average            413.74783 [kg/m^3] +/-          220.77258 [kg/m^3]
+	Average            532.26343 [kg/m^3] +/-            5.22309 [kg/m^3]
 
 	Average density component 0 [carbon_dioxide]
 	-------------------------------------------------------------
-		Block[ 0]           98.71773 [kg/m^3]
-		Block[ 1]          450.39476 [kg/m^3]
-		Block[ 2]          499.50618 [kg/m^3]
-		Block[ 3]          508.69779 [kg/m^3]
-		Block[ 4]          511.42268 [kg/m^3]
+		Block[ 0]          525.99467 [kg/m^3]
+		Block[ 1]          530.98578 [kg/m^3]
+		Block[ 2]          532.61830 [kg/m^3]
+		Block[ 3]          534.46507 [kg/m^3]
+		Block[ 4]          537.25333 [kg/m^3]
 		------------------------------------------------------------------------------
-		Average            413.74783 [kg/m^3] +/-          220.77258 [kg/m^3]
+		Average            532.26343 [kg/m^3] +/-            5.22309 [kg/m^3]
 
 Average compressibility Z:
 =========================
@@ -1988,41 +1988,41 @@ Average compressibility Z:
 
 Average Heat Capacity (MC-NPT-ensemble): [1/(kB T^2)]*[<H^2>-<H>^2]
 ===================================================================
-	Block[ 0] 25329705.444797 [J/mol/K]
-	Block[ 1] 7988493.462926 [J/mol/K]
-	Block[ 2] 292681.859037 [J/mol/K]
-	Block[ 3] 80836.565756 [J/mol/K]
-	Block[ 4] 104970.669807 [J/mol/K]
+	Block[ 0] 60707.756644 [J/mol/K]
+	Block[ 1] 21825.347067 [J/mol/K]
+	Block[ 2] 8776.744591 [J/mol/K]
+	Block[ 3] 9756.651141 [J/mol/K]
+	Block[ 4] 29417.688055 [J/mol/K]
 	------------------------------------------------------------------------------
-	Average        6759337.60046 [J/mol/K] +/-     13557996.47330 [J/mol/K]
-	Average        1615520.45900 [cal/mol/K] +/-      3240438.92765 [cal/mol/K]
+	Average          26096.83750 [J/mol/K] +/-        26292.81415 [J/mol/K]
+	Average           6237.29386 [cal/mol/K] +/-         6284.13340 [cal/mol/K]
 
 Enthalpy of adsorption:
 =======================
 
 	Total enthalpy of adsorption
 	----------------------------
-	Block[ 0] -4198.97721        [K]
-	Block[ 1] -6760.22564        [K]
-	Block[ 2] -6235.80131        [K]
-	Block[ 3] -6472.34199        [K]
-	Block[ 4] -6779.58953        [K]
+	Block[ 0] -5693.18273        [K]
+	Block[ 1] -5123.22194        [K]
+	Block[ 2] -5043.44237        [K]
+	Block[ 3] -3462.28166        [K]
+	Block[ 4] -5596.26631        [K]
 	------------------------------------------------------------------------------
-	Average          -6089.38714 +/-        1341.147751 [K]
-	                   -50.63000 +/-          11.150926 [KJ/MOL]
+	Average          -4983.67900 +/-        1113.233544 [K]
+	                   -41.43662 +/-           9.255941 [KJ/MOL]
 	Note: Ug should be subtracted from this value
 	Note: The heat of adsorption Q=-H
 
 
 derivative of the chemical potential with respect to density (constant T,V):
 ============================================================================
-	Block[ 0] 2446.37664         [-]
-	Block[ 1] 21301.77180        [-]
-	Block[ 2] 498463.36490       [-]
-	Block[ 3] 2004417.59933      [-]
-	Block[ 4] 1967325.42461      [-]
+	Block[ 0] 2003843.79734      [-]
+	Block[ 1] 4510987.82239      [-]
+	Block[ 2] 11924167.17965     [-]
+	Block[ 3] 10867187.21630     [-]
+	Block[ 4] 4117571.05003      [-]
 	------------------------------------------------------------------------------
-	Average         898790.90746 +/-     1256559.280647 [-]
+	Average        6684751.41314 +/-     5488159.936756 [-]
 
 
 
@@ -2454,14 +2454,14 @@ Average Host-Host energy:
 
 Average Adsorbate-Adsorbate energy:
 ===================================
-	Block[ 0] -552760.17753      Van der Waals: -51294.34551       Coulomb: -501465.83201      [K]
-	Block[ 1] -3192117.19217     Van der Waals: -206057.58336      Coulomb: -2986059.60881     [K]
-	Block[ 2] -3761526.47510     Van der Waals: -189052.55594      Coulomb: -3572473.91916     [K]
-	Block[ 3] -3889403.09329     Van der Waals: -179172.47591      Coulomb: -3710230.61738     [K]
-	Block[ 4] -3956308.34373     Van der Waals: -189891.25588      Coulomb: -3766417.08785     [K]
+	Block[ 0] -4123534.57969     Van der Waals: -184698.92385      Coulomb: -3938835.65585     [K]
+	Block[ 1] -4182440.38271     Van der Waals: -179101.47004      Coulomb: -4003338.91267     [K]
+	Block[ 2] -4202558.91713     Van der Waals: -179054.91201      Coulomb: -4023504.00512     [K]
+	Block[ 3] -4233886.56754     Van der Waals: -175036.86045      Coulomb: -4058849.70709     [K]
+	Block[ 4] -4279716.49365     Van der Waals: -172329.74107      Coulomb: -4107386.75258     [K]
 	------------------------------------------------------------------------------
-	Average   -3070423.05636     Van der Waals: -163093.643322     Coulomb: -2907329.41304     [K]
-	      +/- 1786866.67356                 +/- 78506.068169            +/- 1713432.70033      [K]
+	Average   -4204427.38815     Van der Waals: -178044.381483     Coulomb: -4026383.00666     [K]
+	      +/- 72300.96852                   +/- 5827.082552             +/- 78073.12104        [K]
 
 Average Cation-Cation energy:
 =============================
@@ -2476,14 +2476,14 @@ Average Cation-Cation energy:
 
 Average Host-Adsorbate energy:
 ==============================
-	Block[ 0] -60034.26646       Van der Waals: -60034.26646       Coulomb: 0.00000            [K]
-	Block[ 1] -137070.55966      Van der Waals: -137070.55966      Coulomb: 0.00000            [K]
-	Block[ 2] -72773.55275       Van der Waals: -72773.55275       Coulomb: 0.00000            [K]
-	Block[ 3] -49383.52748       Van der Waals: -49383.52748       Coulomb: 0.00000            [K]
-	Block[ 4] -44154.87417       Van der Waals: -44154.87417       Coulomb: 0.00000            [K]
+	Block[ 0] -16638.84692       Van der Waals: -16638.84692       Coulomb: 0.00000            [K]
+	Block[ 1] -12119.84142       Van der Waals: -12119.84142       Coulomb: 0.00000            [K]
+	Block[ 2] -8526.52056        Van der Waals: -8526.52056        Coulomb: 0.00000            [K]
+	Block[ 3] -6324.82834        Van der Waals: -6324.82834        Coulomb: 0.00000            [K]
+	Block[ 4] -1705.35054        Van der Waals: -1705.35054        Coulomb: 0.00000            [K]
 	------------------------------------------------------------------------------
-	Average   -72683.35610       Van der Waals: -72683.356104      Coulomb: 0.00000            [K]
-	      +/- 46709.76115                   +/- 46709.761153            +/- 0.00000            [K]
+	Average   -9063.07755        Van der Waals: -9063.077555       Coulomb: 0.00000            [K]
+	      +/- 7040.81756                    +/- 7040.817560             +/- 0.00000            [K]
 
 Average Host-Cation energy:
 ===========================
@@ -2569,13 +2569,13 @@ Cation back-polarization energy:
 
 Tail-correction energy:
 =======================
-	Block[ 0]       -35193.27902 [K]
-	Block[ 1]       -68600.32104 [K]
-	Block[ 2]       -73951.58556 [K]
-	Block[ 3]       -74975.49839 [K]
-	Block[ 4]       -75280.41867 [K]
+	Block[ 0]       -76919.76237 [K]
+	Block[ 1]       -77484.49790 [K]
+	Block[ 2]       -77669.56424 [K]
+	Block[ 3]       -77879.23132 [K]
+	Block[ 4]       -78196.31188 [K]
 	------------------------------------------------------------------------------
-	Average         -65600.22054 [K] +/-        21367.35784 [K]
+	Average         -77629.87354 [K] +/-          592.14071 [K]
 
 Distance-constraints energy:
 =======================
@@ -2639,44 +2639,44 @@ Exclusion-constraints energy:
 
 Total energy:
 =============
-	Block[ 0]      -647987.72300 [K]
-	Block[ 1]     -3397788.07287 [K]
-	Block[ 2]     -3908251.61341 [K]
-	Block[ 3]     -4013762.11916 [K]
-	Block[ 4]     -4075743.63657 [K]
+	Block[ 0]     -4217093.18898 [K]
+	Block[ 1]     -4272044.72203 [K]
+	Block[ 2]     -4288755.00193 [K]
+	Block[ 3]     -4318090.62720 [K]
+	Block[ 4]     -4359618.15607 [K]
 	------------------------------------------------------------------------------
-	Average       -3208706.63300 [K] +/-      1807841.50000 [K]
+	Average       -4291120.33924 [K] +/-        65893.72760 [K]
 
 Number of molecules:
 ====================
 
 Component 0 [carbon_dioxide]
 -------------------------------------------------------------
-	Block[ 0] 163.57000          [-]
-	Block[ 1] 746.28000          [-]
-	Block[ 2] 827.65500          [-]
-	Block[ 3] 842.88500          [-]
-	Block[ 4] 847.40000          [-]
+	Block[ 0] 871.54500          [-]
+	Block[ 1] 879.81500          [-]
+	Block[ 2] 882.52000          [-]
+	Block[ 3] 885.58000          [-]
+	Block[ 4] 890.20000          [-]
 	------------------------------------------------------------------------------
-	Average loading absolute                            685.5580000000 +/-     365.8083459928 [-]
-	Average loading absolute [molecules/unit cell]      171.3895000000 +/-      91.4520864982 [-]
-	Average loading absolute [mol/kg framework]                 12.5021793393 +/-       6.6710643672 [-]
-	Average loading absolute [milligram/gram framework]        550.2084105447 +/-     293.5868717347 [-]
-	Average loading absolute [cm^3 (STP)/gr framework]         280.2235445039 +/-     149.5250749363 [-]
-	Average loading absolute [cm^3 (STP)/cm^3 framework]       210.7233883034 +/-     112.4403393108 [-]
+	Average loading absolute                            881.9320000000 +/-       8.6543760096 [-]
+	Average loading absolute [molecules/unit cell]      220.4830000000 +/-       2.1635940024 [-]
+	Average loading absolute [mol/kg framework]                 16.0833540402 +/-       0.1578255391 [-]
+	Average loading absolute [milligram/gram framework]        707.8123279555 +/-       6.9457441508 [-]
+	Average loading absolute [cm^3 (STP)/gr framework]         360.4919073972 +/-       3.5374978060 [-]
+	Average loading absolute [cm^3 (STP)/cm^3 framework]       271.0838459958 +/-       2.6601388014 [-]
 
-	Block[ 0] 162.27623          [-]
-	Block[ 1] 744.98623          [-]
-	Block[ 2] 826.36123          [-]
-	Block[ 3] 841.59123          [-]
-	Block[ 4] 846.10623          [-]
+	Block[ 0] 868.95094          [-]
+	Block[ 1] 877.22094          [-]
+	Block[ 2] 879.92594          [-]
+	Block[ 3] 882.98594          [-]
+	Block[ 4] 887.60594          [-]
 	------------------------------------------------------------------------------
-	Average loading excess                            684.2642300688 +/-     365.8083459928 [-]
-	Average loading excess [molecules/unit cell]      171.0660575172 +/-      91.4520864982 [-]
-	Average loading excess [mol/kg framework]                   12.4785855023 +/-       6.6710643672 [-]
-	Average loading excess [milligram/gram framework]          549.1700693723 +/-     293.5868717347 [-]
-	Average loading excess [cm^3 (STP)/gr framework]           279.6947128136 +/-     149.5250749363 [-]
-	Average loading excess [cm^3 (STP)/cm^3 framework]         210.3257157745 +/-     112.4403393108 [-]
+	Average loading excess                            879.3379389403 +/-       8.6543760097 [-]
+	Average loading excess [molecules/unit cell]      219.8344847351 +/-       2.1635940024 [-]
+	Average loading excess [mol/kg framework]                   16.0360474424 +/-       0.1578255391 [-]
+	Average loading excess [milligram/gram framework]          705.7304118922 +/-       6.9457441508 [-]
+	Average loading excess [cm^3 (STP)/gr framework]           359.4315784610 +/-       3.5374978060 [-]
+	Average loading excess [cm^3 (STP)/cm^3 framework]         270.2864964849 +/-       2.6601388014 [-]
 
 
 Average Widom Rosenbluth factor:
@@ -2787,7 +2787,7 @@ Average adsorption energy <U_gh>_1-<U_h>_0 obtained from Widom-insertion:
 Simulation finished,  0 warnings
 
 
-Sun Aug 17 03:16:04 2025
+Sun Aug 17 04:24:24 2025
 Simulation finished on Sunday, August 17.
-The end time was 03:16 AM.
+The end time was 04:24 AM.
 
