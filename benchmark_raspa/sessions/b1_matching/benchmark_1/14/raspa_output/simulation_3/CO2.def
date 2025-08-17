@@ -1,0 +1,28 @@
+# CO2 molecule definition
+# Simple linear molecule O=C=O
+
+# Number of atoms
+3
+
+# Atom definitions: type x y z charge
+C_co2     0.0000    0.0000    0.0000   0.6512
+O_co2     0.0000    0.0000    1.1600  -0.3256
+O_co2     0.0000    0.0000   -1.1600  -0.3256
+
+# Number of bonds
+2
+
+# Bond definitions: atom1 atom2
+0 1
+0 2
+
+# Number of bends
+1
+
+# Bend definitions: atom1 atom2 atom3
+1 0 2
+
+# Critical temperature and pressure
+critical_temperature 304.13
+critical_pressure 7.3773e6
+acentric_factor 0.22394

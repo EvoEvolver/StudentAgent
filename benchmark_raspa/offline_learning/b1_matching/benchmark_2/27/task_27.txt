@@ -1,0 +1,2 @@
+Task: Calculate ideal Rosenbluth weights for n-heptane and n-pentane using RASPA simulations. Requirements: Use 1/10 cycles and up to 10 molecules for speed, ignoring low accuracy. Need to create readme.txt explaining steps.
+Encountered issues calculating ideal Rosenbluth weights in RASPA: 1) Matrix inversion errors when using Ewald summation in empty box, 2) Widom insertion results showing 'average Widom 0.0' indicating calculation problems, 3) Need to investigate proper setup for Widom insertion simulations for alkane molecules.

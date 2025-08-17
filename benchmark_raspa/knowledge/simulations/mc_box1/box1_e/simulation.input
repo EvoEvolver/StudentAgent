@@ -4,7 +4,6 @@ NumberOfInitializationCycles  5000
 PrintEvery                    1000
 
 Forcefield                    local
-CutOff                        14.0
 
 Box 0
 BoxLengths 30 30 30
@@ -13,4 +12,5 @@ ExternalTemperature [T]
 Component 0 MoleculeName             [molecule name]
             MoleculeDefinition       local
             TranslationProbability   1.0
+            [other MC move probibilities]
             CreateNumberOfMolecules  100

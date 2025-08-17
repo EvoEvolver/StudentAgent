@@ -1,0 +1,27 @@
+SimulationType                MonteCarlo
+NumberOfCycles                2000
+NumberOfInitializationCycles  200
+PrintEvery                    200
+
+Forcefield                    local
+ChargeMethod                  Ewald
+EwaldPrecision                1e-6
+CutOffVDW                     12.8
+CutOffCoulomb                 12.8
+RemoveAtomNumberCodeFromLabel yes
+
+Box 0
+BoxLengths 30.0 30.0 30.0
+ExternalTemperature 298.0
+ExternalPressure 1e5
+
+Component 0 MoleculeName       n-heptane
+            MoleculeDefinition local
+            WidomProbability   1.0
+            CreateNumberOfMolecules 0
+
+Component 1 MoleculeName       pentane
+            MoleculeDefinition local
+            WidomProbability   1.0
+            CreateNumberOfMolecules 0
+

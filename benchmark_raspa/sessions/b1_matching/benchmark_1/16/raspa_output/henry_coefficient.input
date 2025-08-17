@@ -1,0 +1,33 @@
+SimulationType                MonteCarlo
+NumberOfCycles                500
+NumberOfInitializationCycles  100
+PrintEvery                    100
+
+Forcefield                    local
+ChargeMethod                  Ewald
+EwaldPrecision                1e-6
+CutOffVDW                     12.8
+CutOffCoulomb                 12.8
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 1
+HeliumVoidFraction 0.877
+ExternalTemperature 298.0
+ExternalPressure 1e5
+
+Component 0
+            MoleculeName           n-hexane
+            MoleculeDefinition     local
+            CreateNumberOfMolecules 0
+            WidomProbability        1.0
+            IdealGasRosenbluthWeight 1.0
+
+Component 1
+            MoleculeName           pentane
+            MoleculeDefinition     local
+            CreateNumberOfMolecules 0
+            WidomProbability        1.0
+            IdealGasRosenbluthWeight 1.0
+

@@ -1,0 +1,19 @@
+SimulationType                MonteCarlo
+NumberOfCycles                2000
+NumberOfInitializationCycles  200
+PrintEvery                    200
+
+Forcefield                    local
+ChargeMethod                  None
+CutOffVDW                     12.8
+RemoveAtomNumberCodeFromLabel yes
+
+Box 0
+BoxLengths 30.0 30.0 30.0
+ExternalTemperature 298.0
+
+Component 0 MoleculeName       pentane
+            MoleculeDefinition local
+            WidomProbability   1.0
+            CreateNumberOfMolecules 0
+

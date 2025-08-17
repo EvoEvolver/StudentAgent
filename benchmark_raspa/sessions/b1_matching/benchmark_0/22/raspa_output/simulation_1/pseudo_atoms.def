@@ -1,0 +1,6 @@
+#number of pseudo atoms
+3
+#type      print   as    chem  oxidation   mass        charge   polarization B-factor radii  connectivity anisotropic anisotropic-type   tinker-type
+c_CH2_c    yes     CH2   CH2   0           14.027      0        0.0          1.0      1      0             0          relative           0          
+He         yes     He    He    0           4.0026      0        0.0          1.0      1      0             0          relative           0          
+CH3_chx    yes     CH3   CH3   0           15.035      0        0.0          1.0      1      0             0          relative           0          

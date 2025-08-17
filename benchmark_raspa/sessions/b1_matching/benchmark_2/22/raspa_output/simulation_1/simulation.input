@@ -1,0 +1,29 @@
+SimulationType                MonteCarlo
+NumberOfCycles                1000
+NumberOfInitializationCycles  100
+PrintEvery                    100
+
+Forcefield                    local
+ChargeMethod                  Ewald
+EwaldPrecision                1e-6
+CutOffVDW                     12.8
+CutOffCoulomb                 12.8
+RemoveAtomNumberCodeFromLabel yes
+
+ComputeEnergyHistogram        yes
+WriteEnergyHistogram          yes
+ComputeNumberOfMoleculesHistogram yes
+WriteNumberOfMoleculesHistogram   yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 1
+HeliumVoidFraction 0.877
+ExternalTemperature 298.0
+ExternalPressure 1e4 5e4 1e5 5e5 1e6
+
+Component 0 MoleculeName       carbon_dioxide
+            MoleculeDefinition local
+            SwapProbability    1.0
+            CreateNumberOfMolecules 0
+

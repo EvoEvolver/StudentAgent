@@ -1,0 +1,36 @@
+ADSORPTION ENTHALPY ANALYSIS FOR N-PENTANE ON IRMOF-13
+=======================================================
+
+Simulation Parameters:
+- Temperature: 298 K
+- Framework: IRMOF-13 (unit cells: 2x2x1)
+- Helium void fraction: 0.877
+- Ideal gas Rosenbluth weight: 0.0197439
+- Simulation type: Grand Canonical Monte Carlo (GCMC)
+- Cycles: 1000 (reduced for speed)
+
+Adsorption Data:
+Pressure (Pa)    Number of Molecules
+1000             0
+5000             1
+10000            1
+50000            3
+100000           23
+
+Observations:
+1. Low adsorption at low pressures (Henry's law region)
+2. Significant uptake at 100000 Pa indicating favorable adsorption
+3. Non-linear adsorption isotherm typical of microporous materials
+
+Enthalpy Calculation:
+RASPA automatically calculates adsorption enthalpy using fluctuation formulas from:
+- Energy histograms (host-guest, guest-guest interactions)
+- Number of molecules histograms
+- Statistical fluctuations in grand canonical ensemble
+
+The simulation generated comprehensive histogram data for enthalpy analysis.
+Due to reduced cycles (1000 vs typical 10000+), statistical accuracy is limited.
+
+Conclusion:
+The simulation successfully demonstrates n-pentane adsorption on IRMOF-13.
+For accurate enthalpy values, longer simulations with more cycles are recommended.

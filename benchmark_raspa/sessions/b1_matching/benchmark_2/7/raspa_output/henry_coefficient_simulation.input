@@ -1,0 +1,30 @@
+SimulationType                MonteCarlo
+NumberOfCycles                5000
+NumberOfInitializationCycles  1000
+PrintEvery                    500
+
+Forcefield                    local
+ChargeMethod                  Ewald
+EwaldPrecision                1e-6
+CutOffVDW                     12.8
+CutOffCoulomb                 12.8
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 1
+HeliumVoidFraction 0.877
+ExternalTemperature 298.0
+
+Component 0 MoleculeName methane
+            MoleculeDefinition local
+            IdealGasRosenbluthWeight [TO_BE_UPDATED_FROM_PREREQUISITE_SIMULATION]
+            CreateNumberOfMolecules 0
+            WidomProbability 1.0
+
+Component 1 MoleculeName nitrogen
+            MoleculeDefinition local
+            IdealGasRosenbluthWeight [TO_BE_UPDATED_FROM_PREREQUISITE_SIMULATION]
+            CreateNumberOfMolecules 0
+            WidomProbability 1.0
+

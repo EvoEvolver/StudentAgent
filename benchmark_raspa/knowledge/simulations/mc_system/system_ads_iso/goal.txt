@@ -64,6 +64,8 @@ At high pressures and temperatures the excess adsorption can be substantially lo
 Adsorption results are displayed in various units for both absolute and excess adsorption.
 \begin{tiny}
 \begin{verbatim}
+Number of molecules:
+====================
      Component 0 [methane]
      -------------------------------------------------------------
          Block[ 0] 2.77660            [-]
@@ -124,3 +126,4 @@ Both equations can be used in grand-canonical MC.
 \end{tiny}
 Since $\left\langle U_g \right\rangle=0$, the enthalpy of adsorption computed from the fluctuation formula
 is -18.96$\pm$0.04 and matches the value 19.0 from the previous example for the limiting case of infinite dilution.
+

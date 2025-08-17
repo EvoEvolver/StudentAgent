@@ -22,6 +22,8 @@ CSD-modified/NCR_data_CSD_modified_*
 
 checkpoints/
 sessions/
+!benchmark_raspa/sessions/
+!benchmark_raspa/sessions/*
 
 tout/
 Movies/

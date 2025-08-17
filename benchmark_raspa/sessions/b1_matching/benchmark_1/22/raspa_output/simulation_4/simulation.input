@@ -1,0 +1,25 @@
+SimulationType                MonteCarlo
+NumberOfCycles                20
+NumberOfInitializationCycles  5
+PrintEvery                    5
+
+Forcefield                    local
+ChargeMethod                  None
+CutOffVDW                     12.8
+CutOffCoulomb                 12.8
+RemoveAtomNumberCodeFromLabel yes
+
+ComputeHenryCoefficients      yes
+
+Framework 0
+FrameworkName framework
+UnitCells 1 1 1
+HeliumVoidFraction 0.877
+ExternalTemperature 298.0
+
+Component 0 MoleculeName CO2
+            MoleculeDefinition     local
+            CreateNumberOfMolecules 0
+            WidomProbability        1.0
+            ExternalTemperature     298.0
+

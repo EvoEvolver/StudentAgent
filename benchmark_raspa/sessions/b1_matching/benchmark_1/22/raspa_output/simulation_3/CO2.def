@@ -1,0 +1,38 @@
+# CO2 molecule definition for RASPA
+# TraPPE force field parameters
+
+# critical constants: Temperature [T], Pressure [Pa], and Acentric factor [-]
+1
+CO2
+124.0
+7377300.0
+0.22394
+# Number Of Atoms
+3
+# Number Of Groups
+1
+# CO2-group
+rigid
+# number of atoms (n) followed by n (atomic-number, mass, charge, polarization, B-factor, radii, connectivity)
+3
+0 C_co2     12.0107  0.70   0.0  1.0  0.0  1 2
+1 O_co2     15.9994 -0.35   0.0  1.0  0.0  1 0
+2 O_co2     15.9994 -0.35   0.0  1.0  0.0  1 0
+# Geometry
+# number of fixed bonds
+2
+# bond nr, atom-nr1, atom-nr2, distance
+0 0 1 1.16
+1 0 2 1.16
+# number of fixed bond angles
+1
+# bond-angle nr, atom-nr1, atom-nr2, atom-nr3, angle
+0 1 0 2 180.0
+# number of fixed dihedral angles
+0
+# number of fixed improper dihedral angles
+0
+# number of fixed inversion-bend angles
+0
+# number of fixed out-of-plane angles
+0

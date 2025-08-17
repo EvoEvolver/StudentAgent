@@ -1,0 +1,10 @@
+# Pseudo atoms definition for CO2
+# TraPPE force field parameters
+
+# C_co2: Carbon in CO2
+C_co2  yes  C  12.011  0.7  0.0  0.0  0.0  0.0  0.0  0.0
+
+# O_co2: Oxygen in CO2  
+O_co2  yes  O  15.999  3.05  -0.35  0.0  0.0  0.0  0.0  0.0
+
+# Format: name  print  element  mass  sigma(A)  epsilon(K)  charge  polarizability  B-factor  radii  connectivity
