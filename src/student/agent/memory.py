@@ -55,6 +55,9 @@ class MemoryNode:
                 self.keys.remove(key)
     
     def set_embeddings(self):
+        if len(self.embeddings) == len(self.keys):
+            return True
+            
         self.clean_keys() # keys are not allowed to be empty!
         keys = list(self.keys) 
 
