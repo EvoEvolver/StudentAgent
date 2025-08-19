@@ -14,4 +14,4 @@ ENV RASPA_DIR=/opt/conda
 EXPOSE 8080
 EXPOSE 8000
 
-CMD python -m streamlit run ./src/student/app.py --server.port=8080 --server.address=0.0.0.0 & python server.py & uvicorn src.student.api:app --host 0.0.0.0 --port 8000 & wait
+CMD python -m streamlit run ./src/student/app.py --server.port=8080 --server.address=0.0.0.0 & python ./server.py & uvicorn src.student.api:app --host 0.0.0.0 --port 8000 & wait

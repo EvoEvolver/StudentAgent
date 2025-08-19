@@ -1,148 +1,163 @@
-from __future__ import annotations
-
 import os
-from typing import List, Sequence
+from typing import List, Sequence, Dict
 
 import numpy as np
 import pandas as pd
 
 from .agent import Agent
 from .agent_memory import MemoryAgent
-from typing import List, Dict
-from mllm import Chat, get_embeddings
-
-
+from .memory_rag import MemoryNodeRAG, MemoryRAG
+from .memory import Memory
 from .agent_memory import Ask
 
+from .tools.tools_memory import RecallMemory
+from .utils import question as q
+
+class RAGRecallMemory(RecallMemory):
+    def __init__(self, memory: MemoryRAG):
+        super().__init__(memory)
+        self.name = "recall"
+        self.description = """
+        Recall knowledge from your memory.
+        ALWAYS choose a short description of the question as query.
+        The retrieval is based on the semantic similarity of the query to the memory entries.
+        """
+    
+    def run(self, query: str) -> Dict[str, str]:
+        return super().run(query)
+
+
 def memory_agent_tools(provider, memory_path):
-    agent = RAGAgent(provider=provider, memory_path=memory_path)
+    agent = AgenticRAGAgent(provider=provider, memory_path=memory_path)
     return {'agent': agent, 'tools' : [Ask(agent)]}
 
 
-class RAGAgent(MemoryAgent):
-    """
-    Simple Retrieval-Augmented-Generation agent that
-
-    • keeps a conversational “memory” as <text, embedding> rows  
-    • stores / reloads that memory with pandas → Parquet  
-    • retrieves the Top-k most similar memories for every user prompt  
-    • prepends those snippets as context before delegating to `Agent.run()`
-    """
-    def run(self, prompt: str, max_iter: int = 15):
-
-        context_snippets = self.retrieve_memory(prompt)
-        context = '\n'.join(context_snippets) if context_snippets else '<<no context found>>'
-        augmented_prompt +=f"Context:\n{context}\n\n"
-        augmented_prompt += f"Question: {prompt}\n Assistant: "
-        
-        return self._run(augmented_prompt, max_iter)
-
-
-
-
-
-
-
-class RAGMemory:
-    # ------------------------------------------------------------------ #
-    # Construction / persistence
-    # ------------------------------------------------------------------ #
-    def __init__(
-        self,
-        memory_path: str,
-        cache=None,
-        expensive=None,
-        dir=None,
-        version=None,
-        provider: str = "anthropic",
-        verbose: bool = False,
-        *,
-        model_embed: str = "text-embedding-3-small",
-        top_k: int = 3,
-    ):
-        super().__init__(tools=[], cache=cache, expensive=expensive,
-                         dir=dir, version=version, provider=provider, verbose=verbose)
-
-        self._memory_path = memory_path
-        self.model_embed = model_embed
-        self.top_k = top_k
-        
-        rag_prompt = "You are a helpful assistant. Answer strictly from the context if possible.\n\n"
-        self.reset_system_prompt(rag_prompt)
-
-        # Load or initialise an empty memory bank
-        if os.path.isfile(memory_path):
-            self._load_memory()
-        else:
-            os.makedirs(os.path.dirname(memory_path) or ".", exist_ok=True)
-            self.memory: List[str] = []
-            self._doc_vectors = np.zeros((0, 0), dtype=np.float32)
-            self._doc_norms = np.zeros(0, dtype=np.float32)
-            self._save_memory()
-
-
-    def add_memory(self, text: str) -> None:
-        """
-        Store a new piece of text in memory and persist it.
-        """
-        self.memory.append(text)
-        vec = self._embed_texts([text])[0]
-
-        # First insert determines embedding dim
-        if self._doc_vectors.size == 0:
-            self._doc_vectors = vec.reshape(1, -1)
-        else:
-            self._doc_vectors = np.vstack([self._doc_vectors, vec])
-
-        self._doc_norms = np.append(self._doc_norms, np.linalg.norm(vec))
-        self._save_memory()
-
-    def retrieve_memory(self, query: str | None = None) -> List[str]:
-        """
-        Return *all* memories if `query` is None, otherwise the Top-k most
-        semantically similar snippets.
-        """
-        if query is None or len(self.memory) == 0:
-            return self.memory
-
-        q_vec = self._embed_texts([query])[0]
-        q_norm = np.linalg.norm(q_vec)
-        scores = (self._doc_vectors @ q_vec) / (self._doc_norms * q_norm + 1e-8)
-        idx = np.argsort(scores)[-self.top_k :][::-1]
-        return [self.memory[i] for i in idx]
-
-    # The main entry-point that callers will use
-    def run(self, prompt: str, max_iter: int = 15):
-
-        context_snippets = self.retrieve_memory(prompt)
-        context = '\n'.join(context_snippets) if context_snippets else '<<no context found>>'
-        augmented_prompt +=f"Context:\n{context}\n\n"
-        augmented_prompt += f"Question: {prompt}\n Assistant: "
-        
-        return self._run(augmented_prompt, max_iter)
-
+class AgenticRAGAgent(MemoryAgent):
+    '''
+    Memory Agent that allows agentic RAG for memory recall and question answering.
+    '''
     
-    def _embed_texts(self, texts: Sequence[str]) -> np.ndarray:
-        response = get_embeddings(texts)
-        vectors = [r.embedding for r in sorted(response.data, key=lambda x: x.index)]
-        return np.asarray(vectors, dtype=np.float32)
+    def __init__(self, memory:Memory=None, memory_path=None, tools: dict = {}, cache=None, expensive=None, provider="openai"):
 
-    # ---------- Parquet helpers --------------------------------------- #
-    def _save_memory(self) -> None:
-        df = pd.DataFrame(
-            {
-                "text": self.memory,
-                "embedding": self._doc_vectors.astype(np.float32).tolist(),
+        self.memory_path = memory_path
+        super().__init__(tools=tools, cache=cache, expensive=expensive, version="v1", provider=provider)
+
+        self.add_memory(memory)
+
+    def setup_general_prompt(self, version):
+        prompt = self.get_prompt(type="general_rag", version=version)
+        self.reset_system_prompt(prompt, append=True)
+
+    def add_memory_tools(self):
+        self.memory = MemoryRAG()
+        recall = RAGRecallMemory(self.memory)
+        self.tools[recall.name] = recall
+        
+        self.load_memory(self.memory_path)
+    
+        
+    def load_memory(self, file=None):
+        if file is None:
+            self.add_memory(MemoryRAG())
+            #print("Initializing empty RAG memory")
+            return
+        else:
+            self.memory = Memory()
+            super().load_memory(file)
+            
+            mem_rag = MemoryRAG()
+            mem_rag.load_from_memory(self.memory)
+            self.add_memory(mem_rag)
+            #print("Loading memory")
+    
+    
+    def add_memory(self,memory:Memory):
+        if memory is None:
+            return
+        if type(memory) == MemoryRAG:
+            self.memory = memory
+        else: 
+            self.memory = MemoryRAG()
+            for id, node in memory.memory.items():
+                if len(node.content) > 0:
+                    new_node = MemoryNodeRAG(input=node.content)
+                    new_node.id = id
+                    self.memory.add(new_node)
+
+        for tool in self.tools.values():
+            if hasattr(tool, 'memory'):
+                tool.memory = self.memory
+
+
+    def ask(self, question: str) -> str:
+        self.set_prompt(type="retrieval_rag", version="v1")
+        
+        prompt = f"Retrieve all knowledge related to this input: {q(question)}"
+        res = self.run(prompt)
+        return res
+    
+class NaiveRAGAgent(AgenticRAGAgent):
+    '''
+    Naive RAG Agent
+    '''
+    def setup_general_prompt(self, version):
+        prompt = self.get_prompt(type="naive_rag", version=version)
+        self.reset_system_prompt(prompt, append=True)
+
+    def add_memory_tools(self):
+        self.memory = MemoryRAG()
+        self.load_memory(self.memory_path)
+
+
+    def _retrieve(self, query, sensitivity=0.1):
+        res = self.memory.recall(query, sensitivity=sensitivity)
+        mem = ""
+        for id, i in res.items():
+            mem += i
+        if mem == "":
+            mem = "<no memory found/>"
+        return mem
+    
+
+    def run(self, prompt: str, max_iter: int=15):
+        recalled = self._retrieve(prompt)
+        
+        rag_prompt = f"""<query>{prompt}</query>
+        <context>
+        {recalled}
+        </context>
+        <answer/>
+        """
+        res = super().run(rag_prompt, max_iter=max_iter)
+        return res
+
+
+    def get_output_jsonschema(self, remove_tools=[]):
+
+        schema = {
+        "type": "object",
+        "properties": {
+            "react": {
+                "type": "array",
+                "description": "A sequence of reasoning steps as discrete thoughts",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "thought": {
+                            "type": "string",
+                            "description": "A reasoning step or internal reflection."
+                        }
+                    },
+                    "required": ["thought"],
+                    "additionalProperties": False
+                },
+            },
+            "response": {
+                "type": "string",
+                "description": "Final response to the user. IGNORED IF a function is included in the react scheme"
             }
-        )
-        df.to_parquet(self._memory_path, index=False)
-
-    def _load_memory(self) -> None:
-        df = pd.read_parquet(self._memory_path)
-        if {"text", "embedding"} - set(df.columns):
-            raise ValueError(
-                f"{self._memory_path} is missing required columns 'text' and 'embedding'."
-            )
-        self.memory = df["text"].tolist()
-        self._doc_vectors = np.asarray(df["embedding"].tolist(), dtype=np.float32)
-        self._doc_norms = np.linalg.norm(self._doc_vectors, axis=1)
+        },
+        "required": ["react", "response"],
+        "additionalProperties": False
+        }
+        return schema

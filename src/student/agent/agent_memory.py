@@ -75,17 +75,18 @@ class MemoryAgent(Agent):
     def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version="v1", provider="openai"):
         super().__init__(tools=tools, cache=cache, expensive=expensive, version=version, provider=provider)
         
-        self.memory = Memory()
         self.add_memory_tools()
         
+        self.setup_general_prompt(version)
+
+    def setup_general_prompt(self, version):
         prompt = self.get_prompt(type="general", version=version)
         self.reset_system_prompt(prompt, append=True)
-
-        #self.special_keywords = {"explicit knowledge" : keyword("explicit knowledge"),}
 
     ####### Setup #######
 
     def add_memory_tools(self):
+        self.memory = Memory()
         add = AddMemory(self.memory)
         modify = ModifyMemory(self.memory)# ExtendedModifyMemory(self.memory, self.single_run)
         recall = RecallMemory(self.memory)

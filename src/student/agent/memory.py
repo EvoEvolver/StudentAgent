@@ -35,8 +35,6 @@ class MemoryNode:
                 self.keys.add(key)
         return self.keys
     
-    def format_key(self, key):
-        return key.strip(" \t\n")
 
     def remove_keys(self, rem_keys: Set[str], check=True):
         assert isinstance(rem_keys, Set)
@@ -47,12 +45,19 @@ class MemoryNode:
             self.check_keys()
         return self.keys
 
+    def format_key(self, key):
+        return key.strip(" \t\n")
+
     def clean_keys(self):
         for key in self.keys:
             if key and len(self.format_key(key)) == 0:
                 self.keys.remove(key)
     
+
     def set_embeddings(self):
+        if len(self.embeddings) == len(self.keys):
+            return True
+        
         self.clean_keys() # keys are not allowed to be empty!
         keys = list(self.keys) 
 
@@ -338,7 +343,7 @@ class Memory:
     def get_nodes(self) -> List[MemoryNode]:
         nodes = []
         for node in self.memory.values():
-            if len(node.content) > 0 and len(node.keys) > 0:
+            if len(node.keys) > 0:
                 nodes.append(node)
                 node.set_embeddings()
         return nodes

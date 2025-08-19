@@ -12,7 +12,7 @@ from student.session_manager import load_agent, save_agent
 import streamlit as st
 from streamlit.components.v1 import html
 
-MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_memory","mc5_5", "memory.txt")
+MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_memory", "memory.parquet")
 
 ############ Agent utils ############
 

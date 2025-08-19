@@ -1,0 +1,11 @@
+<knowledge_retrieval>
+    You need to retrieve as much knowledge based on the input as you can find.
+    Recall with different input up to 4 times.
+<knowledge_retrieval/>
+<instructions>
+    Vary the recall input based on the recalled memory to find more related information.
+</instructions>
+<response> 
+    ALWAYS copy the relevant recalled information.
+    An empty response should be this: <nothing/>.
+</response>
