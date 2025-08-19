@@ -1,5 +1,0 @@
-# TraPPE force field for CO2
-# Lennard-Jones parameters
-# atom-type  epsilon/k_B [K]  sigma [A]  mass [amu]  charge [e]  polarization [A^3]  B-factor [A^2]  radii [A]  connectivity
-C_co2        27.0            2.80       12.0107     0.70        0.0                 1.0             0.0         0
-O_co2        79.0            3.05       15.9994    -0.35        0.0                 1.0             0.0         0
