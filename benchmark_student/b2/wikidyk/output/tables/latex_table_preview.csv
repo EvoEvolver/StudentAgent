@@ -1,0 +1,7 @@
+Model,Obj.,reliability,reliability,generality,generality,paraphrase,paraphrase,portability,portability,locality,locality,counterfactual,counterfactual,factual,factual
+,,Match,F1,Match,F1,Match,F1,Match,F1,Match,F1,Match,F1,Match,F1
+baseline_agentic,,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,208.33,0.00,151.52
+baseline_answerable,,100.00,10000.00,0.00,7500.00,100.00,10000.00,100.00,10000.00,0.00,0.00,100.00,10000.00,50.00,5000.00
+baseline_naive,,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+baseline_pretraining,,0.00,0.00,0.00,5000.00,0.00,0.00,0.00,0.00,0.00,0.00,50.00,5000.00,100.00,10000.00
+student,,0.00,800.00,0.00,1353.54,50.00,5000.00,0.00,969.70,0.00,0.00,0.00,344.83,0.00,650.00
