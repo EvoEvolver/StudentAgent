@@ -85,6 +85,7 @@ class Agent:
 
     def reset_conversation(self):
         self.conversation = []
+        self.reset_chat()
 
     def reset_chat(self):
         self.chat = Chat(system_message=self.system_prompt, dedent=False)

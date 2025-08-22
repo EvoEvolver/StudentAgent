@@ -222,7 +222,7 @@ class MemoryNode:
             "keys":    list(self.keys),
         }
         if include_embeddings:
-            d["embeddings"] = self.embeddings
+            d["embeddings"] = [np.array(emb) for emb in self.embeddings]
         return d
 
     def _from_dict(self, d: dict) -> None:
@@ -245,7 +245,7 @@ class MemoryNode:
             raise NotImplementedError("Wrong key type")
 
         self.add_keys(key_list)
-        self.embeddings = [list(vec) for vec in d.get("embeddings", [])]
+        self.embeddings = [np.array(vec) for vec in d.get("embeddings", [])]
         return
 
     @classmethod

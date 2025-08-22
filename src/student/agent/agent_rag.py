@@ -40,7 +40,7 @@ class AgenticRAGAgent(MemoryAgent):
     def __init__(self, memory:Memory=None, memory_path=None, tools: dict = {}, cache=None, expensive=None, provider="openai"):
 
         self.memory_path = memory_path
-        super().__init__(tools=tools, cache=cache, expensive=expensive, version="v1", provider=provider)
+        super().__init__(tools=tools, cache=cache, expensive=expensive, version="v2", provider=provider)
 
         self.add_memory(memory)
 

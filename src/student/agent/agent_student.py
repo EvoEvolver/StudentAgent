@@ -23,6 +23,24 @@ class StudentAgent(Agent):
         for tool in memory['tools']:
             self.tools[tool.name] = tool
         
+    
+    def run(self, prompt: str, max_iter: int=10, remove_tools=[]):
+        # 1. Decompose into learning and asking
+        # 2. Ask -> Knowledge
+        # 3. ReAct using knowledge
+        # 4. Update learning
+        # 5. Summarize for response
+        remove_tools.append(self.get_tool_mask())
+        return super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
+    
+
+    def chat_config(self, cache=None, expensive=None):
+        super().chat_config()
+
+        mem_agent = self.get_memory_agent()
+        mem_agent.cache = cache if cache is not None else True
+        mem_agent.expensive = expensive if expensive is not None else True
+
 
     def get_memory_agent(self):
         return self.memory_agent
@@ -37,15 +55,20 @@ class StudentAgent(Agent):
         full += self._build_prompt("output", "v3")
         return full
     
-    def run(self, prompt: str, max_iter: int=10, remove_tools=[]):
-        # 1. Decompose into learning and asking
-        # 2. Ask -> Knowledge
-        # 3. ReAct using knowledge
-        # 4. Update learning
-        # 5. Summarize for response
-        remove_tools.append(self.get_tool_mask())
-        return super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
-    
+    def quiz_prompt(self):
+        general = self._build_prompt("student/quiz", "v1")
+        retrieval_instructions = self._build_prompt("student/retrieval", "v2")
+
+        full = general.format(retrieval_instructions=retrieval_instructions)
+        full += "\n"
+        full += self._build_prompt("output", "v3")
+        return full
+
+    def setup_quiz(self):
+        self.active_learning = False
+        self.reset_system_prompt(self.quiz_prompt())
+        self.reset_chat()
+
 
     def get_tool_mask(self, no_memory=False):
         mask = []
