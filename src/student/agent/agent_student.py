@@ -14,6 +14,7 @@ class StudentAgent(Agent):
 
         self.reset_system_prompt(self.student_prompt())
         self.get_memory_tools()
+        self.chat_config_memory(cache=cache, expensive=expensive)
         self.active_learning = active_learning
 
     def get_memory_tools(self):
@@ -30,19 +31,16 @@ class StudentAgent(Agent):
         # 3. ReAct using knowledge
         # 4. Update learning
         # 5. Summarize for response
-        remove_tools.append(self.get_tool_mask())
+        remove_tools.extend(self.get_tool_mask())
         return super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
     
-
-    def chat_config(self, cache=None, expensive=None):
-        super().chat_config()
-
+    def chat_config_memory(self, cache=None, expensive=None):
         mem_agent = self.get_memory_agent()
-        mem_agent.cache = cache if cache is not None else True
-        mem_agent.expensive = expensive if expensive is not None else True
-
+        mem_agent.chat_config(cache=cache, expensive=expensive)
 
     def get_memory_agent(self):
+        if not hasattr(self,"memory_agent"):
+            return None
         return self.memory_agent
 
     def student_prompt(self):
@@ -112,3 +110,25 @@ class StudentAgent(Agent):
     def memory_size(self):
         return self.get_memory_agent().memory_size()
     
+
+    def reset_token_count(self):
+        sum_tokens = self.sum_token_count()
+        
+        student_tokens = super().reset_token_count()
+        memory_agent = self.get_memory_agent()
+        if memory_agent is not None:
+            memory_tokens = memory_agent.reset_token_count()
+        return sum_tokens
+
+    def sum_token_count(self):
+        student_tokens = self._sum_token_count()
+        memory_agent = self.get_memory_agent()
+        if memory_agent is None:
+            return student_tokens
+
+        else:
+            memory_tokens = memory_agent._sum_token_count()
+            return {
+                "input_tokens": student_tokens["input_tokens"] + memory_tokens["input_tokens"],
+                "output_tokens": student_tokens["output_tokens"] + memory_tokens["output_tokens"],
+            }

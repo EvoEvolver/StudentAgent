@@ -21,6 +21,7 @@ class Agent:
         self.id = 0
         self.conversation = [] # list of conversations. new list starts at each reset
         self.system_prompt = ""
+        self.token_counter = []
 
         if dir is not None and version is not None:
             self.reset_system_prompt(self.get_prompt(dir=dir, version=version))
@@ -31,8 +32,10 @@ class Agent:
         self.setup_provider(provider)
         self.verbose = verbose
         self.max_message_content = 4000
+        self.reset_token_count()
         
     ############ General Setup ############
+    
     def setup_provider(self, provider="openai"):
         self.provider = provider
         if provider== "anthropic":
@@ -121,6 +124,8 @@ class Agent:
         chat = Chat(dedent=True)
         chat += prompt
         res = chat.complete(cache=cache, expensive=expensive, parse=parse)
+        self.token_count(chat)
+        
         return res
 
 
@@ -143,6 +148,8 @@ class Agent:
     
     def _run(self, options):
         res = self.chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
+        self.token_count()
+
         res = json.loads(repair_json(res))
         done, n_tool_responses = self.use_tools(res)   
         
@@ -268,6 +275,61 @@ class Agent:
     
     def get_memory_tool_mask(self):
         return []
+
+############ Token counting ############
+
+    def reset_token_count(self):
+        """Reset the token counter to an empty list."""
+        token_sum_old = self._sum_token_count()
+        self.token_counter = []
+        return token_sum_old
+
+    def _sum_token_count(self) -> tuple[int, int]:
+        """
+        Get the total number of input and output tokens used.
+        
+        Returns:
+            tuple[int, int]: Total (input_tokens, output_tokens) used across all interactions
+        """
+        in_tokens = 0
+        out_tokens = 0
+        for count in self.token_counter:
+            in_tokens += count.get("input_tokens", 0)
+            out_tokens += count.get("output_tokens", 0)
+        return {
+            "input_tokens": in_tokens,
+            "output_tokens": out_tokens
+        }
+
+    def token_count(self, chat: Chat = None) -> None:
+        """
+        Count tokens for a chat interaction and add to the token counter.
+        
+        Args:
+            chat: The chat to count tokens for. If None, uses self.chat
+        """
+        if chat is None:
+            chat = self.chat
+        count = self._token_count(chat)
+        self.token_counter.append(count)
+
+    def _token_count(self, chat: Chat) -> Dict[str, int]:
+        """
+        Get the token counts for a specific chat interaction.
+        
+        Args:
+            chat: The chat to count tokens for
+            
+        Returns:
+            Dict with input_tokens and output_tokens counts
+        """
+        input_tokens = chat.additional_res["prompt_tokens"]
+        output_tokens = chat.additional_res["completion_tokens"]
+
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens
+        }
 
 
     ############ Load/Save ############
@@ -465,7 +527,7 @@ class Agent:
             tool_schema = tool.parse(tool_name)
 
             function_branches.append(tool_schema)
-
+        
         schema = {
         "type": "object",
         "properties": {

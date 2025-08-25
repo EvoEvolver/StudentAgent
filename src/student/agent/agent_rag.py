@@ -101,7 +101,7 @@ class NaiveRAGAgent(AgenticRAGAgent):
     Naive RAG Agent
     '''
     def setup_general_prompt(self, version):
-        prompt = self.get_prompt(type="naive_rag", version=version)
+        prompt = self.get_prompt(type="general_rag", version=version)
         self.reset_system_prompt(prompt, append=True)
 
     def add_memory_tools(self):

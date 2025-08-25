@@ -73,6 +73,7 @@ class RaspaAgent(StudentAgent):
                 tool.path = path
         return
 
+
     def set_path_add(self, path_add):
         self.path_add = path_add
         full_path = self.get_full_path()
