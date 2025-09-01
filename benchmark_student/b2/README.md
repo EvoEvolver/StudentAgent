@@ -35,3 +35,11 @@
             - Plot: n_e vs accuracy
             - Plot: n_s vs accuracy
             - 2D?
+
+TODO:
+- combine data with n=100 from paper
+- redo plots:
+    - colors
+    - legend
+    - labels
+- redo tables (for appendix)

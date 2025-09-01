@@ -1,7 +1,8 @@
-Model,Obj.,reliability,reliability,generality,generality,paraphrase,paraphrase,portability,portability,locality,locality,counterfactual,counterfactual,factual,factual
+Model,Obj.,counterfactual,counterfactual,factual,factual,generality,generality,locality,locality,paraphrase,paraphrase,portability,portability,reliability,reliability
 ,,Match,F1,Match,F1,Match,F1,Match,F1,Match,F1,Match,F1,Match,F1
-baseline_agentic,,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,208.33,0.00,151.52
-baseline_answerable,,100.00,10000.00,0.00,7500.00,100.00,10000.00,100.00,10000.00,0.00,0.00,100.00,10000.00,50.00,5000.00
-baseline_naive,,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-baseline_pretraining,,0.00,0.00,0.00,5000.00,0.00,0.00,0.00,0.00,0.00,0.00,50.00,5000.00,100.00,10000.00
-student,,0.00,800.00,0.00,1353.54,50.00,5000.00,0.00,969.70,0.00,0.00,0.00,344.83,0.00,650.00
+Flan-T5-770M,,0.00,0.00,0.00,0.00,51.00,49.67,56.52,73.72,67.00,66.87,44.55,45.80,78.00,79.27
+baseline_agentic,,94.00,0.00,70.00,0.00,79.00,75.82,60.87,71.50,84.00,77.85,79.71,66.18,86.00,81.28
+baseline_answerable,,96.00,0.00,87.00,0.00,69.00,87.94,31.88,36.57,84.00,90.36,73.91,87.88,83.00,91.36
+baseline_naive,,96.00,0.00,41.00,0.00,84.00,80.83,71.01,71.74,84.00,86.03,82.61,83.87,85.00,87.76
+baseline_pretraining,,83.00,0.00,44.00,0.00,11.00,17.92,47.83,66.06,11.00,18.51,8.70,14.58,14.00,18.98
+student,,78.00,0.00,77.00,0.00,63.00,58.77,59.42,68.66,74.00,73.76,63.77,62.64,76.00,75.37

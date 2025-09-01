@@ -13,9 +13,10 @@ dotenv.load_dotenv()
 
 logger = logging.getLogger("benchmark")
 
-# ---- Constants ----
-RAG_MEMORY_PATH = "memory/wikidyk_rag__run__100.parquet"
-STUDENT_MEMORY_PATH = f"checkpoints/memory_run__100"
+training_run_id = "002"
+RAG_MEMORY_PATH = f"memory/combined_fqa_rag_{training_run_id}.parquet"
+STUDENT_MEMORY_PATH = f"checkpoints/memory_{training_run_id}"
+
 
 AGENT_CONFIG = {
     "expensive": False,
@@ -29,6 +30,8 @@ AGENT_IDS = [
     "baseline_pretraining",
     "baseline_answerable",
 ]
+SETUP_PATH = f"setup/setups_fqa_{training_run_id}.json"
+
 
 # ---- Logging setup (call configure_logging() once in your main) ----
 def configure_logging(level=logging.INFO, log_file=None):
@@ -47,85 +50,26 @@ def configure_logging(level=logging.INFO, log_file=None):
     logging.getLogger("httpx").setLevel(logging.WARNING)  # quiet noisy deps if any
 
 
-def build_overload_retry_experiments(prev_results_path: str, new_run_id: str) -> List[Dict[str, Any]]:
-    """
-    Parse a previous results .jsonl and build experiments for any row where
-    result.error contains 'overload' (case-insensitive). Returns a list of
-    experiment dicts compatible with Experiment(...).
-    """
-    experiments: List[Dict[str, Any]] = []
-    seen = set()  # to deduplicate by (fact_id, question_type, agent_id)
-
-    with open(prev_results_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rec = json.loads(line)
-            except Exception:
-                continue
-
-            # Be defensive about structure
-            res = rec.get("result")
-            err_text = ""
-            if isinstance(res, dict):
-                err_text = str(res.get("error") or "")
-            elif isinstance(res, str):
-                err_text = res
-
-            if not err_text.startswith("litellm.InternalServerError: AnthropicError"):
-                continue
-
-
-            # Minimal fields we need to re-run
-            try:
-                agent_id = rec["agent_id"]
-                fact_id = str(rec["fact_id"])
-                question_type = rec["question_type"]
-                fact = rec["fact"]
-                question = rec["question"]
-                correct_answer = rec["correct_answer"]
-            except KeyError:
-                # Skip malformed rows
-                continue
-
-            key = (fact_id, question_type, agent_id)
-            if key in seen:
-                continue
-            seen.add(key)
-
-            experiments.append({
-                "run_id": new_run_id,      # override run_id for the retry batch
-                "agent_id": agent_id,
-                "fact_id": fact_id,
-                "fact": fact,
-                "question_type": question_type,
-                "question": question,
-                "correct_answer": correct_answer,
-            })
-
-    return experiments
-
 class Experiment:
     def __init__(self, exp_args):
         # Required fields
         self.agent_id = exp_args["agent_id"]
         self.run_id = exp_args["run_id"]
-        self.fact_id = exp_args["fact_id"]
-        self.fact = exp_args["fact"]
-        self.question_type = exp_args["question_type"]
+        self.event_id = exp_args["event_id"]
+        self.fiction_id = exp_args["fiction_id"]
+        self.context = exp_args["context"]
+        self.question_id = exp_args["question_id"]
         self.question = exp_args["question"]
-        self.correct_answer = exp_args["correct_answer"]
 
-        # Will be filled after running
+        self.target = exp_args["target"]
+        self.topk_choices = exp_args["topk_choices"]
         self.result = None
 
     @classmethod
     def from_dict(cls, d):
         required = [
-            "agent_id", "run_id", "fact_id", "fact",
-            "question_type", "question", "correct_answer"
+            "agent_id", "run_id", "event_id", "question_id",
+            "question", "target", "topk_choices", "context"
         ]
         missing = [k for k in required if k not in d]
         if missing:
@@ -136,17 +80,22 @@ class Experiment:
         return {
             "agent_id": self.agent_id,
             "run_id": self.run_id,
-            "fact_id": self.fact_id,
-            "fact": self.fact,
-            "question_type": self.question_type,
+            "event_id": self.event_id,
+            "fiction_id": self.fiction_id,
+            
+            "context": self.context,
+
+            "question_id": self.question_id,
             "question": self.question,
-            "correct_answer": self.correct_answer,
+            
+            "target": self.target,
+            "topk_choices" : self.topk_choices,
             "result": self.result,
         }
 
     # ---- Internal helpers ----
     def identifier(self):
-        return f"{self.run_id}__{self.fact_id}__{self.question_type}__{self.agent_id}"
+        return f"{self.run_id}__{self.question_id}__{self.agent_id}"
 
     def _utc_now_iso(self):
         return datetime.now(timezone.utc).isoformat()
@@ -186,14 +135,14 @@ class Experiment:
         if agent is None:
             return {"error": "Agent init failed"}
 
-        prompt = f"Question: {self.question}\nAnswer (no sentence, just precise keyword): "
+        prompt = f"Question: {self.question}\nPossible choices: {self.topk_choices}\nAnswer (MUST BE ONE OF THE CHOICES!): "
 
         try:
             if self.agent_id in ["baseline_naive", "student", "baseline_agentic"]:
                 return agent.run(prompt)
 
             elif self.agent_id == "baseline_answerable":
-                return agent.run_answerable(context=self.fact, question=self.question)
+                return agent.run_answerable(context=self.context, question=self.question)
 
             elif self.agent_id == "baseline_pretraining":
                 return agent.run_pretraining(question=self.question)
@@ -264,16 +213,17 @@ def _run_single_experiment(exp_cfg: Dict[str, Any], outfile: str) -> Dict[str, A
     except Exception as e:
         # Hard failure constructing/running experiment
         # (run_experiment already logs; this captures construction-time issues)
-        exp_id = f"{exp_cfg.get('run_id')}__{exp_cfg.get('fact_id')}__{exp_cfg.get('question_type')}__{exp_cfg.get('agent_id')}"
+        exp_id = f"{exp_cfg.get('run_id')}__{exp_cfg.get('question_id')}__{exp_cfg.get('agent_id')}"
         logger.exception(f"[{exp_id}] Unhandled failure in parallel worker: {e}")
         return {
             "agent_id": exp_cfg.get("agent_id"),
             "run_id": exp_cfg.get("run_id"),
-            "fact_id": exp_cfg.get("fact_id"),
-            "fact": exp_cfg.get("fact"),
-            "question_type": exp_cfg.get("question_type"),
+            "event_id": exp_cfg.get("event_id"),
+            "context": exp_cfg.get("context"),
+            "question_id": exp_cfg.get("question_id"),
             "question": exp_cfg.get("question"),
-            "correct_answer": exp_cfg.get("correct_answer"),
+            "target": exp_cfg.get("target"),
+            "topk_choices": exp_cfg.get("topk_choices"),
             "result": {"error": f"Unhandled: {str(e)}"},
             "_meta": {"experiment_id": exp_id, "parallel_error": True},
             "token_count" : {"input_tokens": 0, "output_tokens": 0}
@@ -338,82 +288,49 @@ def run_experiments_parallel(
     )
     return summary
 
+def load_setups():
+    with open(SETUP_PATH, "r") as f:
+        setups = json.load(f)
+    return setups
 
-
-def rerun():
-    prev_run_id = "benchmark__run__100"
-    prev_results_path = f"results/results__{prev_run_id}.jsonl"
-
-    # Give the retries a fresh run_id + a separate output file
-    retry_run_id = f"{prev_run_id}__retry_overload__{int(time.time())}"
-    retry_outfile = f"results/results__{retry_run_id}.jsonl"
-
-    # Build the retry experiment list from the old results
-    retry_experiments = build_overload_retry_experiments(prev_results_path, retry_run_id)
-    configure_logging(level=logging.INFO, log_file=f"logs/benchmark__{retry_run_id}.log")
-    logger.info(f"Prepared {len(retry_experiments)} overload retries from {prev_results_path}")
-
-    retry_summary = run_experiments_parallel(
-        retry_experiments,
-        outfile=retry_outfile,
-        max_workers=4,
-        per_task_timeout=None,
-    )
-
-    print("Retry Summary:", {k: v for k, v in retry_summary.items() if k not in ("results_sample", "failures")})
-
-
-def main():
-    n_wikidyk = 100
-    start = 0
-    end = 100
-
-    wikidyk = pd.read_parquet("hf://datasets/YWZBrandon/wikidyk/data/test-00000-of-00001.parquet")
-    wikidyk_data = wikidyk[["fact", "eval"]].drop_duplicates()
-    
-    run_id = "benchmark__run__104"
-    
-
-    configure_logging(level=logging.INFO, log_file=f"logs/benchmark__{run_id}.log")
-
-
+def setup_experiment():
     experiments = []
-    for i, row in wikidyk_data[:n_wikidyk].iterrows():
-        if i not in range(start, end):
-            continue
-        
-        fact_id = str(i)
-        fact = row["fact"]
-        evals = json.loads(row["eval"]) if isinstance(row["eval"], str) else row["eval"]
-        for question_type, qa in evals.items():
-            question = qa["prompt"]
-            correct_answer = qa["answer"]
+    
+    setups = load_setups()
+
+    for event_id in setups.keys():
+        for setup in setups[event_id]:
             for agent_id in AGENT_IDS:
-                if agent_id not in ["baseline_naive", "baseline_agentic"]:
-                    continue
                 
                 exp = {
                     "run_id": run_id,
                     "agent_id": agent_id,
-                    "fact_id": str(i),
-                    "fact": fact,
-                    "question_type": question_type,
-                    "question": question,
-                    "correct_answer": correct_answer,
+                    "event_id": setup["event_id"],
+                    "context": setup["context"],
+                    "fiction_id": setup["fiction_id"],
+                    "question_id": setup["question_id"],
+                    "question": setup["question"],
+                    "target": setup["target"],
+                    "topk_choices": setup["topk_choices"],
                 }
                 experiments.append(exp)
+    
+    return experiments
 
+if __name__ == "__main__":
+    
+    n_fqa = 1
+    run_id = "test__001"
+    configure_logging(level=logging.INFO, log_file=f"logs/benchmark__{run_id}.log")
+
+
+    experiments = setup_experiment()
 
     summary = run_experiments_parallel(
         experiments,
         outfile=f"results/results__{run_id}.jsonl",
         max_workers=8,           
-        per_task_timeout=None,   # or e.g. 120 for 2 min per task
+        per_task_timeout=None,  
     )
 
     print("Summary:", {k: v for k, v in summary.items() if k != "results_sample" and k != "failures"})
-
-
-if __name__ == "__main__":
-    # main()
-    rerun()

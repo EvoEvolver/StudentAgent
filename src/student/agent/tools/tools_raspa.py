@@ -23,7 +23,7 @@ import re
 class MoleculeLoader(MoleculeLoaderTrappe):
     def __init__(self, path=None):
         name = "Molecule loader"
-        description = "Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files."
+        description = "Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files. The input must provide a molecule_names list with the correct names!"
         super().__init__(name, description, path)
 
     def run(self, molecule_names : List[str]):
@@ -271,7 +271,7 @@ class CoreMofLoader(RaspaTool):
 
 
 _BLOCK_RE = re.compile(r'^Block\s*\[\s*\d+\s*\]$')
-_PLUSMINUS_TOKENS = {"+/-", "±"}
+_PLUSMINUS_TOKENS = {"+/-", "±", "-", "m^2/g","m^2/cm^3","A^2", "K","kJ/mol", "%"}
 _UNIT_TOKEN_RE = re.compile(r'^\[[^\]]+\]$')
 
 class OutputParser(RaspaTool):

@@ -41,42 +41,39 @@ class AgenticRAGAgent(MemoryAgent):
 
         self.memory_path = memory_path
         super().__init__(tools=tools, cache=cache, expensive=expensive, version="v2", provider=provider)
-
-        self.add_memory(memory)
+        # self.add_memory_tools()
+        # self.setup_general_prompt(version)
+        if memory is not None:
+            self.add_memory(memory)
 
     def setup_general_prompt(self, version):
         prompt = self.get_prompt(type="general_rag", version=version)
         self.reset_system_prompt(prompt, append=True)
 
     def add_memory_tools(self):
-        self.memory = MemoryRAG()
+        self.load_memory(self.memory_path)
+        
         recall = RAGRecallMemory(self.memory)
         self.tools[recall.name] = recall
+
         
-        self.load_memory(self.memory_path)
-    
-        
-    def load_memory(self, file=None):
+    def load_memory(self, file = None):
+        memory = MemoryRAG()
         if file is None:
-            self.add_memory(MemoryRAG())
-            #print("Initializing empty RAG memory")
             return
-        else:
-            self.memory = Memory()
-            super().load_memory(file)
-            
-            mem_rag = MemoryRAG()
-            mem_rag.load_from_memory(self.memory)
-            self.add_memory(mem_rag)
-            #print("Loading memory")
-    
-    
-    def add_memory(self,memory:Memory):
+
+        # Load a plain Memory first (uses base class loader), then convert to RAG
+        memory.load(file)
+        self.add_memory(memory)
+
+    def add_memory(self, memory: Memory):
         if memory is None:
             return
-        if type(memory) == MemoryRAG:
+
+        if isinstance(memory, MemoryRAG):
             self.memory = memory
-        else: 
+        else:
+            # Convert generic Memory -> MemoryRAG
             self.memory = MemoryRAG()
             for id, node in memory.memory.items():
                 if len(node.content) > 0:
@@ -84,10 +81,10 @@ class AgenticRAGAgent(MemoryAgent):
                     new_node.id = id
                     self.memory.add(new_node)
 
+        # Propagate memory to tools that support it
         for tool in self.tools.values():
-            if hasattr(tool, 'memory'):
+            if hasattr(tool, "memory"):
                 tool.memory = self.memory
-
 
     def ask(self, question: str) -> str:
         self.set_prompt(type="retrieval_rag", version="v1")

@@ -69,7 +69,40 @@ class MemoryNode:
 
 
     def _get_cosine_similarity(self, query : List[str], keys: List[str]=None):
-        q_emb = np.array(get_embeddings(query))
+        # AFTER (memory.py)
+        def _as_list(x):
+            return x if isinstance(x, (list, tuple)) else [x]
+
+        def _sanitize_texts(texts, max_len=8000):
+            out = []
+            for t in texts:
+                if t is None:
+                    continue
+                s = str(t).strip()
+                if not s:
+                    continue
+                if len(s) > max_len:
+                    s = s[:max_len]
+                out.append(s)
+            return out
+
+        # Coerce and sanitize
+        _query_list = _sanitize_texts(_as_list(query))
+        if not _query_list:
+            return np.zeros((0, 0), dtype=float)
+
+        q_emb_list = get_embeddings(_query_list)
+
+        # Defensive: enforce 1:1 mapping
+        if len(q_emb_list) != len(_query_list):
+            raise ValueError(
+                f"Embedding backend length mismatch: inputs={len(_query_list)} "
+                f"outputs={len(q_emb_list)}; sample_in={_query_list[:3]}"
+            )
+
+        q_emb = np.array(q_emb_list, dtype=float)
+    
+        # q_emb = np.array(get_embeddings(query))
         
         if keys is None:
             keys = self.keys

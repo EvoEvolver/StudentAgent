@@ -18,14 +18,20 @@ class MemoryNodeRAG(MemoryNode):
     def __init__(self, input: str=""):
         super().__init__(content="", keys = [input])
     
-    def _get_embedding_score(self, query : str, sensitivity=0.4):
+    def _get_embedding_score(self, query: str, sensitivity=0.4):
+        if query is None or not str(query).strip():
+            # No meaningful query → zero score, avoids embedding call entirely
+            return np.array([[0.0]])
         similarity = self._get_cosine_similarity([query], keys=None)
-        similarity = similarity * (similarity > sensitivity) # filter out bad matches
-        return similarity 
+        similarity = similarity * (similarity > sensitivity)
+        return similarity
 
-    def get_score(self, query : str, sensitivity=0.4):
-        score = self._get_embedding_score(query, sensitivity)
-        return score[0][0]
+    def get_score(self, query: str, sensitivity=0.4):
+        sim = self._get_embedding_score(query, sensitivity)
+        if sim.size == 0:
+            return 0.0
+        return float(sim[0][0])
+
 
     def __str__(self):
         return next(iter(self.keys))
@@ -138,7 +144,7 @@ class MemoryRAG(Memory):
         Load keywords from the memory nodes into the keyword dictionary.
         This is useful after loading a memory from a file.
         """
-        self.keywords = {}
+        self.keywords = set()
 
     def load_from_memory(self, memory: Memory):
         if type(memory) == MemoryRAG:

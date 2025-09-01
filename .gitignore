@@ -24,6 +24,7 @@ checkpoints/
 sessions/
 benchmark_raspa/sessions/*
 !benchmark_raspa/sessions/b1_matching/benchmark_2/*
+!benchmark_raspa/sessions/b1_matching/benchmark_2b/*
 
 tout/
 Movies/
@@ -31,3 +32,5 @@ Restart/
 VTK/
 offline_learning/
 logs/
+*.lock
+results__test*
