@@ -1,0 +1,109 @@
+# Henriks Evaluation
+
+Job_id
+Task
+Grade
+Comments
+
+
+9 
+Calculate the helium void fraction of IRMOF-13
+CORRECT
+NumberOfInitializationCycles != 0 
+
+10
+Surface area
+stop - WRONG
+Mistake in input: ComputeSurfaceArea            yes\nSurfaceAreaSamplingPointsPerSphere 1000\nSurfaceAreaProbeDistance      Minimum\nSurfaceAreaProbeAtom          Argon\n instead of: SurfaceAreaProbeDistance Sigma
+
+11
+Determine the adsorption enthalpy of N2 on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.877
+Almost
+Mistake in MC moves: missed rotation! a lot of unneccessary lines
+
+
+12
+Determine the adsorption enthalpy of methane on IRMOF-13 at a pressure of 1e5 and 300 Kelvin given the helium void fraction of 0.877
+CORRECT
+Included rotation although methane with 1 pseudoatom has no rotational degree of freedom
+
+13
+Determine the henry coefficient of N2 on IRMOF-13 given the helium void fraction of 0.877
+CORRECT
+NumberOfInitializationCycles != 0, output analysis incomplete due to error in parser tool (fixed i think)
+
+14
+Compare the adsorption enthalpies of a 1:1 mixture of CO2 and N2 on IRMOF-13 at a pressure of 1e5 and 300 Kelvin given the helium void fraction of 0.877
+GOOD
+
+15
+Determine the henry coefficient of methane and N2 on IRMOF-13 given the helium void fraction of 0.877"
+WRONG
+
+16
+Mixture adsorption 
+Almost correct
+Small mistakes
+
+17
+Determine the henry coefficient of n-pentane and methane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentaneAlmost good
+NumberOfInitializationCycles != 0, pressure, RW for methane
+
+18
+Calculate the ideal Rosenbluth weights for n-hexane
+GOOD
+NumberOfInitializationCycles != 0 and many additional lines in the input file (moves and pressure) which did not change the outcome a lot
+
+19
+Calculate the ideal Rosenbluth weights for n-hexane and n-pentane
+GOOD
+NumberOfInitializationCycles != 0 and could be done in one simulation but not a problem
+
+20
+Determine the adsorption enthalpy of n-heptane on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0004450 for n-heptane
+GOOD (I think)
+Did a henry coefficient calculation. NumberOfInitializationCycles != 0
+
+21
+Determine the adsorption enthalpy of n-heptane on IRMOF-13 at a pressure of 1e5 and 300 Kelvin given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0004450 for n-heptaneALMOST GOOD or WRONG (std are very low for enthalpy - so sampling might be good afterall?)
+X
+only swap move. rotaion, translation and partial reinsertion are missing
+
+22
+Determine the henry coefficient of n-pentane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+GOOD
+NumberOfInitializationCycles != 0, due to confusion in tool usage ran simulation twice. Fix by adjusting output_parser description: use only after you know the raspa simulation was successful
+
+23
+Compare the adsorption enthalpies of a 1:1 mixture of n-pentane and n-heptane on IRMOF-13 at a pressure of 1e4 and 300 Kelvin given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane and 0.0004450 for n-heptane
+Almost Good
+Second try was good. Output not good since the simulation was short by instruction!
+
+
+24
+Determine the henry coefficient of n-hexane and n-heptane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0029442 for n-hexane and 0.0004450 for n-heptane
+CORRECT
+NumberOfInitializationCycles != 0
+
+100
+Determine the adsorption enthalpy of n-hexane on IRMOF-13 using a simulation at infinite dilution
+WRONG 
+good start, then not correct tool use
+
+101
+Determine the adsorption enthalpy of n-hexane on IRMOF-13 at a pressure of 1e5 and 300 Kelvin
+WRONG
+misses prerequisites
+
+102
+Compare the adsorption enthalpies of a 1:1 mixture of n-hexane and CO2 on IRMOF-13 at a pressure of 1e5 and 300 Kelvin
+WRONG
+
+103
+Determine the henry coefficient of n-pentane on IRMOF-13
+CORRECT
+
+104
+Determine the henry coefficient of n-pentane and N2 on IRMOF-13
+CORRECT
+Rosenbluth weight for N2 calculated correctly, but turned out to be 1.025! Output analysis missing due to conversation constraint.

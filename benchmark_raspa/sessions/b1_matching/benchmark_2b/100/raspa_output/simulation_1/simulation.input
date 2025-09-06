@@ -1,0 +1,23 @@
+SimulationType                MonteCarlo
+NumberOfCycles                100000
+NumberOfInitializationCycles  10000
+PrintEvery                    10000
+
+Forcefield                    local
+ChargeMethod                  Ewald
+EwaldPrecision                1e-6
+CutOffVDW                     12.8
+CutOffCoulomb                 12.8
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 1
+ExternalTemperature 300.0
+ExternalPressure 0.0
+
+Component 0 MoleculeName       helium
+            MoleculeDefinition local
+            WidomProbability   1.0
+            CreateNumberOfMolecules 0
+

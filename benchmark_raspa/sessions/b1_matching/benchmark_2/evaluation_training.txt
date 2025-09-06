@@ -1,0 +1,156 @@
+# Feedback for the training examples
+
+1
+Calculate the helium void fraction of IRMOF-13
+GOOD
+
+2
+Determine the surface area of IRMOF-13
+Good
+
+3
+Determine the adsorption enthalpy of CO2 on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.877
+Almost good
+misses rotation move, (wrong CO2 def)
+
+4
+Determine the adsorption enthalpy of CO2 on IRMOF-13 given the helium void fraction of 0.877
+WRONG
+misses swap and rotation moves, p=0, (wrong CO2 def)
+
+5
+Determine the henry coefficient of CO2 on IRMOF-13 given the helium void fraction of 0.877
+Wrong
+NumberOfInitializationCycles != 0, (wrong CO2 def), ExternalPressure = 1e5 wrong, no need for RW
+
+6
+Compare the adsorption enthalpies of methane and N2 on IRMOF-13 given the helium void fraction of 0.877
+Wrong
+No need for RW. misses MC moves.
+
+7
+Determine the henry coefficient of methane and N2 on IRMOF-13 given the helium void fraction of 0.877
+GOOD
+No need for RW calculation, but correct second file
+
+8
+Compare the adsorption enthalpies of n-pentane and N2 on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Almost good
+Does infinite adsorption simulation which is fine I guess
+
+9
+Determine the henry coefficient of n-pentane and N2 on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Almost good
+remove External Pressure 1e5, NumberOfInitializationCycles != 0
+
+10
+Calculate the ideal Rosenbluth weights for n-hexane
+Almost good
+remove ExternalPressure 1e5, NumberOfInitializationCycles != 0
+
+11
+Calculate the ideal Rosenbluth weights for n-hexane and n-pentane
+Almost good
+remove ExternalPressure 1e5, NumberOfInitializationCycles != 0
+
+12
+Determine the adsorption enthalpy of n-pentane on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Almost good
+misses rotation
+
+13
+Determine the adsorption enthalpy of n-pentane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Almost good
+misses rotation, swap, infinite dilution setup
+
+14
+Determine the henry coefficient of n-pentane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Almost good
+NumberOfInitializationCycles != 0
+
+15
+Compare the adsorption enthalpies of n-pentane and n-heptane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane and 0.0004450 for n-heptane
+almost good
+remove Ensemble                      GCMC\nSwapProbability               1.0, mole fraction for both components is 1
+
+16
+Determine the henry coefficient of n-pentane and n-heptane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane and 0.0004450 for n-heptane
+Almost good
+ExternalPressure 1e5, NumberOfInitializationCycles != 0
+
+17
+Calculate the helium void fraction of IRMOF-13
+Good given error in template (component in second line)
+
+18
+Determine the surface area of IRMOF-13
+Good
+even with HVF which is not required
+
+19
+Determine the adsorption enthalpy of methane on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.877
+Good (given wrong template)
+
+20
+Determine the adsorption enthalpy of methane on IRMOF-13 given the helium void fraction of 0.877
+Almost good 
+inf dilution + enthalpy, some output parser problem: check log
+
+21
+Determine the henry coefficient of methane on IRMOF-13 given the helium void fraction of 0.877
+Almost good (output parser problem)
+NumberOfInitializationCycles != 0, Pressure
+
+22
+Compare the adsorption enthalpies of CO2 and methane on IRMOF-13 given the helium void fraction of 0.877
+Almost good
+misses a lot of moves
+
+23
+Determine the henry coefficient of CO2 and methane on IRMOF-13 given the helium void fraction of 0.877
+Almost good
+no need for RW calculations, but correct, NumberOfInitializationCycles != 0
+
+24
+Compare the adsorption enthalpies of n-pentane and N2 on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Almost good
+no need for RW calculation, missing moves
+
+25
+Determine the henry coefficient of n-pentane and N2 on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Wrong
+incorrect move names so that no real simulation
+
+26
+Calculate the ideal Rosenbluth weights for n-pentane
+Almost good
+Pressure, NumberOfInitializationCycles
+
+27
+Calculate the ideal Rosenbluth weights for n-heptane and n-pentane
+Good (despite output parser error)
+
+28
+Determine the adsorption enthalpy of n-pentane on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Almost good
+ReinsertionProbability 0.0 should be nonzero
+
+29
+Determine the adsorption enthalpy of n-pentane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Good
+
+30
+Determine the henry coefficient of n-pentane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0197439 for n-pentane
+Good (output parser problem)
+
+31
+Compare the adsorption enthalpies of n-heptane and n-hexane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0004450 for n-heptane and 0.0029442 for n-hexane
+Almost good
+Misses a lot of moves, except swap
+
+32
+Determine the henry coefficient of n-heptane and n-hexane on IRMOF-13 given the helium void fraction of 0.877 and the ideal gas rosenbluth weight of 0.0004450 for n-heptane and 0.0029442 for n-hexane
+Good
+Some errors but henry coefficient is there, NumberOfInitializationCycles != 0, pressure
+
+

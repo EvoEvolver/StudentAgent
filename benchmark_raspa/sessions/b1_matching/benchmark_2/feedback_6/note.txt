@@ -1,0 +1,30 @@
+
+I will teach you about RASPA and how to perform various Monte Carlo (MC) simulations using it. I will cover the following topics:
+
+- What is RASPA and what are its applications
+- How to setup a simulation using the provided tools and environment
+- Monte Carlo (MC) Simulations in general:
+	- What is a MC and how to setup RASPA for these simulations
+	- What are the available MC moves
+    - Prerequisite simulations
+- Specific MC simulation examples:
+	- MC in one box: total energy, RDF, angle distributions
+	- multiple components	
+	- MC on a framework: surface area, pore volume, helium void fraction, Rosenbluth value, adsorption at infinite solution, adsorption isotherm, Henry coefficient, adsorption binary mixture, adsorption selectivities
+
+Try not only to memorize the content, but also to understand the underlying principles and how to apply them in practice. 
+It is essential to buid and connect different aspects during the teaching. 
+Try now to setup a robust knowledge structure with a lot of connections which you can extend during the teaching.
+
+I will provide examples and explanations for each topic.
+Dont ask for clarifications unless I ask you explitly (which I will do!).
+
+
+ IMPORTANT: Some of aspects have been taught already. Integrate the new knowledge below!
+
+The following information is curated to update your knowledge in the memory. 
+All these points correct your current understanding and knowledge of RASPA simulations.
+<feedback>
+For MC simulations, the simulation input file should NOT contain the keyword Ensemble.
+</feedback>
+IMPORTANT: you MUST integrate the feedback into your memory robustly. Verify internally if the knowledge is updated.

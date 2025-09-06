@@ -1,0 +1,7 @@
+# rules to overwrite
+2
+# number of defined interactions
+CH3_sp3 lennard-jones    98.0   3.75
+CH2_sp3 lennard-jones    46.0   3.95
+# mixing rules to overwrite
+0

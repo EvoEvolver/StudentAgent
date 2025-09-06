@@ -1,0 +1,45 @@
+SimulationType                MonteCarlo
+NumberOfCycles                25000
+NumberOfInitializationCycles  5000
+PrintEvery                    1000
+
+Forcefield                    local
+ChargeMethod                  Ewald
+EwaldPrecision                1e-6
+CutOffVDW                     12.8
+CutOffCoulomb                 12.8
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 1
+HeliumVoidFraction 0.877
+ExternalTemperature 300.0
+ExternalPressure 1e5
+
+Component 0 MoleculeName       carbon_dioxide
+            MoleculeDefinition local
+            SwapProbability    1.0
+            TranslationProbability 1.0
+            RotationProbability 1.0
+            ReinsertionProbability 1.0
+            PartialReinsertionProbability 1.0
+            IdentityChangeProbability 1.0
+            NumberOfIdentityChanges 1
+            IdentityChangesList 0 1
+            FugacityCoefficient 1.0
+            CreateNumberOfMolecules 0
+
+Component 1 MoleculeName       nitrogen
+            MoleculeDefinition local
+            SwapProbability    1.0
+            TranslationProbability 1.0
+            RotationProbability 1.0
+            ReinsertionProbability 1.0
+            PartialReinsertionProbability 1.0
+            IdentityChangeProbability 1.0
+            NumberOfIdentityChanges 1
+            IdentityChangesList 0 1
+            FugacityCoefficient 1.0
+            CreateNumberOfMolecules 0
+

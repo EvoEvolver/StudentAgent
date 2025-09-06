@@ -1,0 +1,12 @@
+# general rule for shifted vs truncated
+truncated
+# general rule tailcorrections
+yes
+# number of defined interactions
+5
+# type interaction
+CH3_chx        lennard-jones    98.0      3.75         // TraPPE
+c_CH2_c        lennard-jones    46.0      3.95         // TraPPE
+C_co2          lennard-jones    27.0      2.8          // TraPPE
+O_co2          lennard-jones    79.0      3.05         // TraPPE
+He             lennard-jones    10.9      2.64         // Standard
