@@ -36,10 +36,61 @@ class MoleculeLoader(MoleculeLoaderTrappe):
         except Exception as e:
             return self.get_output(e=e)
         response = f"""
-        Successfully generated the molecule input files (and force field files) for: 
+        Successfully generated the molecule input files (and force field files) for:
         {', '.join([file(name) for name in out])}
         """
         return self.get_output(content=response)
+
+
+class SystemAgent(RaspaTool):
+    def __init__(self, path=None):
+        name = "learn"
+        description = """
+        Use this tool to execute system tasks using natural language instructions.
+        This tool can read files, write files, and execute system commands based on your query.
+        Provide a natural language instruction describing what you want to accomplish.
+        """
+        super().__init__(name, description, path)
+
+    def run(self, query: str):
+        """
+        Execute a natural language query using Claude CLI.
+
+        Args:
+            query: Natural language instruction for file operations or system commands
+
+        Returns:
+            The output from Claude CLI
+        """
+        try:
+            # Get the working directory path
+            work_dir = self.get_path(full=True)
+
+            # Execute claude command with the query
+            process = subprocess.Popen(
+                ['claude', '-p', query],
+                cwd=work_dir,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            stdout, stderr = process.communicate()
+
+            if process.returncode != 0:
+                error_msg = f"Command failed with return code {process.returncode}"
+                if stderr:
+                    error_msg += f"\nError: {stderr}"
+                return self.get_output(e=error_msg)
+
+            # Return the output
+            return self.get_output(content=stdout)
+
+        except FileNotFoundError:
+            return self.get_output(e="Claude CLI not found. Please ensure 'claude' command is installed and available in PATH.")
+        except Exception as e:
+            return self.get_output(e=f"Error executing system agent: {str(e)}")
+
 
 class InspectFiles(RaspaTool):
     def __init__(self, path=None):
@@ -48,42 +99,16 @@ class InspectFiles(RaspaTool):
         Use this tool to get all the files that you can access.
         """
         super().__init__(name, description, path)
-    
+
     def run(self):
         '''
         Return files hierarchy starting from self.get_path()
         '''
         path = self.get_path(full=True)
-        
+
         files : List[str] = all_files(path)
         return tool_response(self.name, files)
-    
-    
-class ReadFile(RaspaTool):
-    def __init__(self, path=None):
-        name = "read_file"
-        description = """
-        Use this tool to read the content of a text file (not directory!).
-        You must provide the path to the file as file name (based on the root directory NOT the current working directory).
-        """
-        super().__init__(name, description, path)
-        
-    def run(self, file_name):
-        path = self.get_path(full=False)
-        content = None
-        file_path = os.path.join(path, file_name)
-        try:
-            if os.path.exists(file_path) and os.path.isfile(file_path):
-                with open(file_path, "r") as f:
-                    content = f.read()
-            elif os.path.exists(file_path) and not os.path.isfile(file_path):
-                content = "The is a directory, not a file!"
-            else:
-                content = "This path does not exist!"
-            return self.get_output(content=f"{file(file_path)}:\n{content}")
-        except Exception as e:
-            return self.get_output(e="You must provide the path to the file based on the root directory NOT the current working directory)."+e)
-             
+
 
 class WriteFile(RaspaTool):
     def __init__(self, path=None):
@@ -95,7 +120,7 @@ class WriteFile(RaspaTool):
         IMPORTANT: This will overwrite any existing file with the same name!
         """
         super().__init__(name, description, path)
-    
+
     def run(self,file_content, file_name):
         path = self.get_path(full=False)
         return self._run(file_content,file_name,path)
@@ -114,7 +139,7 @@ class WriteFile(RaspaTool):
         else:
             return self.get_output(e=e)
 
-            
+
 
 class InputFile(WriteFile):
     def __init__(self, path=None, template_filename=None):

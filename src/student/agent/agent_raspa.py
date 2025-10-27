@@ -1,33 +1,30 @@
 from .agent_student import StudentAgent
 from .memory import Memory
 
-from .tools.tools_raspa import CoreMofLoader, ExecuteRaspa, ReadFile, WriteFile, InputFile, InspectFiles, OutputParser, FrameworkLoader, MoleculeLoader
+from .tools.tools_raspa import CoreMofLoader, ExecuteRaspa, InputFile, OutputParser, \
+    FrameworkLoader, MoleculeLoader, SystemAgent
 from .tools.tools import Tool
 
 from mllm import Chat
-from typing import List, Dict, Union
-import re
-import json
-import os
+from typing import Dict
 from .utils import *
 
 
 class RaspaAgent(StudentAgent):
+    memory: Memory
+    tools: Dict[str, Tool]
+    system_prompt: str
+    chat: Chat
+    id: int
 
-    memory : Memory
-    tools : Dict[str, Tool]
-    system_prompt : str
-    chat : Chat
-    id : int
-
-    molecule_memory : Memory
+    molecule_memory: Memory
     framework_memory: Memory
-    path : str
-    path_add : str
-    auto_run : bool
+    path: str
+    path_add: str
+    auto_run: bool
 
-
-    def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=False, active_learning=True):
+    def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=True,
+                 active_learning=True):
         if csd_path is not None:
             framework_loader = FrameworkLoader(path, coremof=False, csd_path=csd_path)
         else:
@@ -41,20 +38,21 @@ class RaspaAgent(StudentAgent):
             MoleculeLoader(path),
             ExecuteRaspa(agent=self),
             InputFile(),
-            ReadFile(),
-            WriteFile(),
+            SystemAgent(path),
+            # ReadFile(),
+            # WriteFile(),
             # InspectFiles(),
             OutputParser()
         ]
         tools = {
-            tool.name : tool
+            tool.name: tool
             for tool in raspa_tools
         }
 
         super().__init__(tools=tools, version=version, provider=provider, verbose=verbose)
 
-        self.reset(path)        # base path
-        self.path_add = ""      # add onto path for simulations
+        self.reset(path)  # base path
+        self.path_add = ""  # add onto path for simulations
         self.auto_run = False
         self.add_raspa_prompt()
         self._advance_to_next_folder()
@@ -64,8 +62,8 @@ class RaspaAgent(StudentAgent):
     def add_raspa_prompt(self):
         prompt = self._build_prompt("raspa", "v1")
         self.reset_system_prompt(prompt, append=True)
-    
-    def setup_path(self, path : str) -> None:
+
+    def setup_path(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
         self.path = path
         for tool in self.tools.values():
@@ -81,19 +79,17 @@ class RaspaAgent(StudentAgent):
             if hasattr(tool, "path_add"):
                 tool.path_add = path_add
         return full_path
-        
+
     def get_full_path(self):
         return os.path.join(self.path, self.path_add)
-
 
     def reset(self, path=None):
         if path is not None:
             self.setup_path(path)
         for tool in self.tools:
             if hasattr(tool, "has_file"):
-                tool.has_file =False
+                tool.has_file = False
         return
-
 
     def check_files(self):
         if all([tool.has_file for tool in self.tools if hasattr(tool, "has_file")]):
@@ -112,14 +108,14 @@ class RaspaAgent(StudentAgent):
         current_directory = self.path_add
         files_all = [i for i in all_files(self.path) if self._check_ignore(i) is False]
         file_list = ", ".join(f"{f}" for f in files_all) if files_all else "Empty"
-        #file_overview = f"\n\n<file_overview>\nCurrent directory: {current_directory}\nFiles:\n{file_list}\n</file_overview>"
+        # file_overview = f"\n\n<file_overview>\nCurrent directory: {current_directory}\nFiles:\n{file_list}\n</file_overview>"
         return file_list, current_directory
-    
+
     def add_file_message(self):
         file_list, current_directory = self._file_overview()
         message = {
             "role": "assistant",
-            'content': 
+            'content':
                 {
                     'type': 'text',
                     'text': json.dumps({
@@ -131,8 +127,8 @@ class RaspaAgent(StudentAgent):
         }
 
         self.chat.messages.append(message)
-        return self.chat_length()-1
-    
+        return self.chat_length() - 1
+
     def remove_file_message(self, file_message_index):
         del self.chat.messages[file_message_index]
 
@@ -143,7 +139,6 @@ class RaspaAgent(StudentAgent):
         remove_tools = self.get_tool_mask()
         res = super().run(prompt, remove_tools=remove_tools, max_iter=max_iter)
         return res
-
 
     def _run(self, options, append_files=True):
         if append_files:
@@ -182,8 +177,6 @@ class RaspaAgent(StudentAgent):
         self.set_path_add(new_folder)
         return new_path
 
-
-
     def get_tool_mask(self):
         mask = []
 
@@ -195,28 +188,15 @@ class RaspaAgent(StudentAgent):
             mask.append("execute raspa")
 
         # all required files need to be present:
-        #elif not self.check_files():
+        # elif not self.check_files():
         #    return ["raspa"]
 
         return mask
 
-
     def setup(self):
-        #self.init_special_memories()
+        # self.init_special_memories()
         return
-    
+
     def set_auto(self, auto):
         self.auto_run = auto
         return
-
-
-    '''
-    def init_special_memories(self):
-        for tool in self.tools.values():
-            if hasattr(tool, "init_memory_prompt"):
-                prompt = tool.init_memory_prompt()
-                self.add_explicit_knowledge(prompt)
-        return
-    '''
-
-

@@ -50,7 +50,7 @@ class ManagerAgent(Agent):
             csd_path=csd_path,
             version=version,
             provider=provider,
-            verbose=verbose,
+            verbose=True,
             active_learning=active_learning
         )
 

@@ -2,24 +2,20 @@ from .memory import Memory
 from .tools.tools import Tool
 from .tools.tools_memory import AddMemory, ModifyMemory, RecallMemory, ExtendedModifyMemory
 from .agent import Agent
-
-from mllm import Chat
 from typing import List, Dict, Union
-import json
 from .utils import *
 from .utils import question as q
-from .utils import context as c
 
 
 def memory_agent_tools(provider):
     agent = MemoryAgent(provider=provider)
-    return {'agent': agent, 'tools' : [Ask(agent), Learn(agent)]}
-    
+    return {'agent': agent, 'tools': [Ask(agent), Learn(agent)]}
+
 
 class Ask(Tool):
-    def __init__(self, agent:Agent):
-        name="ask memory"
-        description="""
+    def __init__(self, agent: Agent):
+        name = "ask memory"
+        description = """
         Retrive related knowledge to a question from your memory.
         ALWAYS use if you encounter a task or question.
         Your memory could relevant information for everything.
@@ -27,71 +23,67 @@ class Ask(Tool):
         super().__init__(name, description)
         self.agent = agent
 
-    def run(self, question:str):
+    def run(self, question: str):
         res = self.agent.ask(question)
         return tool_response(self.name, res)
 
 
 class Learn(Tool):
-    def __init__(self, agent:Agent):
-        name="learn"
-        description="""
+    def __init__(self, agent: Agent):
+        name = "learn"
+        description = """
         Learn the knowledge from a given information context.
-        The knowlege is automatically stored into your memory.
+        The knowledge is automatically stored into your memory.
         You can access it later.
         ALWAYS use if you encounter knowledge you can add to your knowledge (NO general instructions).
         ALWAYS use if asked to remember something.
         """
         super().__init__(name, description)
         self.agent = agent
-    
-    def run(self, context:str):
+
+    def run(self, context: str):
         res = self.agent.learn(context)
         return tool_response(self.name, res)
 
 
-
-
 class MemoryAgent(Agent):
-    memory : Memory
+    memory: Memory
 
     def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version="v1", provider="openai"):
         super().__init__(tools=tools, cache=cache, expensive=expensive, version=version, provider=provider)
-        
+
         self.memory = Memory()
         self.add_memory_tools()
-        
+
         prompt = self.get_prompt(type="general", version=version)
         self.reset_system_prompt(prompt, append=True)
 
-        #self.special_keywords = {"explicit knowledge" : keyword("explicit knowledge"),}
+        # self.special_keywords = {"explicit knowledge" : keyword("explicit knowledge"),}
 
     ####### Setup #######
 
     def add_memory_tools(self):
         add = AddMemory(self.memory)
-        modify = ModifyMemory(self.memory)# ExtendedModifyMemory(self.memory, self.single_run)
+        modify = ModifyMemory(self.memory)  # ExtendedModifyMemory(self.memory, self.single_run)
         recall = RecallMemory(self.memory)
-        
+
         self.tools[add.name] = add
         self.tools[modify.name] = modify
         self.tools[recall.name] = recall
 
     def get_memory_tool_mask(self):
         return [name for name in self.tools.keys() if name not in ["add", "recall", "modify"]]
-    
+
     def get_learning_mask(self):
         return ["recall"]
 
     def get_question_mask(self):
         return ["add", "modify"]
-    
-    
+
     def get_all_mask(self):
         return [name for name in self.tools.keys()]
 
-
-    def load_memory(self, file:str):
+    def load_memory(self, file: str):
         if os.path.exists(file):
             try:
                 self.memory.load(file)
@@ -100,7 +92,6 @@ class MemoryAgent(Agent):
                 print("Error loading memory: ", e)
                 return None
         return False
-    
 
     def save_memory(self, file: str):
         try:
@@ -109,14 +100,14 @@ class MemoryAgent(Agent):
         except Exception as e:
             print("Error saving memory: ", e)
             return False
-    
+
     ####### Calls #######
 
-    def ask(self, question:str, copy=False):
+    def ask(self, question: str, copy=False):
         self.set_prompt(type="retrieval", version="v3")
         keys = self.extract_keys(question)
 
-        input = f"Retrieve all knowledge related to this input: {q(question)}"    
+        input = f"Retrieve all knowledge related to this input: {q(question)}"
         input += f"These are related keys that are present in the memory: <keys>{keys}</keys>"
 
         if copy:
@@ -124,14 +115,14 @@ class MemoryAgent(Agent):
         res = self.run(input, remove_tools=self.get_question_mask())
         return res
 
-    def learn(self, context:str):
+    def learn(self, context: str):
         recall = self.ask(context, copy=True)
 
         # learn
         self.set_prompt(type="learning", version="v5")
 
         prompt = self.get_prompt(type="update_mem", version="v2", json=False, general=False)
-        prompt = prompt.format(new_information = context, recalled=recall)
+        prompt = prompt.format(new_information=context, recalled=recall)
         update = self.run(prompt)
 
         # self.set_prompt(type="learning", version="v5")
@@ -140,7 +131,7 @@ class MemoryAgent(Agent):
         answer = self.run(prompt, remove_tools=self.get_all_mask())
         # answer = self.learning_answer(updates, context)
         return answer
-    
+
     def extract_keys(self, context):
         keywords = self.memory.get_keywords(topk=50)
 
@@ -151,17 +142,17 @@ class MemoryAgent(Agent):
     ####### Prompts #######
 
     def get_prompt(self, type, version, json=True, general=True):
-        return super().get_prompt(type, dir="memory", version=version, version_general="v3", version_output="v3", json=json, general=general)
-    
+        return super().get_prompt(type, dir="memory", version=version, version_general="v3", version_output="v3",
+                                  json=json, general=general)
 
     def set_prompt(self, prompt=None, type=None, version="v1"):
-        
+
         if prompt is None:
             try:
                 prompt = self.get_prompt(type, version=version)
             except Exception as e:
                 raise e
-        
+
         self.reset_system_prompt(prompt)
 
     def render_memory(self):
@@ -181,64 +172,60 @@ class MemoryAgent(Agent):
         remove_tools = self.get_memory_tool_mask(memory_only=True)
         res = self.run(prompt, remove_tools=remove_tools)
         return res
-    
 
     def get_special_keywords(self, key):
         return self.special_keywords.get(key, "")
 
 
-
-
 class ExplicitMemoryAgent(MemoryAgent):
 
-    def ask(self, question:str):
+    def ask(self, question: str):
         self.set_prompt(type="retrieval", version="v3")
-        
+
         recall = []
         extracted_keys = []
-        rev_summaries = self.full_summary(question)     # decompose into abstraction level
+        rev_summaries = self.full_summary(question)  # decompose into abstraction level
 
-        for summary in rev_summaries:                   # iterate by summarizing
-            keys = self.extract_keys(summary)           # ask for context
-            
+        for summary in rev_summaries:  # iterate by summarizing
+            keys = self.extract_keys(summary)  # ask for context
+
             if len(extracted_keys) > 0 and set(keys) == set(extracted_keys[-1]) or len(keys) == 0:
                 continue
-            
-            input = f"Retrieve all knowledge related to this input: {q(question)}"    
+
+            input = f"Retrieve all knowledge related to this input: {q(question)}"
             input += f"Use these or similar keys as stimuli: {keys}"
 
-            res = self.run(input, remove_tools=self.get_question_mask()) # TODO: see only last level
+            res = self.run(input, remove_tools=self.get_question_mask())  # TODO: see only last level
             if "<nothing/>" in res and len(res) < 15:
                 continue
 
-            extracted_keys.append(keys)                 # store extracted keys
-            recall.append(res)                          # TODO: aggregate each time
-        
-        if len(recall) > 0:                             # only if memory was recalled
+            extracted_keys.append(keys)  # store extracted keys
+            recall.append(res)  # TODO: aggregate each time
+
+        if len(recall) > 0:  # only if memory was recalled
             response = self.filter_information(q(question), recalled(';\n'.join(recall)))
             return response
         else:
             return "<nothing/>"
 
-
-    def learn(self, context:str):
+    def learn(self, context: str):
 
         recall = []
         extracted_keys = []
         updates = []
 
-        rev_summaries = self.full_summary(context)     # decompose into abstraction level
-        
-        for summary in rev_summaries:                   # iterate by summarizing
-            self.set_prompt(type="learning", version="v5")
-            
-            # ask
-            keys = self.extract_keys(summary)           # ask for context
-            extracted_keys.append(keys)                 # store extracted keys
+        rev_summaries = self.full_summary(context)  # decompose into abstraction level
 
-            input = f"Retrieve all knowledge related to this input: {q(context)}"    
+        for summary in rev_summaries:  # iterate by summarizing
+            self.set_prompt(type="learning", version="v5")
+
+            # ask
+            keys = self.extract_keys(summary)  # ask for context
+            extracted_keys.append(keys)  # store extracted keys
+
+            input = f"Retrieve all knowledge related to this input: {q(context)}"
             input += f"Use these or similar keys as stimuli: {keys}"
-            
+
             prompt = self.get_prompt(type="retrieval", version="v3", json=False, general=False)
             prompt += input
             mem = self.run(prompt, remove_tools=self.get_question_mask())
@@ -246,7 +233,7 @@ class ExplicitMemoryAgent(MemoryAgent):
 
             # learn
             prompt = self.get_prompt(type="update_mem", version="v2", json=False, general=False)
-            prompt = prompt.format(new_information = summary, recalled=mem)
+            prompt = prompt.format(new_information=summary, recalled=mem)
             update = self.run(prompt)
             updates.append(update)
 

@@ -230,17 +230,26 @@ class Agent:
         id = self.get_next_id()
         call['tool_call_id'] = id
 
+        # Print tool call information
+        if tool is None:
+            print(f"\n[TOOL ERROR] Invalid tool name: {name}")
+            name = "INVALID TOOL NAME"
+        else:
+            print(f"\n[TOOL CALL] {tool.name}")
+            if args:
+                print(f"[ARGUMENTS] {json.dumps(args, indent=2)}")
+            name = tool.name
+
         try:
             out = tool.run(**args)
+            success = True
+            # Print tool result
+            print(f"[TOOL RESULT] {str(out)[:500]}{'...' if len(str(out)) > 500 else ''}")
         except Exception as e:
             success = False
             out = e
+            print(f"[TOOL ERROR] {str(e)}")
 
-        if tool is None:
-            name = "INVALID TOOL NAME"
-        else:
-            name = tool.name
-            
         message = {
             "role": "user",
             'content': {

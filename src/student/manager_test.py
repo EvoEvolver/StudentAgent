@@ -6,5 +6,5 @@ load_dotenv()
 
 agent = ManagerAgent(provider="openai")
 agent.auto_run = True
-reply = agent.run("do monte carlo on methane in a box")
+reply = agent.run("setup monte carlo on methane in a box and execute it")
 print(reply)
