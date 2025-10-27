@@ -1,6 +1,5 @@
 import json, os, uuid
 from .agent import RaspaAgent, StudentAgent, Agent
-from .agent.agent_manager import ManagerAgent
 
 from pydantic import BaseModel
 from typing import Any, List, Dict
@@ -84,21 +83,14 @@ def save_session(session_id, state=None, session_dir=None):
 def load_agent(session):
     if session.agent_type == "RASPA":
         agent = RaspaAgent(
-            provider=session.provider, 
-            path=os.path.join(session.path, OUTPUT_PATH), 
-            csd_path=CSD_PATH, 
+            provider=session.provider,
+            path=os.path.join(session.path, OUTPUT_PATH),
+            csd_path=CSD_PATH,
             active_learning=session.active_learning
         )
 
     elif session.agent_type == "Student":
         agent = StudentAgent(provider=session.provider)
-    elif session.agent_type == "Manager":
-        agent = ManagerAgent(
-            provider=session.provider,
-            output_path=os.path.join(session.path, OUTPUT_PATH),
-            csd_path=CSD_PATH,
-            active_learning=session.active_learning
-        )
     else:
         agent = Agent(provider=session.provider)
 

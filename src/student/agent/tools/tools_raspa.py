@@ -23,16 +23,71 @@ import re
 class MoleculeLoader(MoleculeLoaderTrappe):
     def __init__(self, path=None):
         name = "Molecule loader"
-        description = "Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files."
+        description = """Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files.
+
+        Accepts common molecule names and chemical formulas such as:
+        - Simple formulas: CO2, N2, O2, CH4, H2O, NH3, Ar, Kr, Xe, He
+        - Common names: carbon dioxide, nitrogen, oxygen, methane, water, ammonia, argon, krypton, xenon, helium
+        - Organic molecules: ethane, propane, butane, pentane, hexane, heptane, octane, benzene, toluene
+
+        The tool will automatically map common abbreviations to their proper names."""
         super().__init__(name, description, path)
+
+        # Common molecule name mappings
+        # IMPORTANT: Map to names that work with BOTH:
+        # 1. TraPPE fuzzy search (can match "CO2" to "carbon dioxide")
+        # 2. PubChem API (recognizes chemical formulas, NOT "carbon_dioxide" with underscore)
+        self.name_mappings = {
+            # Small molecules - use formulas PubChem recognizes
+            'co2': 'CO2',
+            'co₂': 'CO2',
+            'carbon_dioxide': 'CO2',
+            'n2': 'N2',
+            'nitrogen': 'N2',
+            'o2': 'O2',
+            'oxygen': 'O2',
+            'nh3': 'NH3',
+            'ammonia': 'NH3',
+            'h2s': 'H2S',
+            'hydrogen_sulfide': 'H2S',
+
+            # Alkanes - keep as single-word names (no spaces)
+            'ch4': 'methane',
+            'c2h6': 'ethane',
+            'c3h8': 'propane',
+            'c4h10': 'butane',
+            'c5h12': 'pentane',
+            'c6h14': 'hexane',
+            'c7h16': 'heptane',
+            'c8h18': 'octane',
+
+            # Aromatics - single-word names
+            'c6h6': 'benzene',
+            'c7h8': 'toluene',
+        }
+
+    def normalize_name(self, name: str) -> str:
+        """Convert common chemical formulas and abbreviations to standard names."""
+        # Convert to lowercase and remove spaces for matching
+        normalized = name.lower().strip().replace(' ', '_')
+
+        # Check if we have a mapping for this name
+        if normalized in self.name_mappings:
+            return self.name_mappings[normalized]
+
+        # Return original name if no mapping found
+        return name
 
     def run(self, molecule_names : List[str]):
         self.reset()
         if type(molecule_names) == str:
             molecule_names = [molecule_names]
 
+        # Normalize molecule names
+        normalized_names = [self.normalize_name(name) for name in molecule_names]
+
         try:
-            out = self._run(molecule_names)
+            out = self._run(normalized_names)
         except Exception as e:
             return self.get_output(e=e)
         response = f"""
@@ -150,6 +205,12 @@ class InputFile(WriteFile):
         Use this tool to write the simulation input file.
         You must provide the content as string. The filename is always simulation.input
         ALWAYS use this template and modify based on examples from your memory!
+
+        CRITICAL: RASPA2 uses 0-based indexing for systems and components:
+        - First system: Box 0 or Framework 0 (NOT Box 1 or Framework 1)
+        - First component: Component 0 (NOT Component 1)
+        - Second component: Component 1, etc.
+        Using 1-based indexing will cause "system number is incorrect" errors!
         """
         self.has_file = False
         if template_filename is None:

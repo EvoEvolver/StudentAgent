@@ -6,8 +6,9 @@ from .tools.tools_raspa import CoreMofLoader, ExecuteRaspa, InputFile, OutputPar
 from .tools.tools import Tool
 
 from mllm import Chat
-from typing import Dict
+from typing import Dict, List, Any
 from .utils import *
+import re
 
 
 class RaspaAgent(StudentAgent):
@@ -54,6 +55,7 @@ class RaspaAgent(StudentAgent):
         self.reset(path)  # base path
         self.path_add = ""  # add onto path for simulations
         self.auto_run = False
+        self.current_todo_list = ""  # for todo list tracking
         self.add_raspa_prompt()
         self._advance_to_next_folder()
         self.reset(path)
@@ -140,6 +142,47 @@ class RaspaAgent(StudentAgent):
         res = super().run(prompt, remove_tools=remove_tools, max_iter=max_iter)
         return res
 
+    def run_with_todo_list(self, prompt: str, max_iter: int = 10) -> str:
+        """Main execution method that uses todo list for task management."""
+        if self.verbose:
+            print(f"[RASPA] RaspaAgent received instruction: {prompt}")
+
+        # Add initial progress message
+        self.print_progress("execution_start", f"RaspaAgent starting execution of: {prompt[:100]}...")
+
+        try:
+            # Step 1: Decompose the instruction into a todo list
+            todo_list_markdown = self.decompose_task(prompt)
+
+            if not todo_list_markdown:
+                return "Could not decompose the instruction into actionable tasks. Please provide a more specific instruction."
+
+            # Extract tasks for display
+            tasks = self._extract_tasks_from_markdown(todo_list_markdown)
+
+            if self.verbose:
+                print(f"[DECOMPOSE] Decomposed into {len(tasks)} tasks:")
+                print(todo_list_markdown)
+
+            # Step 2: Execute the todo list using tools
+            self.print_progress("execution_phase", "Starting execution of todo list")
+            execution_results = self.execute_todo_list_with_tools(todo_list_markdown, max_iter)
+
+            # Step 3: Prepare summary
+            self.print_progress("summary_generation", "Generating execution summary")
+            summary = self._generate_summary(prompt, execution_results)
+
+            self.print_progress("execution_final_complete", "RaspaAgent execution complete.")
+
+            return summary
+
+        except Exception as e:
+            error_msg = f"RaspaAgent encountered an error: {str(e)}"
+            self.print_progress("execution_error", f"RaspaAgent execution failed: {str(e)}")
+            if self.verbose:
+                print(f"[ERROR] {error_msg}")
+            return error_msg
+
     def _run(self, options, append_files=True):
         if append_files:
             index = self.add_file_message()
@@ -196,6 +239,285 @@ class RaspaAgent(StudentAgent):
     def setup(self):
         # self.init_special_memories()
         return
+
+    def print_progress(self, message_type: str, details: str):
+        """Print progress messages during execution."""
+        print(f"[{message_type}]: {details}")
+
+    def get_tool_list_prompt(self):
+        """Generate tool descriptions dynamically."""
+        tool_descriptions = []
+        tool_names = []
+        for tool_name, tool in self.tools.items():
+            tool_descriptions.append(f"- {tool_name}: {tool.description}")
+            tool_names.append(tool_name)
+
+        tools_text = "\n".join(tool_descriptions)
+        return tools_text
+
+    def decompose_task(self, instruction: str) -> str:
+        """Generate a markdown todo list directly from the instruction."""
+        if self.verbose:
+            print("[RASPA] Generating todo list directly from instruction...")
+
+        # Add progress message
+        self.print_progress("decomposition_start", f"Starting task decomposition for: {instruction[:100]}...")
+
+        # Direct prompt to generate todo list
+        todo_generation_prompt = f"""
+        Analyze the following instruction and break it down into a actionable markdown todo list.
+        You must ensure that the todo list you generate can be solved by the tools
+
+        Instruction: {instruction}
+
+        Available Tools:
+        {self.get_tool_list_prompt()}
+
+        Rules:
+        - Use [ ] for incomplete tasks in markdown format
+        - Each task should specify which tool to use from the available tools
+        - The steps should be actionable with the available tools
+        - Keep tasks focused and specific
+        - The todo list can be as simple as one or two items
+
+        Return only the markdown todo list, nothing else:
+        - [ ] Task 1
+        - [ ] Task 2
+        """
+
+        try:
+            response = Chat(todo_generation_prompt).complete(cache=False, expensive=True)
+            self.current_todo_list = response.strip()
+
+            # Add progress message to display the generated todo list in chat
+            self.print_progress("todo_list_generated", f"Generated todo list:\n\n{self.current_todo_list}")
+
+            self.print_progress("decomposition_complete",
+                                f"Task decomposed into todo list with {len(self._extract_tasks_from_markdown(self.current_todo_list))} tasks")
+            return self.current_todo_list
+        except Exception as e:
+            error_msg = f"Could not generate todo list: {str(e)}"
+            if self.verbose:
+                print(f"[ERROR] {error_msg}")
+            self.print_progress("decomposition_error", error_msg)
+            return ""
+
+    def update_todo_list_after_task(self, completed_task: str, task_result: str) -> str:
+        """Update the todo list by marking completed task and potentially adding new tasks."""
+        if not self.current_todo_list:
+            return self.current_todo_list
+
+        update_prompt = f"""
+        Current todo list:
+        {self.current_todo_list}
+
+        A task was just completed:
+        Task: {completed_task}
+        Result: {task_result[:500]}...
+
+        Please update the todo list by:
+        1. Mark the completed task with [x] instead of [ ]
+        2. If the result suggests new tasks are needed, add them as new [ ] items
+        3. Return the complete updated todo list in markdown format
+
+        Only return the updated todo list, nothing else.
+        """
+
+        try:
+            response = Chat(update_prompt).complete(cache=False, expensive=True)
+            updated_list = response.strip()
+            self.current_todo_list = updated_list
+            return updated_list
+        except Exception as e:
+            if self.verbose:
+                print(f"[WARNING] Could not update todo list: {str(e)}")
+            return self.current_todo_list
+
+    def _suggest_next_action(self, todo_list_markdown: str, current_results: Dict[str, Any]) -> str:
+        """Use LLM to suggest the next action based on the todo list and current progress."""
+
+        # Build context from completed tasks
+        completed_context = ""
+        if current_results['completed_tasks']:
+            completed_context = "\n\nCompleted tasks so far:\n"
+            for task in current_results['completed_tasks']:
+                completed_context += f"- {task['task']}\n  Result: {task['result'][:200]}...\n"
+
+        next_action_prompt = f"""
+        Current Todo List:
+        {todo_list_markdown}
+
+        Available Tools:
+        {self.get_tool_list_prompt()}
+        {completed_context}
+
+        Based on the current todo list and progress, what should be the next action to take?
+
+        Notice:
+        - Return a action description that contains all the information to run the tool
+        - Look at the todo list and identify the next incomplete task (marked with [ ])
+        - Provide specific details needed to execute the task
+        """
+
+        try:
+            response = Chat(next_action_prompt).complete(cache=False, expensive=True)
+            next_action = response.strip()
+            return next_action
+        except Exception as e:
+            if self.verbose:
+                print(f"[WARNING] Could not suggest next action: {str(e)}")
+            return "done"
+
+    def _extract_tasks_from_markdown(self, markdown_todo: str) -> List[str]:
+        """Extract task descriptions from markdown todo list."""
+        tasks = []
+        lines = markdown_todo.split('\n')
+
+        for line in lines:
+            line = line.strip()
+            # Match markdown checkbox format: - [ ] or - [x]
+            match = re.match(r'^-\s*\[\s*[x ]?\s*\]\s*(.+)$', line)
+            if match:
+                tasks.append(match.group(1).strip())
+
+        return tasks
+
+    def _all_tasks_completed(self, todo_list_markdown: str) -> bool:
+        """Check if all tasks in the todo list are completed (marked with [x])."""
+        if not todo_list_markdown.strip():
+            return True  # Empty todo list means nothing to do
+
+        lines = todo_list_markdown.split('\n')
+        has_tasks = False
+
+        for line in lines:
+            line = line.strip()
+            # Check for markdown checkbox format
+            if re.match(r'^-\s*\[', line):
+                has_tasks = True
+                # If we find any incomplete task ([ ]), return False
+                if re.match(r'^-\s*\[\s*\]\s*', line):
+                    return False
+
+        # If we found tasks and none were incomplete, all are completed
+        # If we found no tasks at all, consider it completed
+        return has_tasks
+
+    def execute_todo_list_with_tools(self, todo_list_markdown: str, max_iter: int) -> Dict[str, Any]:
+        """Execute the markdown todo list using tools through the Agent framework."""
+        results = {
+            'completed_tasks': [],
+            'failed_tasks': [],
+            'total_tasks': 0,
+        }
+
+        max_iterations = min(max_iter, 20)  # Prevent infinite loops
+        iteration = 0
+
+        # Build context from previous completions
+        context_summary = ""
+
+        while iteration < max_iterations:
+            # Check if all tasks in the todo list are completed (marked with [x])
+            if self._all_tasks_completed(self.current_todo_list):
+                if self.verbose:
+                    print("[RASPA] All tasks completed - todo list shows all [x]")
+                self.print_progress("execution_complete", "All tasks completed - todo list shows all [x]")
+                break
+
+            iteration += 1
+
+            # Use LLM to suggest next action based on current todo list
+            next_action = self._suggest_next_action(self.current_todo_list, results)
+
+            if self.verbose:
+                print(f"\n[RASPA] Iteration {iteration}: {next_action}")
+
+            self.print_progress("task_start", f"Starting task {iteration}: {next_action}")
+
+            try:
+                # Build action prompt with context from previous tasks
+                if context_summary:
+                    action_prompt = f"""Execute this specific task: {next_action}
+
+Context from previous completed tasks:
+{context_summary}
+
+Please execute the task taking into account the previous work done."""
+                else:
+                    action_prompt = f"Execute this specific task: {next_action}"
+
+                # Get tool mask for current state
+                remove_tools = self.get_tool_mask()
+
+                # Use parent StudentAgent's run method to execute this single action
+                result = super(RaspaAgent, self).run(action_prompt, max_iter=5, remove_tools=remove_tools)
+
+                # Print the actual result for visibility
+                if self.verbose:
+                    print(f"[RESULT] Task result: {result[:500]}...")
+
+                self.print_progress("task_result", f"Result: {result[:300]}...")
+
+                # Update context summary with this completion
+                context_summary += f"\nTask: {next_action}\nResult: {result[:500]}\n"
+
+                # Update todo list after task completion
+                self.update_todo_list_after_task(next_action, result)
+
+                self.print_progress("todo_list", f"{self.current_todo_list}")
+
+                results['completed_tasks'].append({
+                    'task': next_action,
+                    'result': result,
+                    'status': 'completed'
+                })
+
+                if self.verbose:
+                    print(f"[SUCCESS] Task completed successfully")
+
+            except Exception as e:
+                error_result = {
+                    'task': next_action,
+                    'error': str(e),
+                    'status': 'failed'
+                }
+                results['failed_tasks'].append(error_result)
+                self.print_progress("task_error", f"Task failed: {next_action}. Error: {str(e)}")
+
+                if self.verbose:
+                    print(f"[FAILED] Task failed: {str(e)}")
+
+        results['total_tasks'] = len(results['completed_tasks']) + len(results['failed_tasks'])
+        return results
+
+    def _generate_summary(self, original_instruction: str, execution_results: Dict[str, Any]) -> str:
+        """Generate a comprehensive summary of the execution."""
+        summary = f"""
+## Execution Summary
+
+**Original Instruction:** {original_instruction}
+
+### Final Todo List Status:
+{self.current_todo_list}
+
+### Completed Tasks ({len(execution_results['completed_tasks'])}):
+"""
+
+        for i, task_result in enumerate(execution_results['completed_tasks'], 1):
+            summary += f"\n**Task {i}:** {task_result['task']}\n"
+            summary += f"**Result:** {task_result['result'][:1000] if task_result['result'] else 'No result captured'}\n"
+            if len(task_result['result']) > 1000:
+                summary += f"... (result truncated)\n"
+
+        if execution_results['failed_tasks']:
+            summary += f"\n### Failed Tasks ({len(execution_results['failed_tasks'])}):\n"
+            for i, task_result in enumerate(execution_results['failed_tasks'], 1):
+                summary += f"\n**Task {i}:** {task_result['task']}\n"
+                summary += f"**Error:** {task_result['error']}\n"
+
+        summary += f"\n### Total: {execution_results['total_tasks']} tasks processed\n"
+        return summary
 
     def set_auto(self, auto):
         self.auto_run = auto
