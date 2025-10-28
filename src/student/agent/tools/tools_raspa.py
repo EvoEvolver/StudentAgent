@@ -1,23 +1,18 @@
-import shutil
-import os
-import numpy as np
-import subprocess
-from typing import List, Dict, Set, Any, Union
-from collections import defaultdict
+import math
 import re
+import shutil
+import subprocess
+from collections import defaultdict
+from typing import Dict, Any, Union
 
+import numpy as np
 from dotenv import load_dotenv
-
-from .tools import Tool, RaspaTool
-from ..utils import *
 
 from .input_gen.molecule_loader import MoleculeLoaderTrappe
 from .output import output_parser
+from .tools import RaspaTool
+from ..utils import *
 from ..utils import quick_search
-
-import math
-import re
-
 
 
 class MoleculeLoader(MoleculeLoaderTrappe):
@@ -78,7 +73,7 @@ class MoleculeLoader(MoleculeLoaderTrappe):
         # Return original name if no mapping found
         return name
 
-    def run(self, molecule_names : List[str]):
+    def run(self, molecule_names: List[str]):
         self.reset()
         if type(molecule_names) == str:
             molecule_names = [molecule_names]
@@ -99,7 +94,7 @@ class MoleculeLoader(MoleculeLoaderTrappe):
 
 class SystemAgent(RaspaTool):
     def __init__(self, path=None):
-        name = "learn"
+        name = "SystemAgent"
         description = """
         Use this tool to execute system tasks using natural language instructions.
         This tool can read files, write files, and execute system commands based on your query.
@@ -123,7 +118,7 @@ class SystemAgent(RaspaTool):
 
             # Execute claude command with the query
             process = subprocess.Popen(
-                ['claude', '-p', query],
+                ['claude', '--dangerously-skip-permissions', '-p', query],
                 cwd=work_dir,
                 text=True,
                 stdout=subprocess.PIPE,
@@ -142,27 +137,11 @@ class SystemAgent(RaspaTool):
             return self.get_output(content=stdout)
 
         except FileNotFoundError:
-            return self.get_output(e="Claude CLI not found. Please ensure 'claude' command is installed and available in PATH.")
+            return self.get_output(
+                e="Claude CLI not found. Please ensure 'claude' command is installed and available in PATH.")
         except Exception as e:
             return self.get_output(e=f"Error executing system agent: {str(e)}")
 
-
-class InspectFiles(RaspaTool):
-    def __init__(self, path=None):
-        name = "inspect_files"
-        description = """
-        Use this tool to get all the files that you can access.
-        """
-        super().__init__(name, description, path)
-
-    def run(self):
-        '''
-        Return files hierarchy starting from self.get_path()
-        '''
-        path = self.get_path(full=True)
-
-        files : List[str] = all_files(path)
-        return tool_response(self.name, files)
 
 
 class WriteFile(RaspaTool):
@@ -176,9 +155,9 @@ class WriteFile(RaspaTool):
         """
         super().__init__(name, description, path)
 
-    def run(self,file_content, file_name):
+    def run(self, file_content, file_name):
         path = self.get_path(full=False)
-        return self._run(file_content,file_name,path)
+        return self._run(file_content, file_name, path)
 
     def _run(self, file_content, file_name, path):
         e = None
@@ -195,11 +174,10 @@ class WriteFile(RaspaTool):
             return self.get_output(e=e)
 
 
-
 class InputFile(WriteFile):
     def __init__(self, path=None, template_filename=None):
         super().__init__(path)
-        
+
         self.name = "input_file"
         self.description = """
         Use this tool to write the simulation input file.
@@ -220,7 +198,7 @@ class InputFile(WriteFile):
     def add_template(self, template_filename):
         if template_filename is None or not os.path.exists(template_filename):
             return False
-        
+
         self.template_filename = template_filename
         with open(self.template_filename, 'r') as file:
             template = file.read()
@@ -228,7 +206,7 @@ class InputFile(WriteFile):
         return True
 
     def run(self, file_content):
-        file_name="simulation.input"
+        file_name = "simulation.input"
         out = super()._run(file_content, file_name, self.get_path(full=True))
         if not (isinstance(out, str) and out.startswith("<error>")):
             self.has_file = True
@@ -243,7 +221,7 @@ class ExecuteRaspa(RaspaTool):
         """
         super().__init__(name, description, path)
         self.agent = agent
-        
+
     def run(self):
         self.get_run_file()
         out = self.run_raspa()
@@ -251,9 +229,9 @@ class ExecuteRaspa(RaspaTool):
             stdout, stderr = out
             if self.check_success:
                 self.agent._advance_to_next_folder()
-            return self.get_output(content=f"<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created! To rerun, you must create all input files again!)")
-        return self.get_output(e = out)
-    
+            return self.get_output(
+                content=f"<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created! To rerun, you must create all input files again!)")
+        return self.get_output(e=out)
 
     def check_success(self):
         path = self.get_path(full=True)
@@ -275,7 +253,7 @@ class ExecuteRaspa(RaspaTool):
             f.write(content)
         os.chmod(file_path, 0o755)
         return
-    
+
     def run_raspa(self):
         process = subprocess.Popen(
             ['bash', 'run.sh'],
@@ -288,113 +266,8 @@ class ExecuteRaspa(RaspaTool):
         return out
 
 
-'''
-class TrappeLoader(RaspaTool):
-
-    def __init__(self, path=None):
-        name = "molecule definition generator"
-        description = """
-        Load the molecule data using Trappe and generate the molecule definition files and corresponding force field files..
-        """
-        super().__init__(name, description, path)
-        self.has_file = False
-        self.molecules = self.load_molecule_names()
-    
-
-    def run(self, molecule_names : List[str]):
-        if type(molecule_names) == str:
-            molecule_names = [molecule_names]
-
-        molecule_names = [name.replace(" ", "_") for name in molecule_names]
-        
-        res = self.search_names(molecule_names)
-        ids = [self.get_molecule_id(name) for name in res]
-        if len(ids) == 0:
-            return self.get_output(e="No corresponding molecules found. Try a different name!")
-
-        out_path = self.get_path(full=True)
-
-        try:
-            # filenames = generate_molecule_def(molecule_ids=ids, names=molecule_names, output_dir=out_path)
-            self.has_file = True
-        except Exception as e:
-            #echo(f"There was some error with the molecule file generation: {e}")
-            return self.get_output(e=e)
-        
-        return self.get_output(filenames=filenames)
-    
-    
-    def get_output(self, filenames=None, e=None):
-        if filenames is not None:
-            response = f"""
-            Successfully generated the molecule input files (and force field files) for: 
-            {''.join([file(name) for name in filenames])}
-            """
-            return tool_response(self.name, response)
-        else:
-            return error(e)
-
-
-    def _load_trappe_names(self):
-        # URL to scrape
-        url = "http://trappe.oit.umn.edu/scripts/search_select.php"
-        # check if the data is already downloaded
-        path = self.get_path(full=False)
-        file_path = os.path.join(path, "trappe_molecule_list.json")
-        try:
-            with open(file_path) as f:
-                return json.load(f)
-        except FileNotFoundError:
-            pass
-        os.makedirs(path, exist_ok=True)
-        res_dict = json.loads(request_by_post(url))['search']
-        
-        with open(file_path, "w") as f:
-            json.dump(res_dict, f)
-
-        return res_dict
-    
-    def load_molecule_names(self, families=["UA", "small"]):
-        mols = self._load_trappe_names()
-        molecules = {}
-        for m in mols:
-            if m['family'] in families:
-                name = m["name"].replace("<em>", "").replace("</em>", "")
-                molecules[name] =  m["molecule_ID"] 
-        return molecules
-
-    def get_molecule_id(self, mol):
-        return self.molecules.get(mol, None)
-
-    def molecule_names(self):
-        return self.molecules.keys()
-    
-    def _search_name(self, query, score_cutoff=90):
-        candidates = self.molecule_names()
-        matches = quick_search(query, candidates, limit=5, score_cutoff=score_cutoff)
-        
-        if len(matches) == 0:
-            return None
-        best_match = matches[0]
-        return best_match[0]
-
-    def search_names(self, names, score_curoff = 90):
-        res = []
-        for name in names:
-            res.append(self._search_name(name, score_curoff))
-        return res
-    
-    def init_memory_prompt(self):
-        prompt = f""""
-        This is a list of molecule names you might want to use for {tool(self.name)} but which can only be found with alternative names:
-        {mol_name("carbon dioxide", ["CO2", "carbon", "co2", "co", "carbon oxide"])}
-        {mol_name("nitrogen", ["N2", "dinitrogen"])}
-        """
-        return prompt
-    
-'''
 class CoreMofLoader(RaspaTool):
-    
+
     def __init__(self, path=None):
         name = "framework loader"
         description = """
@@ -402,9 +275,9 @@ class CoreMofLoader(RaspaTool):
         """
         super().__init__(name, description, path)
         self.has_file = False
-        self.structures : Dict[str, List[str]] = None
+        self.structures: Dict[str, List[str]] = None
 
-    def run(self, mof_name : str, output_file : str = "mol.cif"):
+    def run(self, mof_name: str, output_file: str = "mol.cif"):
         import CoRE_MOF
         name = self.search_names(mof_name)
         if name is None:
@@ -414,7 +287,7 @@ class CoreMofLoader(RaspaTool):
         datasets = self.get_coremof_datasets(name)
         if datasets is None:
             return self.get_output(e=f"No dataset found for {name}")
-        errors=[]
+        errors = []
         for dataset in datasets:
             try:
                 mof = CoRE_MOF.get_structure(dataset, name)
@@ -428,7 +301,7 @@ class CoreMofLoader(RaspaTool):
     def get_coremof_structures(self):
         import CoRE_MOF
         structures = defaultdict(list)
-        datasets = {'2014': '2014', '2019-ASR': '2019-ASR', '2019-FSR': '2019-FSR'} # CoRE_MOF.load.__datasets
+        datasets = {'2014': '2014', '2019-ASR': '2019-ASR', '2019-FSR': '2019-FSR'}  # CoRE_MOF.load.__datasets
         for dataset in datasets:
             for name in CoRE_MOF.list_structures(dataset):
                 structures[name].append(dataset)
@@ -438,24 +311,22 @@ class CoreMofLoader(RaspaTool):
         if self.structures is None:
             self.structures = self.get_coremof_structures()
         return self.structures
-    
+
     def get_coremof_datasets(self, framework):
         return self.get_structures().get(framework, None)
-    
 
     def structures_names(self):
         return self.get_structures().keys()
-    
 
     def search_names(self, query, score_cutoff=90):
         candidates = self.structures_names()
         limit = 5
 
         matches = quick_search(query, candidates, limit=limit, score_cutoff=score_cutoff)
-        
+
         if len(matches) == 0:
             return None
-            
+
         best_match = matches[0]
         return best_match[0]
 
@@ -472,18 +343,18 @@ class OutputParser(RaspaTool):
         Provide the path of the output file you want to read (based on the root directory, NOT the current working directory).
         """
         super().__init__(name, description, path)
-    
+
     def _run(self, file_path):
         path = os.path.join(self.get_path(full=False), file_path)
-        
+
         try:
             with open(path) as in_file:
                 data = in_file.read()
             out = output_parser.parse(data)
-            
+
             out = self.filter(out)
             out = self.strip_block_fields(out)
-            
+
         except Exception as e:
             return self.get_output(f"Error with output parsing: {e}, (path={path})")
         return out
@@ -491,7 +362,6 @@ class OutputParser(RaspaTool):
     def run(self, file_path):
         out = self._run(file_path)
         return self.get_output(out.__str__(), LIMIT=7500)
-    
 
     def filter(self, d: Dict) -> Dict:
         """
@@ -532,9 +402,8 @@ class OutputParser(RaspaTool):
             content = value.get(k, None)
             if self.is_empty(content):
                 return True
-            
-        return False
 
+        return False
 
     def is_empty(self, content):
         if type(content) == float and (content == 0 or np.isnan(content) or np.isinf(content)):
@@ -544,16 +413,15 @@ class OutputParser(RaspaTool):
             return self.is_empty(c)
         except Exception as e:
             return False
-        
 
     def check_del_key(self, key):
         if type(key) != str:
             return False
         blacklist = [
             'System Properties',
-            "Cpu",  
-            'Total CPU timings', 
-            'Production run CPU timings of the MC moves', 
+            "Cpu",
+            'Total CPU timings',
+            'Production run CPU timings of the MC moves',
             'Production run CPU timings of the MC moves summed over all systems and components',
             'Mutual consistent basic set of units',
             'Derived units and their conversion factors',
@@ -575,10 +443,9 @@ class OutputParser(RaspaTool):
         for c in ["Current", "[Init]", "Compi", "OS", "Pseudo", 'Forcefield']:
             if key.startswith(c):
                 return True
-        
+
         else:
             return False
-    
 
     def strip_block_fields(self, obj: Union[dict, list, Any]) -> Any:
         """
@@ -612,10 +479,9 @@ class OutputParser(RaspaTool):
         return obj
 
 
-
 class FrameworkLoader(RaspaTool):
-    
-    def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff = 14.0):
+
+    def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff=14.0):
         name = "framework loader"
         description = """
         Load a framework file as framework.cif
@@ -623,11 +489,11 @@ class FrameworkLoader(RaspaTool):
         super().__init__(name, description, path)
         self.has_file = False
         self.output_file = "framework.cif"
-        
+
         self.coremof = coremof
         self.cutoff = cutoff
         self.load_local()
-        
+
         if self.coremof is True:
             self.csd_path = csd_path
             self.coremof_structures = None
@@ -662,7 +528,7 @@ class FrameworkLoader(RaspaTool):
         elif len(index) == 1:
             i = index[0]
         elif len(index) > 1:
-            types = {cr["type"][i] : i for i in index}
+            types = {cr["type"][i]: i for i in index}
             if "FSR" in types.keys():
                 i = types["FSR"]
             elif "ASR" in types.keys():
@@ -674,11 +540,11 @@ class FrameworkLoader(RaspaTool):
         vf = row["VF"][i]
         pv = row['PV (cm3/g)'][i]
         density = row['Density (g/cm3)'][i]
-        
+
         filepath = os.path.join(self.cm_path, f"cifs/CR/{typ}/{coreid}.cif")
         path_new = os.path.join(self.get_path(full=True), "framework.cif")
         shutil.copy(filepath, path_new)
-        
+
         r = row[row.refcode == name]["refcode"]
         if len(r) > 0:
             return r[i], vf, pv, density
@@ -686,13 +552,12 @@ class FrameworkLoader(RaspaTool):
         if len(n) > 0:
             return n[i], vf, pv, density
         return None
-    
 
     def load_local(self):
         load_dotenv()
         raspa_dir = os.getenv("RASPA_DIR")
         self.raspa_path = f"{raspa_dir}/share/raspa/structures/cif/"
-        self.structures_local = [i[:-4] for i in os.listdir(self.raspa_path)] # remove .cif
+        self.structures_local = [i[:-4] for i in os.listdir(self.raspa_path)]  # remove .cif
 
     def find_mof_local(self, query):
         matches = quick_search(query, self.structures_local)
@@ -703,18 +568,18 @@ class FrameworkLoader(RaspaTool):
     def get_cif_local(self, structure):
         from PACMANCharge import pmcharge
 
-        filepath = self.raspa_path+structure+".cif"
+        filepath = self.raspa_path + structure + ".cif"
         path_new = os.path.join(self.get_path(full=True), "framework.cif")
         path_new_mod = os.path.join(self.get_path(full=True), "framework_pacman.cif")
 
         shutil.copy(filepath, path_new)
         self.clean_cif(path_new)
-        pmcharge.predict(cif_file=path_new,charge_type="DDEC6",digits=10,atom_type=True,neutral=True,keep_connect=True) # > framework_pacman.cif
+        pmcharge.predict(cif_file=path_new, charge_type="DDEC6", digits=10, atom_type=True, neutral=True,
+                         keep_connect=True)  # > framework_pacman.cif
         os.rename(path_new_mod, path_new)
         return structure
 
-
-    def run(self, framework_name):
+    def run(self, framework_name: str):
         if self.coremof is True:
             name = self.find_mof_in_coremof(framework_name)
             if name is None:
@@ -744,7 +609,7 @@ class FrameworkLoader(RaspaTool):
 
         with open(file, "w") as f:
             f.writelines(cleaned_lines)
-    
+
     def calculate_unit_cells(self, cif_filename, cutoff_angstrom=14.0):
         # Patterns for cell lengths
         patterns = {
@@ -756,17 +621,17 @@ class FrameworkLoader(RaspaTool):
             'gamma': re.compile(r'_cell_angle_gamma\s+([0-9.]+)')
         }
         cell = {}
-        
+
         with open(cif_filename, 'r') as f:
             for line in f:
                 for axis in patterns:
                     match = patterns[axis].match(line.strip())
                     if match:
                         cell[axis] = float(match.group(1))
-        
+
         if len(cell) != 6:
             raise ValueError("Could not find all cell lengths in the CIF file.")
-            
+
         # Convert angles to radians
         alpha, beta, gamma = [math.radians(cell['alpha']), math.radians(cell['beta']), math.radians(cell['gamma'])]
         a, b, c = cell['a'], cell['b'], cell['c']
@@ -781,7 +646,7 @@ class FrameworkLoader(RaspaTool):
             cy = 0.0
         else:
             cy = (b * c * math.cos(alpha) - bx * cx) / by
-        temp = c**2 - cx**2 - cy**2
+        temp = c ** 2 - cx ** 2 - cy ** 2
         cz = math.sqrt(temp) if temp > 0 else 0.0
 
         # Unit cell matrix
@@ -802,6 +667,48 @@ class FrameworkLoader(RaspaTool):
 
         print(f"RASPA UnitCells: {uc_x} {uc_y} {uc_z}")
         return [uc_x, uc_y, uc_z]
+
+
+class AskHuman(RaspaTool):
+    """Tool to ask questions to a human user via console input."""
+
+    def __init__(self, path=None):
+        name = "ask_human"
+        description = """
+        Use this tool when you need to ask the human user a question during execution.
+        This is useful when you need clarification, additional information, or decisions from the user.
+        Provide a clear question, and the tool will prompt the user for input via the console.
+        """
+        super().__init__(name, description, path)
+
+    def run(self, question: str):
+        """
+        Ask a question to the human user and get their response.
+
+        Args:
+            question: The question to ask the user
+
+        Returns:
+            The user's response from console input
+        """
+        try:
+            # Print the question to console
+            print(f"\n[AGENT QUESTION] {question}")
+            print("[Waiting for your input...]")
+
+            # Get input from user
+            user_response = input("Your answer: ").strip()
+
+            if not user_response:
+                return self.get_output(e="No response provided by user.")
+
+            result = f"Question: {question}\nUser's answer: {user_response}"
+            return self.get_output(content=result)
+
+        except EOFError:
+            return self.get_output(e="Input stream closed. Cannot read from console.")
+        except Exception as e:
+            return self.get_output(e=f"Error getting user input: {str(e)}")
 
 
 class ImageQuestionTool(RaspaTool):

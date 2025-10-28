@@ -67,22 +67,6 @@ def clear_all(memory: AgentMemoryV2):
         print("Cancelled.")
 
 
-def ask_image(memory: AgentMemoryV2, query: str, image_path: str, vision_model: str = "gpt-4o"):
-    """Ask a question about an image."""
-    print(f"Analyzing image: {image_path}")
-    print(f"Question: {query}\n")
-
-    try:
-        answer = memory.ask_image(query, image_path, vision_model)
-        print("Answer:")
-        print(answer)
-    except FileNotFoundError as e:
-        print(f"✗ Error: {e}")
-    except ValueError as e:
-        print(f"✗ Error: {e}")
-    except Exception as e:
-        print(f"✗ Unexpected error: {e}")
-
 
 def interactive_mode(memory: AgentMemoryV2):
     """Run interactive CLI mode."""
@@ -94,7 +78,6 @@ def interactive_mode(memory: AgentMemoryV2):
         print("  1. Remember new information")
         print("  2. Retrieve memories")
         print("  3. List all memories")
-        print("  4. Ask question about image")
         print("  5. Delete a memory")
         print("  6. Clear all memories")
         print("  7. Exit")
@@ -123,14 +106,6 @@ def interactive_mode(memory: AgentMemoryV2):
 
         elif choice == "3":
             list_all(memory)
-
-        elif choice == "4":
-            query = input("\nEnter question about the image: ").strip()
-            image_path = input("Enter image path: ").strip()
-            if query and image_path:
-                ask_image(memory, query, image_path)
-            else:
-                print("Both question and image path are required.")
 
         elif choice == "5":
             list_all(memory)
