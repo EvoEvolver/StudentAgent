@@ -2,6 +2,7 @@ import math
 import re
 import shutil
 import subprocess
+import traceback
 from collections import defaultdict
 from typing import Dict, Any, Union
 
@@ -104,12 +105,13 @@ class SystemAgent(RaspaTool):
         """
         super().__init__(name, description, path)
 
-    def run(self, query: str):
+    def run(self, query: str, timeout: int = 300):
         """
         Execute a natural language query using Claude CLI.
 
         Args:
             query: Natural language instruction for file operations or system commands
+            timeout: Maximum time in seconds to wait for completion (default: 300)
 
         Returns:
             The output from Claude CLI
@@ -118,31 +120,52 @@ class SystemAgent(RaspaTool):
             # Get the working directory path
             work_dir = self.get_path(full=True)
 
+            print(f"[SystemAgent] Executing query in: {work_dir}")
+            print(f"[SystemAgent] Query: {query[:100]}..." if len(query) > 100 else f"[SystemAgent] Query: {query}")
+
             # Execute claude command with the query
+            # IMPORTANT: Close stdin to prevent child process from waiting for input
             process = subprocess.Popen(
                 ['claude', '--dangerously-skip-permissions', '-p', query],
                 cwd=work_dir,
                 text=True,
+                stdin=subprocess.DEVNULL,  # Close stdin to prevent hanging
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                bufsize=0,  # Unbuffered
+                universal_newlines=True
             )
 
-            stdout, stderr = process.communicate()
+            print(f"[SystemAgent] Process started (PID: {process.pid}), waiting up to {timeout}s...")
+
+            try:
+                stdout, stderr = process.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                print(f"[SystemAgent] Process timed out after {timeout}s, terminating...")
+                process.kill()
+                stdout, stderr = process.communicate()
+                return self.get_output(
+                    e=f"Command timed out after {timeout} seconds.\nPartial stdout: {stdout[:500]}\nPartial stderr: {stderr[:500]}"
+                )
+
+            print(f"[SystemAgent] Process completed with return code: {process.returncode}")
 
             if process.returncode != 0:
                 error_msg = f"Command failed with return code {process.returncode}"
                 if stderr:
                     error_msg += f"\nError: {stderr}"
+                if stdout:
+                    error_msg += f"\nStdout: {stdout}"
                 return self.get_output(e=error_msg)
 
             # Return the output
-            return self.get_output(content=stdout)
+            return self.get_output(content=stdout if stdout else "(No output produced)")
 
         except FileNotFoundError:
             return self.get_output(
                 e="Claude CLI not found. Please ensure 'claude' command is installed and available in PATH.")
         except Exception as e:
-            return self.get_output(e=f"Error executing system agent: {str(e)}")
+            return self.get_output(e=f"Error executing system agent: {str(e)}\n{traceback.format_exc()}")
 
 
 

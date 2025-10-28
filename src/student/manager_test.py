@@ -10,7 +10,7 @@ MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_
 # Updated to use RaspaAgent with todo list functionality
 agent = RaspaAgent(provider="openai", path = "output/manager/")
 agent.set_auto(True)
-agent.memory_agent.load_memory(MEMORY_PATH)
+#agent.memory._load_from_file(MEMORY_PATH)
 
 # Use run_with_todo_list() for todo list-based execution
 reply = agent.run_with_todo_list("""
