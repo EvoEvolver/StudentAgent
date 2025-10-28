@@ -1,4 +1,5 @@
 from .agent_student import StudentAgent
+from .agent_memory_v2 import AgentMemoryV2
 
 from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputParser, \
     FrameworkLoader, MoleculeLoader, SystemAgent, ImageQuestionTool
@@ -18,6 +19,7 @@ class RaspaAgent(StudentAgent):
     path: str
     path_add: str
     auto_run: bool
+    memory: AgentMemoryV2
 
     def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=True,
                  active_learning=True):
@@ -51,6 +53,10 @@ class RaspaAgent(StudentAgent):
         self._advance_to_next_folder()
         self.reset(path)
         self.active_learning = active_learning
+
+        # Initialize memory system for storing and retrieving task experiences
+        memory_storage_path = os.path.join(path, "raspa_memory.json")
+        self.memory = AgentMemoryV2(storage_file=memory_storage_path)
 
     def add_raspa_prompt(self):
         prompt = self._build_prompt("raspa", "v1")
@@ -163,6 +169,9 @@ class RaspaAgent(StudentAgent):
             self.print_progress("summary_generation", "Generating execution summary")
             summary = self._generate_summary(prompt, execution_results)
 
+            # Step 4: Store execution in memory for future reference
+            # self._store_execution_in_memory(prompt, execution_results)
+
             self.print_progress("execution_final_complete", "RaspaAgent execution complete.")
 
             return summary
@@ -254,6 +263,31 @@ class RaspaAgent(StudentAgent):
         # Add progress message
         self.print_progress("decomposition_start", f"Starting task decomposition for: {instruction[:100]}...")
 
+        # Query memory for relevant past experiences
+        relevant_memories = ""
+        try:
+            if self.verbose:
+                print("[RASPA] Querying memory for relevant past experiences...")
+
+            memories = self.memory.retrieve(instruction, top_k=3)
+
+            if memories:
+                if self.verbose:
+                    print(f"[RASPA] Found {len(memories)} relevant memories")
+
+                relevant_memories = "\n\nRelevant Past Experiences:\n"
+                for i, mem in enumerate(memories, 1):
+                    relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:300]}...\n"
+
+                self.print_progress("memory_retrieved", f"Retrieved {len(memories)} relevant memories")
+            else:
+                if self.verbose:
+                    print("[RASPA] No relevant memories found")
+        except Exception as e:
+            if self.verbose:
+                print(f"[WARNING] Could not query memory: {str(e)}")
+            # Continue without memories if retrieval fails
+
         # Direct prompt to generate todo list
         todo_generation_prompt = f"""
         Analyze the following instruction and break it down into a actionable markdown todo list.
@@ -263,6 +297,7 @@ class RaspaAgent(StudentAgent):
 
         Available Tools:
         {self.get_tool_list_prompt()}
+        {relevant_memories}
 
         Rules:
         - Use [ ] for incomplete tasks in markdown format
@@ -270,6 +305,7 @@ class RaspaAgent(StudentAgent):
         - The steps should be actionable with the available tools
         - Keep tasks focused and specific
         - The todo list can be as simple as one or two items
+        - If relevant past experiences are provided, learn from them to create a better todo list
 
         Return only the markdown todo list, nothing else:
         - [ ] Task 1
@@ -334,6 +370,35 @@ class RaspaAgent(StudentAgent):
             for task in current_results['completed_tasks']:
                 completed_context += f"- {task['task']}\n  Result: {task['result'][:200]}...\n"
 
+        # Find the next unfinished task and query memory for it
+        next_incomplete_task = self._get_next_incomplete_task(todo_list_markdown)
+        relevant_memories = ""
+
+        if next_incomplete_task:
+            try:
+                if self.verbose:
+                    print(f"[RASPA] Searching memory for next task: {next_incomplete_task[:100]}...")
+
+                # Query memory based on the specific next task
+                memories = self.memory.retrieve(next_incomplete_task, top_k=2)
+
+                if memories:
+                    if self.verbose:
+                        print(f"[RASPA] Found {len(memories)} relevant memories for next action")
+
+                    relevant_memories = "\n\nRelevant Past Experiences for This Task:\n"
+                    for i, mem in enumerate(memories, 1):
+                        relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:250]}...\n"
+
+                    self.print_progress("memory_for_task", f"Retrieved {len(memories)} memories for task: {next_incomplete_task[:80]}...")
+                else:
+                    if self.verbose:
+                        print("[RASPA] No relevant memories found for next task")
+            except Exception as e:
+                if self.verbose:
+                    print(f"[WARNING] Could not query memory for next task: {str(e)}")
+                # Continue without memories if retrieval fails
+
         next_action_prompt = f"""
         Current Todo List:
         {todo_list_markdown}
@@ -341,6 +406,7 @@ class RaspaAgent(StudentAgent):
         Available Tools:
         {self.get_tool_list_prompt()}
         {completed_context}
+        {relevant_memories}
 
         Based on the current todo list and progress, what should be the next action to take?
 
@@ -348,6 +414,7 @@ class RaspaAgent(StudentAgent):
         - Return a action description that contains all the information to run the tool
         - Look at the todo list and identify the next incomplete task (marked with [ ])
         - Provide specific details needed to execute the task
+        - If relevant past experiences are provided, learn from them to execute the task effectively
         """
 
         try:
@@ -358,6 +425,20 @@ class RaspaAgent(StudentAgent):
             if self.verbose:
                 print(f"[WARNING] Could not suggest next action: {str(e)}")
             return "done"
+
+    def _get_next_incomplete_task(self, todo_list_markdown: str) -> str:
+        """Get the next incomplete task from the todo list."""
+        lines = todo_list_markdown.split('\n')
+
+        for line in lines:
+            line = line.strip()
+            # Match incomplete task: - [ ]
+            match = re.match(r'^-\s*\[\s*\]\s*(.+)$', line)
+            if match:
+                return match.group(1).strip()
+
+        # No incomplete tasks found
+        return ""
 
     def _extract_tasks_from_markdown(self, markdown_todo: str) -> List[str]:
         """Extract task descriptions from markdown todo list."""
@@ -510,6 +591,66 @@ Please execute the task taking into account the previous work done."""
         summary += f"\n### Total: {execution_results['total_tasks']} tasks processed\n"
         return summary
 
+    def _store_execution_in_memory(self, instruction: str, execution_results: Dict[str, Any]) -> None:
+        """Store the completed execution in memory for future reference."""
+        try:
+            # Only store if there were successful completions
+            if not execution_results['completed_tasks']:
+                if self.verbose:
+                    print("[RASPA] No completed tasks to store in memory")
+                return
+
+            # Create a summary of the execution for storage
+            memory_content = f"Instruction: {instruction}\n\n"
+            memory_content += f"Todo List:\n{self.current_todo_list}\n\n"
+            memory_content += f"Completed Tasks ({len(execution_results['completed_tasks'])}):\n"
+
+            for i, task in enumerate(execution_results['completed_tasks'], 1):
+                memory_content += f"{i}. {task['task']}\n"
+                # Store abbreviated results to keep memory concise
+                result_summary = task['result'][:200] if task['result'] else "No result"
+                memory_content += f"   Result: {result_summary}...\n"
+
+            if execution_results['failed_tasks']:
+                memory_content += f"\nFailed Tasks ({len(execution_results['failed_tasks'])}):\n"
+                for i, task in enumerate(execution_results['failed_tasks'], 1):
+                    memory_content += f"{i}. {task['task']}: {task['error']}\n"
+
+            # Store in memory (which will auto-generate a title)
+            title = self.memory.learn(memory_content)
+
+            if self.verbose:
+                print(f"[RASPA] Stored execution in memory with title: '{title}'")
+
+            self.print_progress("memory_stored", f"Stored execution in memory: {title}")
+
+        except Exception as e:
+            if self.verbose:
+                print(f"[WARNING] Could not store execution in memory: {str(e)}")
+            # Continue execution even if memory storage fails
+
     def set_auto(self, auto):
         self.auto_run = auto
         return
+
+    # Memory management methods
+    def get_all_memories(self) -> Dict[str, str]:
+        """Get all stored memories."""
+        return self.memory.get_all_memories()
+
+    def clear_memory(self) -> None:
+        """Clear all stored memories."""
+        self.memory.clear()
+        if self.verbose:
+            print("[RASPA] All memories cleared")
+
+    def search_memory(self, query: str, top_k: int = 5) -> List[Dict[str, str]]:
+        """Search memories with a query."""
+        return self.memory.retrieve(query, top_k=top_k)
+
+    def store_memory(self, content: str) -> str:
+        """Manually store content in memory."""
+        title = self.memory.learn(content)
+        if self.verbose:
+            print(f"[RASPA] Stored memory with title: '{title}'")
+        return title
