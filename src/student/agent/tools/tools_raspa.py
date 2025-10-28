@@ -802,3 +802,111 @@ class FrameworkLoader(RaspaTool):
 
         print(f"RASPA UnitCells: {uc_x} {uc_y} {uc_z}")
         return [uc_x, uc_y, uc_z]
+
+
+class ImageQuestionTool(RaspaTool):
+    """Tool to ask questions about images using OpenAI's vision API."""
+
+    def __init__(self, path=None):
+        name = "ask_image_question"
+        description = """
+        Ask a question about an image using AI vision capabilities.
+        Provide a query (question) and the path to an image file.
+        Supported formats: JPG, JPEG, PNG, GIF, WebP.
+        The tool will analyze the image and return an answer to your question.
+        """
+        super().__init__(name, description, path)
+        self._init_vision_client()
+
+    def _init_vision_client(self):
+        """Initialize OpenAI client for vision API."""
+        try:
+            from openai import OpenAI
+            self.client = OpenAI()
+            self.vision_model = "gpt-4o"
+        except ImportError:
+            self.client = None
+            print("Warning: OpenAI package not found. Image question tool will not work.")
+
+    def run(self, query: str, image_path: str):
+        """
+        Ask a question about an image.
+
+        Args:
+            query: The question to ask about the image
+            image_path: Path to the image file (relative to working directory or absolute)
+
+        Returns:
+            The answer from the vision model
+        """
+        if self.client is None:
+            return self.get_output(e="OpenAI client not initialized. Please install openai package.")
+
+        try:
+            import base64
+
+            # Handle both absolute and relative paths
+            if not os.path.isabs(image_path):
+                # Try relative to full path first
+                full_image_path = os.path.join(self.get_path(full=True), image_path)
+                if not os.path.exists(full_image_path):
+                    # Try relative to base path
+                    full_image_path = os.path.join(self.get_path(full=False), image_path)
+                    if not os.path.exists(full_image_path):
+                        # Try as-is
+                        full_image_path = image_path
+            else:
+                full_image_path = image_path
+
+            # Validate image exists
+            if not os.path.exists(full_image_path):
+                return self.get_output(e=f"Image file not found: {full_image_path}")
+
+            # Read and encode image
+            with open(full_image_path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+
+            # Determine image format from file extension
+            ext = os.path.splitext(full_image_path)[1].lower()
+            mime_types = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp'
+            }
+
+            if ext not in mime_types:
+                return self.get_output(e=f"Unsupported image format: {ext}. Supported: {list(mime_types.keys())}")
+
+            mime_type = mime_types[ext]
+
+            # Call OpenAI vision API
+            response = self.client.chat.completions.create(
+                model=self.vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": query
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{mime_type};base64,{image_data}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=1000
+            )
+
+            answer = response.choices[0].message.content.strip()
+            result = f"Question: {query}\nImage: {image_path}\n\nAnswer: {answer}"
+            return self.get_output(content=result)
+
+        except Exception as e:
+            return self.get_output(e=f"Error analyzing image: {str(e)}")

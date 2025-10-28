@@ -67,6 +67,23 @@ def clear_all(memory: AgentMemoryV2):
         print("Cancelled.")
 
 
+def ask_image(memory: AgentMemoryV2, query: str, image_path: str, vision_model: str = "gpt-4o"):
+    """Ask a question about an image."""
+    print(f"Analyzing image: {image_path}")
+    print(f"Question: {query}\n")
+
+    try:
+        answer = memory.ask_image(query, image_path, vision_model)
+        print("Answer:")
+        print(answer)
+    except FileNotFoundError as e:
+        print(f"✗ Error: {e}")
+    except ValueError as e:
+        print(f"✗ Error: {e}")
+    except Exception as e:
+        print(f"✗ Unexpected error: {e}")
+
+
 def interactive_mode(memory: AgentMemoryV2):
     """Run interactive CLI mode."""
     print("=== Agent Memory System ===")
@@ -77,11 +94,12 @@ def interactive_mode(memory: AgentMemoryV2):
         print("  1. Remember new information")
         print("  2. Retrieve memories")
         print("  3. List all memories")
-        print("  4. Delete a memory")
-        print("  5. Clear all memories")
-        print("  6. Exit")
+        print("  4. Ask question about image")
+        print("  5. Delete a memory")
+        print("  6. Clear all memories")
+        print("  7. Exit")
 
-        choice = input("\nEnter command (1-6): ").strip()
+        choice = input("\nEnter command (1-7): ").strip()
 
         if choice == "1":
             content = input("\nEnter content to remember: ").strip()
@@ -107,6 +125,14 @@ def interactive_mode(memory: AgentMemoryV2):
             list_all(memory)
 
         elif choice == "4":
+            query = input("\nEnter question about the image: ").strip()
+            image_path = input("Enter image path: ").strip()
+            if query and image_path:
+                ask_image(memory, query, image_path)
+            else:
+                print("Both question and image path are required.")
+
+        elif choice == "5":
             list_all(memory)
             title = input("\nEnter title to delete: ").strip()
             if title:
@@ -114,15 +140,15 @@ def interactive_mode(memory: AgentMemoryV2):
             else:
                 print("Title cannot be empty.")
 
-        elif choice == "5":
+        elif choice == "6":
             clear_all(memory)
 
-        elif choice == "6":
+        elif choice == "7":
             print("Goodbye!")
             break
 
         else:
-            print("Invalid command. Please enter 1-6.")
+            print("Invalid command. Please enter 1-7.")
 
 
 def main():
@@ -143,6 +169,9 @@ Examples:
   # List all memories
   python agent_memory_cli.py list
 
+  # Ask question about an image
+  python agent_memory_cli.py ask-image "What's in this image?" --image photo.jpg
+
   # Delete a memory
   python agent_memory_cli.py delete "Title of memory"
 
@@ -154,7 +183,7 @@ Examples:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=["remember", "retrieve", "list", "delete", "clear"],
+        choices=["remember", "retrieve", "list", "ask-image", "delete", "clear"],
         help="Command to execute (omit for interactive mode)"
     )
     parser.add_argument(
@@ -176,6 +205,15 @@ Examples:
         "--top-k",
         type=int,
         help="Maximum number of results to retrieve"
+    )
+    parser.add_argument(
+        "--image",
+        help="Path to image file (for ask-image command)"
+    )
+    parser.add_argument(
+        "--vision-model",
+        default="gpt-4o",
+        help="OpenAI vision model to use for image questions (default: gpt-4o)"
     )
 
     args = parser.parse_args()
@@ -203,6 +241,15 @@ Examples:
         retrieve(memory, query, args.top_k)
     elif args.command == "list":
         list_all(memory)
+    elif args.command == "ask-image":
+        if not args.text:
+            print("Error: Please provide a question about the image")
+            sys.exit(1)
+        if not args.image:
+            print("Error: Please provide an image path using --image")
+            sys.exit(1)
+        query = " ".join(args.text)
+        ask_image(memory, query, args.image, args.vision_model)
     elif args.command == "delete":
         if not args.text:
             print("Error: Please provide a title to delete")

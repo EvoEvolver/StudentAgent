@@ -1,8 +1,7 @@
 from .agent_student import StudentAgent
-from .memory import Memory
 
-from .tools.tools_raspa import CoreMofLoader, ExecuteRaspa, InputFile, OutputParser, \
-    FrameworkLoader, MoleculeLoader, SystemAgent
+from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputParser, \
+    FrameworkLoader, MoleculeLoader, SystemAgent, ImageQuestionTool
 from .tools.tools import Tool
 
 from mllm import Chat
@@ -12,14 +11,10 @@ import re
 
 
 class RaspaAgent(StudentAgent):
-    memory: Memory
     tools: Dict[str, Tool]
     system_prompt: str
     chat: Chat
     id: int
-
-    molecule_memory: Memory
-    framework_memory: Memory
     path: str
     path_add: str
     auto_run: bool
@@ -33,17 +28,13 @@ class RaspaAgent(StudentAgent):
             framework_loader = FrameworkLoader(path, coremof=False)
 
         raspa_tools = [
-            # CoreMofLoader(path),
             framework_loader,
-            # TrappeLoader(path),
             MoleculeLoader(path),
             ExecuteRaspa(agent=self),
             InputFile(),
             SystemAgent(path),
-            # ReadFile(),
-            # WriteFile(),
-            # InspectFiles(),
-            OutputParser()
+            OutputParser(),
+            ImageQuestionTool(path)
         ]
         tools = {
             tool.name: tool
