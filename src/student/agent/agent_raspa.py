@@ -2,8 +2,8 @@ from . import Agent
 from .agent_student import StudentAgent
 from .agent_memory_v2 import AgentMemoryV2
 
-from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputParser, \
-    FrameworkLoader, MoleculeLoader, SystemAgent, ImageQuestionTool, AskHuman
+from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputExtractor, \
+    FrameworkLoader, MoleculeLoader, SystemAgent, ImageQuestionTool, AskHuman, ReportToHuman
 from .tools.tools import Tool
 
 from mllm import Chat
@@ -35,9 +35,10 @@ class RaspaAgent(Agent):
             ExecuteRaspa(agent=self),
             InputFile(),
             SystemAgent(path),
-            OutputParser(),
+            OutputExtractor(),
             ImageQuestionTool(path),
-            AskHuman(path)
+            AskHuman(path),
+            ReportToHuman(path)
         ]
         tools = {
             tool.name: tool
@@ -364,7 +365,7 @@ class RaspaAgent(Agent):
         if current_results['completed_tasks']:
             completed_context = "\n\nCompleted tasks so far:\n"
             for task in current_results['completed_tasks']:
-                completed_context += f"- {task['task']}\n  Result: {task['result'][:200]}...\n"
+                completed_context += f"- {task['task']}\n  Result: {task['result'][:1000]}...\n"
 
         # Find the next unfinished task and query memory for it
         next_incomplete_task = self._get_next_incomplete_task(todo_list_markdown)
@@ -373,7 +374,7 @@ class RaspaAgent(Agent):
         if next_incomplete_task:
             try:
                 if self.verbose:
-                    print(f"[RASPA] Searching memory for next task: {next_incomplete_task[:100]}...")
+                    print(f"[RASPA] Searching memory for next task: {next_incomplete_task}...")
 
                 # Query memory based on the specific next task
                 memories = self.memory.retrieve(next_incomplete_task, top_k=2)
@@ -384,7 +385,7 @@ class RaspaAgent(Agent):
 
                     relevant_memories = "\n\nRelevant Past Experiences for This Task:\n"
                     for i, mem in enumerate(memories, 1):
-                        relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:250]}...\n"
+                        relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:1000]}...\n"
 
                     self.print_progress("memory_for_task", f"Retrieved {len(memories)} memories for task: {next_incomplete_task[:80]}...")
                 else:
@@ -410,7 +411,6 @@ class RaspaAgent(Agent):
         - Return a action description that contains all the information to run the tool
         - Look at the todo list and identify the next incomplete task (marked with [ ])
         - Provide specific details needed to execute the task
-        - If relevant past experiences are provided, learn from them to execute the task effectively
         """
 
         try:
@@ -519,7 +519,8 @@ Please execute the task taking into account the previous work done."""
                 remove_tools = self.get_tool_mask()
 
                 # Use parent StudentAgent's run method to execute this single action
-                result = super(RaspaAgent, self).run(action_prompt, max_iter=5, remove_tools=remove_tools)
+                self.chat = Chat()  # Reset chat for each action
+                result = self.run_single_tool(action_prompt)
 
                 # Print the actual result for visibility
                 if self.verbose:
@@ -530,7 +531,7 @@ Please execute the task taking into account the previous work done."""
                 # Update context summary with this completion
                 context_summary += f"\nTask: {next_action}\nResult: {result[:500]}\n"
 
-                # Update todo list after task completion
+                # Update to-do list after task completion
                 self.update_todo_list_after_task(next_action, result)
 
                 self.print_progress("todo_list", f"{self.current_todo_list}")
@@ -540,9 +541,6 @@ Please execute the task taking into account the previous work done."""
                     'result': result,
                     'status': 'completed'
                 })
-
-                if self.verbose:
-                    print(f"[SUCCESS] Task completed successfully")
 
             except Exception as e:
                 error_result = {

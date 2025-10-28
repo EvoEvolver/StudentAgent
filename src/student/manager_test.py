@@ -22,7 +22,6 @@ Tasks:
 
 Write a RASPA input file to perform a Henry coefficient calculation.
 Run the simulation and locate the output file
-Report the Henry’s coefficient in mol/kg/Pa and convert it to mol/kg/bar.
-Briefly explain how temperature would affect the Henry’s coefficient.
+Report the calculated Henry’s coefficient value.
 """)
 print(reply)

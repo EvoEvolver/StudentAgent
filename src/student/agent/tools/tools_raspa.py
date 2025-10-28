@@ -7,6 +7,7 @@ from typing import Dict, Any, Union
 
 import numpy as np
 from dotenv import load_dotenv
+from mllm import Chat
 
 from .input_gen.molecule_loader import MoleculeLoaderTrappe
 from .output import output_parser
@@ -99,6 +100,7 @@ class SystemAgent(RaspaTool):
         Use this tool to execute system tasks using natural language instructions.
         This tool can read files, write files, and execute system commands based on your query.
         Provide a natural language instruction describing what you want to accomplish.
+        You MUST make the query very specific and carry all the necessary information to perform the task.
         """
         super().__init__(name, description, path)
 
@@ -334,17 +336,17 @@ class CoreMofLoader(RaspaTool):
 _BLOCK_RE = re.compile(r'^Block\s*\[\s*\d+\s*\]$')
 
 
-class OutputParser(RaspaTool):
+class OutputExtractor(RaspaTool):
     def __init__(self, path=None):
-        name = "output_parser"
+        name = "output_extractor"
         description = """
-        Use this tool to parse the raspa output files since they are too long to read directly.
+        Use this tool to extract information from the RASPA output files by query in natural language.
         Do not use for any .output file!
         Provide the path of the output file you want to read (based on the root directory, NOT the current working directory).
         """
         super().__init__(name, description, path)
 
-    def _run(self, file_path):
+    def _run(self, file_path: str, query: str):
         path = os.path.join(self.get_path(full=False), file_path)
 
         try:
@@ -357,11 +359,27 @@ class OutputParser(RaspaTool):
 
         except Exception as e:
             return self.get_output(f"Error with output parsing: {e}, (path={path})")
-        return out
 
-    def run(self, file_path):
-        out = self._run(file_path)
-        return self.get_output(out.__str__(), LIMIT=7500)
+        # Extract relevant information based on query using LLM
+        chat = Chat()
+        chat += f"""
+        You are an expert in RASPA simulation software output analysis.
+        Here is the parsed output data from a RASPA simulation in JSON format:
+        <output>
+        {out}
+        </output>
+        
+        Please answer the query based on this data.
+        <query>
+        {query}
+        </query>
+        """
+        response = chat.complete()
+        return response
+
+    def run(self, file_path: str, query: str):
+        res = self._run(file_path, query)
+        return res
 
     def filter(self, d: Dict) -> Dict:
         """
@@ -667,6 +685,51 @@ class FrameworkLoader(RaspaTool):
 
         print(f"RASPA UnitCells: {uc_x} {uc_y} {uc_z}")
         return [uc_x, uc_y, uc_z]
+
+
+class ReportToHuman(RaspaTool):
+    """Tool to generate markdown reports with datetime-based filenames."""
+
+    def __init__(self, path=None):
+        name = "report_to_human"
+        description = """
+        Use this tool to report to human your result in markdown when you finished or failed your task.
+        """
+        super().__init__(name, description, path)
+
+    def run(self, report_content: str):
+        """
+        Generate a markdown report with a datetime-based filename.
+
+        Args:
+            report_content: The content of the markdown report to write
+
+        Returns:
+            Success message with the filename, or error message
+        """
+        try:
+            from datetime import datetime
+
+            # Generate filename with current datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            filename = f"report_{timestamp}.md"
+
+            # Get the full path for saving the report
+            full_path = self.get_path(full=True)
+            os.makedirs(full_path, exist_ok=True)
+
+            # Full file path
+            file_path = os.path.join(full_path, filename)
+
+            # Write the report content to the file
+            with open(file_path, "w") as f:
+                f.write(report_content)
+
+            result = f"Successfully generated markdown report: {filename}\nLocation: {file_path}"
+            return self.get_output(content=result)
+
+        except Exception as e:
+            return self.get_output(e=f"Error generating markdown report: {str(e)}")
 
 
 class AskHuman(RaspaTool):

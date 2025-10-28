@@ -137,6 +137,7 @@ class Agent:
     def _run(self, options):
         res = self.chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
         res = json.loads(repair_json(res))
+        """
         self.chat.messages.append({
             "role": "assistant",
             "content": {
@@ -144,12 +145,29 @@ class Agent:
                 "text": json.dumps(res)
             }
         })
-        done, n_tool_responses = self.use_tools(res)
+        """
+        done, n_tool_responses, tool_messages = self.use_tools(res)
 
         if self.verbose is True:
             print(self.response(res))
 
         return res, done, n_tool_responses
+
+    def run_single_tool(self, prompt: str):
+        schema = self.get_output_jsonschema(remove_tools=[])
+        options = self.get_options(schema)
+        chat = Chat(system_message=self.system_prompt)
+        chat += prompt
+        res = chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
+        res = json.loads(repair_json(res))
+        done, n_tool_responses, tool_messages = self.use_tools(res)
+
+        # Concatenate all tool messages into a single string
+        concatenated = "\n\n".join(
+            msg['content']['text'] for msg in tool_messages if msg.get('content', {}).get('text')
+        )
+        return concatenated
+
 
     def response(self, message: Dict):
         response = message.get("response", '')
@@ -196,7 +214,7 @@ class Agent:
         self.id += 1
         return self.id
 
-    def use_tools(self, message: Dict) -> bool:
+    def use_tools(self, message: Dict):
         '''
         Return a boolean indicating, >=1 tool call is present.
         '''
@@ -204,10 +222,10 @@ class Agent:
         done = True
         tool_messages = []
 
-        react = message["react"]
+        react = message["actions"]
         if type(react) != list:
             try:
-                react = json.loads(repair_json(message['react']))
+                react = json.loads(repair_json(message['actions']))
             except Exception as e:
                 raise e
         for call in react:
@@ -220,7 +238,7 @@ class Agent:
         print("tool calls used:", n)
         print("tool messages:", tool_messages)
         self.add_message(tool_messages)
-        return done, n
+        return done, n, tool_messages
 
     def _use_tool(self, call):
         success = False
@@ -315,13 +333,13 @@ class Agent:
             if type(parsed) == str:
                 parsed = json.loads(repair_json(parsed))
             if "react" in parsed:
-                react_trace = parsed["react"]
-                if type(react_trace) != list:
+                actions_trace = parsed["actions"]
+                if type(actions_trace) != list:
                     try:
-                        react_trace = json.loads(repair_json(parsed['react']))
+                        actions_trace = json.loads(repair_json(parsed['actions']))
                     except Exception as e:
                         return
-                for i, item in enumerate(react_trace):
+                for i, item in enumerate(actions_trace):
 
                     if "thought" in item:
                         inner_parts.append(f"💭 <strong>Thought:</strong> {html.escape(item['thought'])}")
@@ -458,7 +476,7 @@ class Agent:
         schema = {
             "type": "object",
             "properties": {
-                "react": {
+                "actions": {
                     "type": "array",
                     "description": "A sequence of reasoning steps, including thoughts and actions.",
                     "items": {
@@ -477,13 +495,9 @@ class Agent:
                             *function_branches
                         ]
                     }
-                },
-                "response": {
-                    "type": "string",
-                    "description": "Final response to the user. IGNORED IF a function is included in the react scheme"
                 }
             },
-            "required": ["react", "response"],
+            "required": ["actions"],
             "additionalProperties": False
         }
 
