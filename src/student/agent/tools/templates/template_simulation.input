@@ -10,14 +10,14 @@ RemoveAtomNumberCodeFromLabel yes
 ...                                                # Optional: Add here if properties should be computed
 # The square brackets respresent that this is optional! They have to be removed in a real setting!
 [                                                  # Optional: box specifications (NEVER use a .cif file for a box!)
-Box 0                                              # IMPORTANT: System numbering is 0-based (always use 0 for first system)
+Box [int]                                          # IMPORTANT: System numbering is 0-based (always use 0 for first system)
 BoxLengths [real] [real] [real]                    # in Angström (MUST BE twice the CutOff)
 ExternalTemperature [real]                         # in Kelvin
 ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
 ]
 
 [                                                  # Optional: framework specifications
-Framework 0                                        # IMPORTANT: System numbering is 0-based (always use 0 for first system)
+Framework [int]                                    # IMPORTANT: System numbering is 0-based (always use 0 for first system)
 FrameworkName framework                            # same as framework.cif file
 UnitCells [int] [int] [int]                        # number of unit cells in each dimension (must be twice the CutOff), calcuated automatically when generating a framework.cif with the tool
 HeliumVoidFraction [real]                          # calculate in a separate simulation before!

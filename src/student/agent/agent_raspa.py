@@ -1,8 +1,9 @@
+from . import Agent
 from .agent_student import StudentAgent
 from .agent_memory_v2 import AgentMemoryV2
 
 from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputParser, \
-    FrameworkLoader, MoleculeLoader, SystemAgent, ImageQuestionTool
+    FrameworkLoader, MoleculeLoader, SystemAgent, ImageQuestionTool, AskHuman
 from .tools.tools import Tool
 
 from mllm import Chat
@@ -11,7 +12,7 @@ from .utils import *
 import re
 
 
-class RaspaAgent(StudentAgent):
+class RaspaAgent(Agent):
     tools: Dict[str, Tool]
     system_prompt: str
     chat: Chat
@@ -21,8 +22,7 @@ class RaspaAgent(StudentAgent):
     auto_run: bool
     memory: AgentMemoryV2
 
-    def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=True,
-                 active_learning=True):
+    def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=True):
         if csd_path is not None:
             framework_loader = FrameworkLoader(path, coremof=False, csd_path=csd_path)
         else:
@@ -36,7 +36,8 @@ class RaspaAgent(StudentAgent):
             InputFile(),
             SystemAgent(path),
             OutputParser(),
-            ImageQuestionTool(path)
+            ImageQuestionTool(path),
+            AskHuman(path)
         ]
         tools = {
             tool.name: tool
@@ -52,7 +53,6 @@ class RaspaAgent(StudentAgent):
         self.add_raspa_prompt()
         self._advance_to_next_folder()
         self.reset(path)
-        self.active_learning = active_learning
 
         # Initialize memory system for storing and retrieving task experiences
         memory_storage_path = os.path.join(path, "raspa_memory.json")
@@ -135,12 +135,11 @@ class RaspaAgent(StudentAgent):
         return len(self.chat.messages)
 
     def run(self, prompt, max_iter=25):
-        remove_tools = self.get_tool_mask()
-        res = super().run(prompt, remove_tools=remove_tools, max_iter=max_iter)
+        res = self.run_with_todo_list(prompt, max_iter)
         return res
 
-    def run_with_todo_list(self, prompt: str, max_iter: int = 10) -> str:
-        """Main execution method that uses todo list for task management."""
+    def run_with_todo_list(self, prompt: str, max_iter: int = 30) -> str:
+        """Main execution method that uses to-do list for task management."""
         if self.verbose:
             print(f"[RASPA] RaspaAgent received instruction: {prompt}")
 
@@ -222,9 +221,6 @@ class RaspaAgent(StudentAgent):
 
     def get_tool_mask(self):
         mask = []
-
-        if self.active_learning is False:
-            mask.append("learn")
 
         # self.auto_run controls visibility of the raspa tool:
         if self.auto_run is False:
@@ -591,66 +587,6 @@ Please execute the task taking into account the previous work done."""
         summary += f"\n### Total: {execution_results['total_tasks']} tasks processed\n"
         return summary
 
-    def _store_execution_in_memory(self, instruction: str, execution_results: Dict[str, Any]) -> None:
-        """Store the completed execution in memory for future reference."""
-        try:
-            # Only store if there were successful completions
-            if not execution_results['completed_tasks']:
-                if self.verbose:
-                    print("[RASPA] No completed tasks to store in memory")
-                return
-
-            # Create a summary of the execution for storage
-            memory_content = f"Instruction: {instruction}\n\n"
-            memory_content += f"Todo List:\n{self.current_todo_list}\n\n"
-            memory_content += f"Completed Tasks ({len(execution_results['completed_tasks'])}):\n"
-
-            for i, task in enumerate(execution_results['completed_tasks'], 1):
-                memory_content += f"{i}. {task['task']}\n"
-                # Store abbreviated results to keep memory concise
-                result_summary = task['result'][:200] if task['result'] else "No result"
-                memory_content += f"   Result: {result_summary}...\n"
-
-            if execution_results['failed_tasks']:
-                memory_content += f"\nFailed Tasks ({len(execution_results['failed_tasks'])}):\n"
-                for i, task in enumerate(execution_results['failed_tasks'], 1):
-                    memory_content += f"{i}. {task['task']}: {task['error']}\n"
-
-            # Store in memory (which will auto-generate a title)
-            title = self.memory.learn(memory_content)
-
-            if self.verbose:
-                print(f"[RASPA] Stored execution in memory with title: '{title}'")
-
-            self.print_progress("memory_stored", f"Stored execution in memory: {title}")
-
-        except Exception as e:
-            if self.verbose:
-                print(f"[WARNING] Could not store execution in memory: {str(e)}")
-            # Continue execution even if memory storage fails
-
     def set_auto(self, auto):
         self.auto_run = auto
         return
-
-    # Memory management methods
-    def get_all_memories(self) -> Dict[str, str]:
-        """Get all stored memories."""
-        return self.memory.get_all_memories()
-
-    def clear_memory(self) -> None:
-        """Clear all stored memories."""
-        self.memory.clear()
-        if self.verbose:
-            print("[RASPA] All memories cleared")
-
-    def search_memory(self, query: str, top_k: int = 5) -> List[Dict[str, str]]:
-        """Search memories with a query."""
-        return self.memory.retrieve(query, top_k=top_k)
-
-    def store_memory(self, content: str) -> str:
-        """Manually store content in memory."""
-        title = self.memory.learn(content)
-        if self.verbose:
-            print(f"[RASPA] Stored memory with title: '{title}'")
-        return title
