@@ -3,7 +3,7 @@ truncated
 # general rule tailcorrections
 yes
 # number of defined interactions
-50
+46
 # type interaction
 O_             lennard-jones    48.1581   3.03315      // DREIDING S.L. Mayo et al., J. Phys. Chem. 1990, 94, 8897-8909.
 N_             lennard-jones    38.9492   3.26256      // DREIDING
@@ -50,10 +50,6 @@ CH3            lennard-jones    108.0     3.76         // D. Dubbeldam et al., J
 CH2            lennard-jones    56.0      3.96         // idem
 CH             lennard-jones    17.0      4.67         // idem
 C              lennard-jones     0.8      6.38         // idem
-c_CH2_oh       lennard-jones     46       3.95        
-Ho             lennard-jones     0        0           
-c_CH2_c        lennard-jones     46       3.95        
 CH3_chx        lennard-jones     98       3.75        
-hO_c           lennard-jones     93       3.02        
 # general mixing rule for Lennard-Jones
 Lorentz-Berthelot
