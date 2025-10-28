@@ -8,7 +8,7 @@ CutOff                        14.0                # ALWAYS this value
 RemoveAtomNumberCodeFromLabel yes
 
 ...                                                # Optional: Add here if properties should be computed
-
+# The square brackets respresent that this is optional! They have to be removed in a real setting!
 [                                                  # Optional: box specifications (NEVER use a .cif file for a box!)
 Box 0                                              # IMPORTANT: System numbering is 0-based (always use 0 for first system)
 BoxLengths [real] [real] [real]                    # in Angström (MUST BE twice the CutOff)
