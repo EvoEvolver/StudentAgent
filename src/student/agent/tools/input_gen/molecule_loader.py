@@ -90,7 +90,9 @@ class MoleculeLoaderTrappe(RaspaTool):
         self.ps_bag = PseudoAtomsBag()
 
     def _run(self, molecule_names : List[str]):
-        molecule_names = [name.replace(" ", "_") for name in molecule_names]
+
+        molecule_names = self._sanitize_names(molecule_names)
+
         out_names = []
         for name in molecule_names:
 
@@ -98,8 +100,13 @@ class MoleculeLoaderTrappe(RaspaTool):
             
             if res is not None and molecule_name_to_smiles(res) == molecule_name_to_smiles(name):
                 id = self.get_molecule_id(res)
-                mol_def = self.build_molecule_definition(id, res)
+                try:
+                    mol_def = self.build_molecule_definition(id, res)
+                except Exception as e:
+                    print("Error building molecule definition for:", res, id, e)
+                    raise e
             else:
+                print("Loading unknown molecule: ", name)
                 res = name
                 try:
                     mol_def = self.load_unknown_molecule(name)
@@ -107,7 +114,7 @@ class MoleculeLoaderTrappe(RaspaTool):
                     print(name, e)
                     raise ValueError("No molecule could be generated for ", name, " (only use names recognized by PubChem)")
                     
-                
+            res = res.replace(" ", "_")
             self.make_file(mol_def, f"{res}.def")
             out_names.append(res)
         self.make_ff_ps_files()
@@ -123,6 +130,11 @@ class MoleculeLoaderTrappe(RaspaTool):
     ################################################################################
     ################################      Utils          ###########################
     ################################################################################
+
+    def _sanitize_names(self, molecule_names: List[str]) -> List[str]:
+        for name in molecule_names:
+            name = name.replace(" ", "_")
+        return molecule_names
 
     def make_file(self, content, file_name):
         if self.make_files is False:
@@ -175,6 +187,14 @@ class MoleculeLoaderTrappe(RaspaTool):
         candidates = self.molecule_names()
         matches = quick_search(query, candidates, limit=5, score_cutoff=score_cutoff)
         matches = [i for i in matches if i not in self.blacklist]
+
+        edge_cases = quick_search(query, ["co2", "n2"], limit=1, score_cutoff=score_cutoff)
+        if len(edge_cases) > 0:
+            x = edge_cases[0][0]
+            if x == "co2":
+                return "carbon dioxide"
+            if x == "n2":
+                return "nitrogen"
 
         if len(matches) == 0:
             return None
@@ -257,6 +277,8 @@ class MoleculeLoaderTrappe(RaspaTool):
         # Group information
         lines.append(f"# Group")
         lines.append(f"flexible")
+
+
         lines.append("# number of atoms")
         lines.append(f"{mol.GetNumAtoms()}")
         
@@ -305,11 +327,14 @@ class MoleculeLoaderTrappe(RaspaTool):
         intramolecular_flags = flag_format.format(*intramol)
         lines.append(intramolecular_flags)
 
-        lines.append(bonded)
+        if len(bonded) > 0:
+            lines.append(bonded)
         
         # Intra-molecular interactions
-        lines.append(self.get_intramol_string(interactions))
-        
+        x = self.get_intramol_string(interactions)
+        if len(x) > 0:
+            lines.append(x)
+
         # Partial reinsertion moves
         lines.append(self.get_nr_fixed_section(mol))
         
@@ -318,9 +343,10 @@ class MoleculeLoaderTrappe(RaspaTool):
 
 
     def build_molecule_definition(self, id, name) -> list:
-        
+        rigid = int(id) in [120, 200, 117, 118, 116, 119]
+
         Tc, pc, acentric_factor = get_trappe_properties(id)
-        params = self.load_trappe_parameters(id)
+        params = self.load_trappe_parameters(id, rigid=rigid)
         
         ps = params["pseudoatoms"]
         self.ps_bag.add(name, ps)
@@ -388,11 +414,12 @@ class MoleculeLoaderTrappe(RaspaTool):
         lines.append(intramolecular_flags)
         
         # Bond stretching parameters
-        lines.append("# Bond stretch: atom n1-n2, type, parameters")
-        for bond in params['bond_stretches']:
-            atom1, atom2, bond_type, eq_length = bond
-            lines.append(f"{atom1} {atom2} {bond_type} {eq_length}")
-        
+        if "bond_stretches" in params and params["bond_stretches"]:
+            lines.append("# Bond stretch: atom n1-n2, type, parameters")
+            for bond in params['bond_stretches']:
+                atom1, atom2, bond_type, eq_length = bond
+                lines.append(f"{atom1} {atom2} {bond_type} {eq_length}")
+            
         # Bond bending parameters (if available)
         if "bond_bends" in params and params["bond_bends"]:
             lines.append("# Bond bending: atom n1-n2-n3, type, parameters")
@@ -408,8 +435,10 @@ class MoleculeLoaderTrappe(RaspaTool):
                 lines.append(f"{atom1} {atom2} {atom3} {atom4} TRAPPE_DIHEDRAL {c0} {c1} {c2} {c3}")
         
         # Intra-molecular interactions
-        lines.append(self.get_intramol_string(interactions))
-        
+        intra = self.get_intramol_string(interactions)
+        if intra != "":
+            lines.append(intra)
+
         # Partial reinsertion moves
         lines.append(self.get_nr_fixed_section(mol))
         
@@ -417,7 +446,7 @@ class MoleculeLoaderTrappe(RaspaTool):
         return lines
     
 
-    def load_trappe_parameters(self, molecule_id: int) -> dict:
+    def load_trappe_parameters(self, molecule_id: int, rigid=False) -> dict:
         """
         Retrieves TraPPE parameters for a given molecule_id and returns a dictionary.
         The returned dictionary includes pseudoatom information, bond stretching, bending,
@@ -435,12 +464,20 @@ class MoleculeLoaderTrappe(RaspaTool):
 
         num_groups = 1  # (could be set to 2 if num_atoms > 8, etc.)
         group_name = "Group"
-        group_flexibility = "flexible"
+        group_flexibility = "flexible"# if rigid is False else "rigid"
         group_atom_count = num_atoms // num_groups
         # atomic_positions = [(int(p[0]) - 1, p[1]) for p in pseudoatoms]
 
         # --- Bond Stretching Parameters ---
         stretches = self.parse_section(PARAM_STRING, "#,stretch", 4)
+
+        # Override wrong O-O bond from Trappe!
+        if int(molecule_id) == 116:
+            print("overwrite CO2 Trappe data")
+            # stretches = [['1', '"\'1 - 2\'"', 'O=(C=O)', '1.16'], ['2', '"\'2 - 3\'"', 'O=(C=O)', '1.16']]
+            stretches = [['1', '"\'1 - 2\'"', 'O=(C=O)', '1.16'], ['2', '"\'1 - 3\'"', 'O=(C=O)', '1.16']]
+
+
         default_force_constant = 96500
         bond_stretches = []
         bonds = []
@@ -465,45 +502,49 @@ class MoleculeLoaderTrappe(RaspaTool):
         # --- Bond Bending Parameters ---
         bends = self.parse_section(PARAM_STRING, "#,bend", 5)
         bond_bends = []
-        for bend in bends:
-            # bend: [index, bend_range, bend_type, theta_str, k_theta_str]
-            _, bend_range, bend_type, theta_str, k_theta_str = bend
-            bend_range = bend_range.strip(' "\'')
-            parts = [p.strip(' "\'') for p in bend_range.split('-')]
-            if len(parts) == 3:
-                try:
-                    atom1 = int(parts[0]) - 1
-                    atom2 = int(parts[1]) - 1
-                    atom3 = int(parts[2]) - 1
-                    theta = float(theta_str)
-                    force_constant = float(k_theta_str)
-                    bond_bends.append((atom1, atom2, atom3, "HARMONIC_BEND", force_constant, theta))
-                except Exception:
-                    continue
-                
+        if not rigid:
+            for bend in bends:
+                # bend: [index, bend_range, bend_type, theta_str, k_theta_str]
+                _, bend_range, bend_type, theta_str, k_theta_str = bend
+                bend_range = bend_range.strip(' "\'')
+                parts = [p.strip(' "\'') for p in bend_range.split('-')]
+                if len(parts) == 3:
+                    try:
+                        atom1 = int(parts[0]) - 1
+                        atom2 = int(parts[1]) - 1
+                        atom3 = int(parts[2]) - 1
+                        theta = float(theta_str)
+                        force_constant = float(k_theta_str)
+                        if force_constant == 0.0:
+                            force_constant = default_force_constant
+                        bond_bends.append((atom1, atom2, atom3, "HARMONIC_BEND", force_constant, theta))
+                    except Exception:
+                        continue
+                    
         
         # --- Torsion Parameters ---
         torsions = self.parse_section(PARAM_STRING, "#,torsion", 7)
         bond_torsions = []
-        for torsion in torsions:
-            # torsion: [index, torsion_range, torsion_type, c0_str, c1_str, c2_str, c3_str]
-            _, torsion_range, torsion_type, c0_str, c1_str, c2_str, c3_str = torsion
-            torsion_range = torsion_range.strip(' "\'')
-            parts = [p.strip(' "\'') for p in torsion_range.split('-')]
-            if len(parts) == 4:
-                try:
-                    atom1 = int(parts[0]) - 1
-                    atom2 = int(parts[1]) - 1
-                    atom3 = int(parts[2]) - 1
-                    atom4 = int(parts[3]) - 1
-                
-                    c0 = float(c0_str)
-                    c1 = float(c1_str)
-                    c2 = float(c2_str)
-                    c3 = float(c3_str)
-                    bond_torsions.append((atom1, atom2, atom3, atom4, "TRAPPE_DIHEDRAL", c0, c1, c2, c3))
-                except Exception:
-                    continue
+        if not rigid:
+            for torsion in torsions:
+                # torsion: [index, torsion_range, torsion_type, c0_str, c1_str, c2_str, c3_str]
+                _, torsion_range, torsion_type, c0_str, c1_str, c2_str, c3_str = torsion
+                torsion_range = torsion_range.strip(' "\'')
+                parts = [p.strip(' "\'') for p in torsion_range.split('-')]
+                if len(parts) == 4:
+                    try:
+                        atom1 = int(parts[0]) - 1
+                        atom2 = int(parts[1]) - 1
+                        atom3 = int(parts[2]) - 1
+                        atom4 = int(parts[3]) - 1
+                    
+                        c0 = float(c0_str)
+                        c1 = float(c1_str)
+                        c2 = float(c2_str)
+                        c3 = float(c3_str)
+                        bond_torsions.append((atom1, atom2, atom3, atom4, "TRAPPE_DIHEDRAL", c0, c1, c2, c3))
+                    except Exception:
+                        continue
         
         num_bond_stretches = len(bond_stretches)
         num_bond_bends     = len(bond_bends)
@@ -636,7 +677,9 @@ class MoleculeLoaderTrappe(RaspaTool):
         if verbose:
             print(atom_idx_to_symbol)
             print(adjacency)
+            print(bonds)
             print(mol_adjacency)
+            print(mol_atom_symbols)
 
         # 4. Try to match external atom graph to mol atom graph
         # Naive approach: assume same number of atoms and that a unique match exists based on symbols and connectivity
@@ -654,10 +697,10 @@ class MoleculeLoaderTrappe(RaspaTool):
                     atom_map[mol_idx] = ext_idx
                     used_atoms.add(ext_idx)
                     break
-            else:
-                if self.verbose:
-                    print((f"Could not find a match for mol atom {mol_idx} ({symbol})"))
-                raise ValueError
+                else:
+                    if self.verbose:
+                        print((f"Could not find a match for mol atom {mol_idx} ({symbol})"))
+                    raise ValueError
 
         # Create inverse map: from external index -> mol index
         ext_to_mol_map = {v: k for k, v in atom_map.items()}
@@ -695,7 +738,7 @@ class MoleculeLoaderTrappe(RaspaTool):
             for (i, j) in sorted(interactions["coulomb"]):
                 lines.append(f"{i} {j}")
             
-        return "\n".join(lines)
+        return "\n".join(lines) if len(lines) > 0 else ""
         
 
     def get_nr_fixed_section(self, mol: Chem.Mol) -> str:
@@ -703,7 +746,7 @@ class MoleculeLoaderTrappe(RaspaTool):
         Generates the "nr fixed" section (fixed fragments list) for a molecule.def file.
         """
         n = mol.GetNumAtoms()
-        if n < 3:
+        if n <= 3:
             return "\n".join(["# Number of config moves", "0"])
         
         degrees = {atom.GetIdx(): len(atom.GetNeighbors()) for atom in mol.GetAtoms()}
@@ -760,6 +803,5 @@ class MoleculeLoaderTrappe(RaspaTool):
         
         out = ["# Number of config moves", str(len(lines) - 1)]
         out.extend(lines)
-        out.append("")
-            
+        out.append("")    
         return "\n".join(out)

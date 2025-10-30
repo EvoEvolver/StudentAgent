@@ -2,8 +2,8 @@ from . import Agent
 from .agent_student import StudentAgent
 from .agent_memory_v2 import AgentMemoryV2
 
-from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputExtractor, \
-    FrameworkLoader, MoleculeLoader, SystemAgent, ImageQuestionTool, AskHuman, ReportToHuman
+from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputExtractor, FrameworkLoader, MoleculeLoader, ReadFile, WriteFile
+from .tools.tools_system import  SystemAgent, ImageQuestionTool, AskHuman, ReportToHuman
 from .tools.tools import Tool
 
 from mllm import Chat
@@ -33,10 +33,12 @@ class RaspaAgent(Agent):
             framework_loader,
             MoleculeLoader(path),
             ExecuteRaspa(agent=self),
-            InputFile(),
-            SystemAgent(path),
-            OutputExtractor(),
-            ImageQuestionTool(path),
+            InputFile(path=path),        
+            ReadFile(path=path),
+            WriteFile(path=path),
+            #SystemAgent(path),
+            OutputExtractor(path=path),
+            #ImageQuestionTool(path),
             AskHuman(path),
             ReportToHuman(path)
         ]
@@ -520,7 +522,7 @@ Please execute the task taking into account the previous work done."""
 
                 # Use parent StudentAgent's run method to execute this single action
                 self.chat = Chat()  # Reset chat for each action
-                result = self.run_single_tool(action_prompt)
+                result = super().run(action_prompt, remove_tools=remove_tools, max_iter=3)
 
                 # Print the actual result for visibility
                 if self.verbose:

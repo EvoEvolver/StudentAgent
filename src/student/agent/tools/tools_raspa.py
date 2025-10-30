@@ -2,7 +2,6 @@ import math
 import re
 import shutil
 import subprocess
-import traceback
 from collections import defaultdict
 from typing import Dict, Any, Union
 
@@ -90,85 +89,44 @@ class MoleculeLoader(MoleculeLoaderTrappe):
         response = f"""
         Successfully generated the molecule input files (and force field files) for:
         {', '.join([file(name) for name in out])}
+        (IMPORTANT: use these exact names in the simulation.input file!)
         """
         return self.get_output(content=response)
 
-
-class SystemAgent(RaspaTool):
+class ReadFile(RaspaTool):
     def __init__(self, path=None):
-        name = "SystemAgent"
+        name = "read_file"
         description = """
-        Use this tool to execute system tasks using natural language instructions.
-        This tool can read files, write files, and execute system commands based on your query.
-        Provide a natural language instruction describing what you want to accomplish.
-        You MUST make the query very specific and carry all the necessary information to perform the task.
+        Use this tool to read the content of a text file (not directory!).
+        You must provide the path to the file as file name (based on the root directory NOT the current working directory).
+        For long documents, this tool only reads the beginning.
+        The tool does not work on RASPA output files directly, use the output_parser tool for that.
         """
         super().__init__(name, description, path)
 
-    def run(self, query: str, timeout: int = 300):
-        """
-        Execute a natural language query using Claude CLI.
+        self.blacklist = ["output/", "Output/"]
+        
+    def run(self, file_name):
+        path = self.get_path(full=False)
+        content = None
+        file_path = os.path.join(path, file_name)
 
-        Args:
-            query: Natural language instruction for file operations or system commands
-            timeout: Maximum time in seconds to wait for completion (default: 300)
+        for x in self.blacklist:
+            if file_path in x:
+                return self.get_output(e="Access to this file path is not possible with this tool.")
 
-        Returns:
-            The output from Claude CLI
-        """
         try:
-            # Get the working directory path
-            work_dir = self.get_path(full=True)
-
-            print(f"[SystemAgent] Executing query in: {work_dir}")
-            print(f"[SystemAgent] Query: {query[:100]}..." if len(query) > 100 else f"[SystemAgent] Query: {query}")
-
-            # Execute claude command with the query
-            # IMPORTANT: Close stdin to prevent child process from waiting for input
-            process = subprocess.Popen(
-                ['claude', '--dangerously-skip-permissions', '-p', query],
-                cwd=work_dir,
-                text=True,
-                stdin=subprocess.DEVNULL,  # Close stdin to prevent hanging
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                bufsize=0,  # Unbuffered
-                universal_newlines=True
-            )
-
-            print(f"[SystemAgent] Process started (PID: {process.pid}), waiting up to {timeout}s...")
-
-            try:
-                stdout, stderr = process.communicate(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                print(f"[SystemAgent] Process timed out after {timeout}s, terminating...")
-                process.kill()
-                stdout, stderr = process.communicate()
-                return self.get_output(
-                    e=f"Command timed out after {timeout} seconds.\nPartial stdout: {stdout[:500]}\nPartial stderr: {stderr[:500]}"
-                )
-
-            print(f"[SystemAgent] Process completed with return code: {process.returncode}")
-
-            if process.returncode != 0:
-                error_msg = f"Command failed with return code {process.returncode}"
-                if stderr:
-                    error_msg += f"\nError: {stderr}"
-                if stdout:
-                    error_msg += f"\nStdout: {stdout}"
-                return self.get_output(e=error_msg)
-
-            # Return the output
-            return self.get_output(content=stdout if stdout else "(No output produced)")
-
-        except FileNotFoundError:
-            return self.get_output(
-                e="Claude CLI not found. Please ensure 'claude' command is installed and available in PATH.")
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                with open(file_path, "r") as f:
+                    content = f.read()
+            elif os.path.exists(file_path) and not os.path.isfile(file_path):
+                content = "The is a directory, not a file!"
+            else:
+                content = "This path does not exist!"
+            return self.get_output(content=f"{file(file_path)}:\n{content}")
         except Exception as e:
-            return self.get_output(e=f"Error executing system agent: {str(e)}\n{traceback.format_exc()}")
-
-
-
+            return self.get_output(e="You must provide the path to the file based on the root directory NOT the current working directory)."+e)
+        
 class WriteFile(RaspaTool):
     def __init__(self, path=None):
         name = "write_file"
@@ -355,19 +313,245 @@ class CoreMofLoader(RaspaTool):
         best_match = matches[0]
         return best_match[0]
 
-
 _BLOCK_RE = re.compile(r'^Block\s*\[\s*\d+\s*\]$')
+_PLUSMINUS_TOKENS = {"+/-", "±", "-", "m^2/g","m^2/cm^3","A^2", "K","kJ/mol", "%"}
+_UNIT_TOKEN_RE = re.compile(r'^\[[^\]]+\]$')
 
-
-class OutputExtractor(RaspaTool):
+class OutputParser(RaspaTool):
     def __init__(self, path=None):
-        name = "output_extractor"
+        name = "output_parser"
         description = """
-        Use this tool to extract information from the RASPA output files by query in natural language.
+        Use this tool to parse the raspa output files since they are too long to read directly.
         Do not use for any .output file!
         Provide the path of the output file you want to read (based on the root directory, NOT the current working directory).
         """
         super().__init__(name, description, path)
+    
+    def _run(self, file_path):
+        path = os.path.join(self.get_path(full=False), file_path)
+        
+        try:
+            with open(path) as in_file:
+                data = in_file.read()
+            out = output_parser.parse(data)
+            
+            out = self.filter(out)
+            out = self.strip_block_fields(out)
+            out = self.filter(out)
+
+            out = json.dumps(out, separators=(',', ':'), ensure_ascii=False, default=self._json_default)
+            
+        except Exception as e:
+            return self.get_output(f"Error with output parsing: {e}, (path={path})")
+        return out
+
+    def run(self, file_path):
+        out = self._run(file_path)
+        return self.get_output(out, LIMIT=7500)
+    
+    def _json_default(self, obj):
+        # Make numpy scalars serializable; fallback to str for unknowns
+        try:
+            if isinstance(obj, (np.floating, np.integer)):
+                return obj.item()
+        except Exception:
+            pass
+        return str(obj)
+
+    def filter(self, d: Dict) -> Dict:
+        """
+        Remove keys for which check_del_key(key) or check_empty_content(value) is True.
+        If a value is a dict, recurse into it.
+        """
+        if not isinstance(d, dict):
+            return d
+
+        for key in list(d.keys()):
+            value = d[key]
+
+            if self.check_del_key(key) or self.check_empty_content(value):
+                del d[key]
+                continue
+            if self.check_keep_key(key):
+                continue
+
+            # Recurse into containers first so we can prune after
+            if isinstance(value, dict):
+                self.filter(value)
+                if self.check_empty_content(value):
+                    del d[key]
+                    continue
+
+            elif isinstance(value, list):
+                # Clean list items (recurse into dict elements)
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        self.filter(item)
+                # Remove empty items
+                value[:] = [v for v in value if not self.check_empty_content(v)]
+                # Drop the list itself if it became empty
+                if not value:
+                    del d[key]
+                    continue
+
+            # 3) whitelist does not protect empties; it only prevents key-based deletion
+            if self.check_keep_key(key):
+                continue
+
+        return d
+
+    def check_keep_key(self, key):
+        whitelist = [
+            'Total energy',
+            'Average Widom Rosenbluth factor',
+            'Average Henry coefficient',
+        ]
+        if key in whitelist:
+            return True
+
+        return False
+
+    def check_empty_content(self, value):
+        content = value
+        if self.is_empty(content):
+            return True
+        k = 'Block[0]'
+        if type(content) == dict:
+            content = value.get(k, None)
+            if content is not None and self.is_empty(content):
+                return True
+            
+        return False
+
+
+    def is_empty(self, content):
+        if content is None:
+            return True
+
+        if type(content) == float and (content == 0 or np.isnan(content) or np.isinf(content)):
+            return True
+        
+        # Strings (also catch "[]"/"{}" produced by some parsers)
+        if isinstance(content, str):
+            s = content.strip()
+            return s == '' or s == '[]' or s == '{}'
+
+        # Floats (treat NaN/inf as empty; keep 0.0 as valid)
+        if isinstance(content, float):
+            return math.isnan(content) or math.isinf(content)
+        
+        
+        if isinstance(content, (list, tuple, set)):
+            if len(content) == 0:
+                return True
+
+            has_number = any(
+                isinstance(x, (int, float, np.integer, np.floating)) and not (
+                    isinstance(x, float) and (math.isnan(x) or math.isinf(x))
+                )
+                for x in content
+            )
+            if not has_number:
+                if all(isinstance(x, str) and (x.strip() in _PLUSMINUS_TOKENS or _UNIT_TOKEN_RE.match(x.strip()))
+                    for x in content):
+                    return True
+
+            # Treat lists that contain **only** "+/-" (or "±") as empty
+            # e.g., ["+/-"] → empty; but [0.12, "+/-", 0.01] stays non-empty.
+            #if all(isinstance(x, str) and x.strip() in _PLUSMINUS_TOKENS for x in content):
+            #    return True
+
+            # Consider empty if all elements are empty
+            return all(self.is_empty(v) for v in content)
+        # Dicts
+        if isinstance(content, dict):
+            if len(content) == 0:
+                return True
+            # Consider empty if all values are empty
+            return all(self.is_empty(v) for v in content.values())
+
+        try:
+            c = content[0]
+            return self.is_empty(c)
+    
+        except Exception as e:
+            return False
+
+    def check_del_key(self, key):
+        if type(key) != str:
+            return False
+        blacklist = [
+            'System Properties',
+            "Cpu",  
+            'Total CPU timings', 
+            'Production run CPU timings of the MC moves', 
+            'Production run CPU timings of the MC moves summed over all systems and components',
+            'Mutual consistent basic set of units',
+            'Derived units and their conversion factors',
+            'Internal conversion factors',
+            'Energy conversion factors',
+            'VTK', 'MoleculeDefinitions',
+            'Thermo/Baro-stat NHC parameters',
+            'Method and settings for electrostatics',
+            'CFC-RXMC parameters',
+            'Rattle parameters',
+            'Spectra parameters',
+            'Minimization parameters',
+            'dcTST parameters',
+            'Cbmc parameters',
+            "Simulation",
+            "Dimensions",
+            "Random number seed",
+            "RASPA directory set to",
+            "Properties computed",
+        ]
+        if key in blacklist:
+            return True
+
+        for c in ["Current", "[Init]", "Compi", "OS", "Pseudo", 'Forcefield']:
+            if key.startswith(c):
+                return True
+        
+        else:
+            return False
+    
+
+    def strip_block_fields(self, obj: Union[dict, list, Any]) -> Any:
+        """
+        Recursively remove every key that looks like 'Block[<digits>]' (allowing spaces)
+        from dictionaries, anywhere in a nested structure. Non-dict/list values are
+        returned unchanged.
+
+        Parameters
+        ----------
+        obj : dict | list | Any
+            The data structure to clean.
+
+        Returns
+        -------
+        The cleaned copy, with the same overall shape as `obj`.
+        """
+        if isinstance(obj, dict):
+            # Rebuild the dict without the unwanted keys,
+            # and recurse into each value.
+            return {
+                k: self.strip_block_fields(v)
+                for k, v in obj.items()
+                if not (_BLOCK_RE.match(str(k)))
+            }
+
+        if isinstance(obj, list):
+            # Recurse through lists element-wise.
+            return [self.strip_block_fields(item) for item in obj]
+
+        # Primitive value → return as-is
+        return obj
+
+
+
+class OutputExtractor(OutputParser):
+    def __init__(self, path=None):
+        super().__init__(path=path)
 
     def _run(self, file_path: str, query: str):
         path = os.path.join(self.get_path(full=False), file_path)
@@ -402,122 +586,9 @@ class OutputExtractor(RaspaTool):
 
     def run(self, file_path: str, query: str):
         res = self._run(file_path, query)
-        return res
+        return self.get_output(res)
 
-    def filter(self, d: Dict) -> Dict:
-        """
-        Remove keys for which check_del_key(key) or check_empty_content(value) is True.
-        If a value is a dict, recurse into it.
-        """
-        for key in list(d.keys()):
-            value = d[key]
-
-            if self.check_del_key(key) or self.check_empty_content(value):
-                del d[key]
-                continue
-            if self.check_keep_key(key):
-                continue
-
-            if isinstance(value, dict):
-                self.filter(value)
-
-        return d
-
-    def check_keep_key(self, key):
-        whitelist = [
-            'Total energy',
-            'Average Widom Rosenbluth factor',
-            'Average Henry coefficient',
-        ]
-        if key in whitelist:
-            return True
-
-        return False
-
-    def check_empty_content(self, value):
-        content = value
-        if self.is_empty(content):
-            return True
-        k = 'Block[0]'
-        if type(content) == dict:
-            content = value.get(k, None)
-            if self.is_empty(content):
-                return True
-
-        return False
-
-    def is_empty(self, content):
-        if type(content) == float and (content == 0 or np.isnan(content) or np.isinf(content)):
-            return True
-        try:
-            c = content[0]
-            return self.is_empty(c)
-        except Exception as e:
-            return False
-
-    def check_del_key(self, key):
-        if type(key) != str:
-            return False
-        blacklist = [
-            'System Properties',
-            "Cpu",
-            'Total CPU timings',
-            'Production run CPU timings of the MC moves',
-            'Production run CPU timings of the MC moves summed over all systems and components',
-            'Mutual consistent basic set of units',
-            'Derived units and their conversion factors',
-            'Internal conversion factors',
-            'Energy conversion factors',
-            'VTK', 'MoleculeDefinitions',
-            'Thermo/Baro-stat NHC parameters',
-            'Method and settings for electrostatics',
-            'CFC-RXMC parameters',
-            'Rattle parameters',
-            'Spectra parameters',
-            'Minimization parameters',
-            'dcTST parameters',
-            'Cbmc parameters',
-        ]
-        if key in blacklist:
-            return True
-
-        for c in ["Current", "[Init]", "Compi", "OS", "Pseudo", 'Forcefield']:
-            if key.startswith(c):
-                return True
-
-        else:
-            return False
-
-    def strip_block_fields(self, obj: Union[dict, list, Any]) -> Any:
-        """
-        Recursively remove every key that looks like 'Block[<digits>]' (allowing spaces)
-        from dictionaries, anywhere in a nested structure. Non-dict/list values are
-        returned unchanged.
-
-        Parameters
-        ----------
-        obj : dict | list | Any
-            The data structure to clean.
-
-        Returns
-        -------
-        The cleaned copy, with the same overall shape as `obj`.
-        """
-        if isinstance(obj, dict):
-            # Rebuild the dict without the unwanted keys,
-            # and recurse into each value.
-            return {
-                k: self.strip_block_fields(v)
-                for k, v in obj.items()
-                if not (_BLOCK_RE.match(str(k)))
-            }
-
-        if isinstance(obj, list):
-            # Recurse through lists element-wise.
-            return [self.strip_block_fields(item) for item in obj]
-
-        # Primitive value → return as-is
-        return obj
+  
 
 
 class FrameworkLoader(RaspaTool):
@@ -708,198 +779,3 @@ class FrameworkLoader(RaspaTool):
 
         print(f"RASPA UnitCells: {uc_x} {uc_y} {uc_z}")
         return [uc_x, uc_y, uc_z]
-
-
-class ReportToHuman(RaspaTool):
-    """Tool to generate markdown reports with datetime-based filenames."""
-
-    def __init__(self, path=None):
-        name = "report_to_human"
-        description = """
-        Use this tool to report to human your result in markdown when you finished or failed your task.
-        """
-        super().__init__(name, description, path)
-
-    def run(self, report_content: str):
-        """
-        Generate a markdown report with a datetime-based filename.
-
-        Args:
-            report_content: The content of the markdown report to write
-
-        Returns:
-            Success message with the filename, or error message
-        """
-        try:
-            from datetime import datetime
-
-            # Generate filename with current datetime
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            filename = f"report_{timestamp}.md"
-
-            # Get the full path for saving the report
-            full_path = self.get_path(full=True)
-            os.makedirs(full_path, exist_ok=True)
-
-            # Full file path
-            file_path = os.path.join(full_path, filename)
-
-            # Write the report content to the file
-            with open(file_path, "w") as f:
-                f.write(report_content)
-
-            result = f"Successfully generated markdown report: {filename}\nLocation: {file_path}"
-            return self.get_output(content=result)
-
-        except Exception as e:
-            return self.get_output(e=f"Error generating markdown report: {str(e)}")
-
-
-class AskHuman(RaspaTool):
-    """Tool to ask questions to a human user via console input."""
-
-    def __init__(self, path=None):
-        name = "ask_human"
-        description = """
-        Use this tool when you need to ask the human user a question during execution.
-        This is useful when you need clarification, additional information, or decisions from the user.
-        Provide a clear question, and the tool will prompt the user for input via the console.
-        """
-        super().__init__(name, description, path)
-
-    def run(self, question: str):
-        """
-        Ask a question to the human user and get their response.
-
-        Args:
-            question: The question to ask the user
-
-        Returns:
-            The user's response from console input
-        """
-        try:
-            # Print the question to console
-            print(f"\n[AGENT QUESTION] {question}")
-            print("[Waiting for your input...]")
-
-            # Get input from user
-            user_response = input("Your answer: ").strip()
-
-            if not user_response:
-                return self.get_output(e="No response provided by user.")
-
-            result = f"Question: {question}\nUser's answer: {user_response}"
-            return self.get_output(content=result)
-
-        except EOFError:
-            return self.get_output(e="Input stream closed. Cannot read from console.")
-        except Exception as e:
-            return self.get_output(e=f"Error getting user input: {str(e)}")
-
-
-class ImageQuestionTool(RaspaTool):
-    """Tool to ask questions about images using OpenAI's vision API."""
-
-    def __init__(self, path=None):
-        name = "ask_image_question"
-        description = """
-        Ask a question about an image using AI vision capabilities.
-        Provide a query (question) and the path to an image file.
-        Supported formats: JPG, JPEG, PNG, GIF, WebP.
-        The tool will analyze the image and return an answer to your question.
-        """
-        super().__init__(name, description, path)
-        self._init_vision_client()
-
-    def _init_vision_client(self):
-        """Initialize OpenAI client for vision API."""
-        try:
-            from openai import OpenAI
-            self.client = OpenAI()
-            self.vision_model = "gpt-4o"
-        except ImportError:
-            self.client = None
-            print("Warning: OpenAI package not found. Image question tool will not work.")
-
-    def run(self, query: str, image_path: str):
-        """
-        Ask a question about an image.
-
-        Args:
-            query: The question to ask about the image
-            image_path: Path to the image file (relative to working directory or absolute)
-
-        Returns:
-            The answer from the vision model
-        """
-        if self.client is None:
-            return self.get_output(e="OpenAI client not initialized. Please install openai package.")
-
-        try:
-            import base64
-
-            # Handle both absolute and relative paths
-            if not os.path.isabs(image_path):
-                # Try relative to full path first
-                full_image_path = os.path.join(self.get_path(full=True), image_path)
-                if not os.path.exists(full_image_path):
-                    # Try relative to base path
-                    full_image_path = os.path.join(self.get_path(full=False), image_path)
-                    if not os.path.exists(full_image_path):
-                        # Try as-is
-                        full_image_path = image_path
-            else:
-                full_image_path = image_path
-
-            # Validate image exists
-            if not os.path.exists(full_image_path):
-                return self.get_output(e=f"Image file not found: {full_image_path}")
-
-            # Read and encode image
-            with open(full_image_path, "rb") as image_file:
-                image_data = base64.b64encode(image_file.read()).decode('utf-8')
-
-            # Determine image format from file extension
-            ext = os.path.splitext(full_image_path)[1].lower()
-            mime_types = {
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.webp': 'image/webp'
-            }
-
-            if ext not in mime_types:
-                return self.get_output(e=f"Unsupported image format: {ext}. Supported: {list(mime_types.keys())}")
-
-            mime_type = mime_types[ext]
-
-            # Call OpenAI vision API
-            response = self.client.chat.completions.create(
-                model=self.vision_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": query
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{mime_type};base64,{image_data}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                max_tokens=1000
-            )
-
-            answer = response.choices[0].message.content.strip()
-            result = f"Question: {query}\nImage: {image_path}\n\nAnswer: {answer}"
-            return self.get_output(content=result)
-
-        except Exception as e:
-            return self.get_output(e=f"Error analyzing image: {str(e)}")

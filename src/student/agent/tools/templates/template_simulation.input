@@ -26,9 +26,9 @@ ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
 ...
 ]
 
-Component 0 MoleculeName       [molecule name]     # IMPORTANT: Component numbering is 0-based (0 for first, 1 for second, etc.)
-            MoleculeDefinition     local            # same as [molecule name].def
-            ...                                    # other component information
+Component 0 MoleculeName       [molecule name]     # IMPORTANT: same as the file name of [molecule name].def
+            MoleculeDefinition  local              # always 
+            ...                                    # other component information (e.g. Monte Carlo moves)
 
 [
 Component 1 MoleculeName        [molecule name]    # Optional: second component (use 1 for second component)

@@ -277,12 +277,12 @@ class PseudoAtomsBag:
     def get_generic_mof(self):
         with open(os.path.join(os.path.dirname(__file__), "data/forcefields/generic_ff_mof.def"), "r") as f:
             s = f.read()
-        return s, 45
+        return s, 34
     
     def get_generic_zeolites(self):
         with open(os.path.join(os.path.dirname(__file__), "data/forcefields/generic_ff_zeolites.def"), "r") as f:
             s = f.read()
-        return s, 16
+        return s, 5
 
     def build_pseudoatoms(self):
         atoms = self.get_unique_atoms()
