@@ -4,7 +4,6 @@ NumberOfInitializationCycles  1000
 PrintEvery                    500
 
 Forcefield                    local
-CutOff                        14.0
 
 Box 0
 BoxLengths 30 30 30
@@ -15,6 +14,7 @@ Component 0 MoleculeName             [molecule name]
             TranslationProbability   1.0
             RotationProbability      1.0
             ReinsertionProbability   1.0
+            [other MC move probabities]
             CreateNumberOfMolecules  20
 
 Component 1 MoleculeName             [molecule name]
@@ -22,4 +22,5 @@ Component 1 MoleculeName             [molecule name]
             TranslationProbability   1.0
             RotationProbability      1.0
             ReinsertionProbability   1.0
+            [other MC move probabities]
             CreateNumberOfMolecules  20

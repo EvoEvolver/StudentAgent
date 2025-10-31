@@ -5,7 +5,6 @@ PrintEvery                       5000
 RestartFile                      no
 
 Forcefield                       local
-CutOff                           14.0
 
 Box 0
 BoxLengths 30 30 30
@@ -19,4 +18,5 @@ component 0 MoleculeName                     [molecule name]
             RotationProbability              1.0
             ReinsertionProbability           1.0
             PartialReinsertionProbability    1.0
+            [other MC move probabities]
             CreateNumberOfMolecules          32

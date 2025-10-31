@@ -1,7 +1,7 @@
 SimulationType                MonteCarlo
-NumberOfCycles                25000
-NumberOfInitializationCycles  2000
-PrintEvery                    1000
+NumberOfCycles                50000
+NumberOfInitializationCycles  25000
+PrintEvery                    100
 
 Forcefield                    local
 CutOff                        14.0
@@ -15,19 +15,14 @@ ExternalTemperature [T]
 ExternalPressure [p]
 
 ComputeNumberOfMoleculesHistogram yes
-WriteNumberOfMoleculesHistogramEvery 500
-NumberOfMoleculesHistogramSize 110
-NumberOfMoleculesRange 80
-
 ComputeEnergyHistogram yes
-WriteEnergyHistogramEvery 500
-EnergyHistogramSize 40
-EnergyHistogramLowerLimit -110000
-EnergyHistogramUpperLimit -20000
 
 Component 0 MoleculeName             [molecule name]
             MoleculeDefinition       local
+		    IdealGasRosenbluthWeight [rosenbluth]
             TranslationProbability   0.5
+		    RotationProbability      0.5
             ReinsertionProbability   0.5
+		    PartialReinsertionProbability 1
             SwapProbability          1.0
             CreateNumberOfMolecules  0

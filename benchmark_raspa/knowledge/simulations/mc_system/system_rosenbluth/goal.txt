@@ -9,15 +9,19 @@ since they are computed from Widom insertions where the molecule is never actual
 The output contains 
 \begin{tiny}
 \begin{verbatim}
-     Average Widom Rosenbluth factor:
-     ================================
-             [C5] Average Widom:   0.0668555 +/- 0.000131 [-]
-             [C6] Average Widom:   0.0175062 +/- 0.000067 [-]
-             [C7] Average Widom:   0.00462547 +/- 0.000010 [-]
-             [C8] Average Widom:   0.00122842 +/- 0.000005 [-]
-             [C9] Average Widom:   0.000328228 +/- 0.000001 [-]
+ Average Widom Rosenbluth factor:
+================================
+	Block[ 0] 1.03663e-05 [-]
+	Block[ 1] 1.06213e-05 [-]
+	Block[ 2] 1.03349e-05 [-]
+	Block[ 3] 1.05147e-05 [-]
+	Block[ 4] 1.04152e-05 [-]
+	------------------------------------------------------------------------------
+	[PFOA] Average Widom Rosenbluth-weight:   1.04505e-05 +/- 0.000000 [-]
 \end{verbatim}
 \end{tiny}
-which is printed every `PrintPropertiesEvery' cycles. The `Rosenbluth factor new' are the values of interest.
+which is printed every `PrintPropertiesEvery' cycles. The `average Widom:' are the values of interest.
 The average and error estimated from block averages is printed at the end
 of the simulation.
+
+IMPORTANT to do for all simulations of molecules with torsions/bends if partial reinsertion moves are used!

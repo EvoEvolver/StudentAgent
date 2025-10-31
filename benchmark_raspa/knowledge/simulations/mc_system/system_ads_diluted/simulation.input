@@ -4,7 +4,6 @@ NumberOfInitializationCycles  5000
 PrintEvery                    1000
 
 Forcefield                    local
-CutOff                        14.0
 RemoveAtomNumberCodeFromLabel yes
 
 
@@ -19,5 +18,5 @@ Component 0 MoleculeName             [molecule name]
             MoleculeDefinition       local
             TranslationProbability   0.5
             ReinsertionProbability   0.5
-            ...
+            [other MC move probabilties]
             CreateNumberOfMolecules  1

@@ -1,0 +1,40 @@
+# Feedback for the training examples (comments for all 20 examples sent via email)
+ 
+
+Good means if I run the simulation in RASPA on my compute, I will see results, Almost good means that with one little fix, it would run in RASPA and Wrong ,means RASPA will throw an error and will need multiple fixes. 
+
+1 : Good
+
+2 : Almost good 
+
+3 : Wrong, CO2 def file has wrong bond parameters, has #nr fixed line in the CO2 file, which will throw error since CO2 is a rigid molecule, you cannot grow a rigid molecule. Molecule name as a space in it, "carbon dioxide" should be "carbon_dioxide"
+
+4 : Wrong, CO2 def file has wrong bond parameters, has #nr fixed line in the CO2 file, which will throw error since CO2 is a rigid molecule, you cannot grow a rigid molecule. Molecule name as a space in it, "carbon dioxide" should be "carbon_dioxide"
+
+5 : Wrong, Initialization cycles should not exist for Widom insertions, remove ExternalPressure line. CO2 def file has wrong bond parameters, has #nr fixed line in the CO2 file, which will throw error since CO2 is a rigid molecule, you cannot grow a rigid molecule. Molecule name as a space in it, "carbon dioxide" should be "carbon_dioxide"
+
+6 : Wrong, CO2 def file has wrong bond parameters, has #nr fixed line in the CO2 file, which will throw error since CO2 is a rigid molecule, you cannot grow a rigid molecule. Molecule name as a space in it, "carbon dioxide" should be "carbon_dioxide". No framework in simulation.input file, the input file has an empty box. There is an empty line in nitrogen definition file. 
+
+7. Wrong, CO2 def file has wrong bond parameters, has #nr fixed line in the CO2 file, which will throw error since CO2 is a rigid molecule, you cannot grow a rigid molecule. Molecule name as a space in it, "carbon dioxide" should be "carbon_dioxide". No framework in simulation.input file, the input file has an empty box. There is an empty line in nitrogen definition file. 
+
+8. Almost good, remove empty Lines from molecule definition files and remove ExternalPressure line
+
+15. Wrong, Ensemble GCMC line not required in simulation.input file, mole fraction for two components in the simulation.input file cannot be 1 for both components, it is a mixture, the sum of mole fractions should be 1.
+
+
+General Comments:
+- Henrik, for the CO2 molecule, it looks like your code defines bond lengths starting from atom 0 to atom N sequentially. But in case of CO2, since you have atom 0 as carbon, atom 1 as oxygen and atom 3 as oxygen, your bond lengths are between oxygen-carbon and oxygen-oxygen. But oxygens are not connected in CO2. In these cases make sure you go from left to right while numbering atoms under #atomic positions in a linear molecule.
+
+- Add RotationProbability for all simulations except Widom insertion simaultions 
+
+- remove repetitive parameters from force_field_mixing_rules that are not TraPPE
+
+- Component 0 should be on the same line as the molecule name 
+
+- Molecule name should have no spaces 
+
+- Set number of initialization cycles to 0 for Widom insertions 
+
+- Don't calculate Rosenbluth weight for molecule with no torsions 
+
+- In NVT ensemble, no need to mention "ExternalPressure 0".  
