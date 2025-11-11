@@ -558,6 +558,27 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
         # No incomplete tasks found
         return ""
 
+    def _extract_tool_results_from_chat(self) -> str:
+        """Extract tool results from chat messages when no response text is provided."""
+        tool_results = []
+
+        # Iterate through chat messages in reverse to get recent tool results
+        for message in reversed(self.chat.messages):
+            if message.get('role') == 'tool':
+                tool_name = message.get('name', 'unknown')
+                content = message.get('content', {})
+                if isinstance(content, dict) and content.get('type') == 'tool_result':
+                    result = content.get('result', '')
+                    success = content.get('success', True)
+                    status = "✓" if success else "✗"
+                    tool_results.append(f"{status} {tool_name}: {result}")
+
+        if tool_results:
+            # Return the most recent tool results (reverse back to chronological order)
+            return "\n".join(reversed(tool_results))
+
+        return "Task executed (no output captured)"
+
     def _extract_tasks_from_markdown(self, markdown_todo: str) -> List[str]:
         """Extract task descriptions from markdown todo list."""
         tasks = []
@@ -643,6 +664,10 @@ Please execute the task taking into account the previous work done."""
                 # Use parent StudentAgent's run method to execute this single action
                 self.chat = Chat()  # Reset chat for each action
                 result = super().run(action_prompt, remove_tools=remove_tools, max_iter=3)
+
+                # If result is empty, try to extract tool results from chat messages
+                if not result or result.strip() == "":
+                    result = self._extract_tool_results_from_chat()
 
                 # Print the actual result for visibility
                 if self.verbose:

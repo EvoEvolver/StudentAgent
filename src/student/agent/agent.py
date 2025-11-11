@@ -192,7 +192,8 @@ class Agent:
             return
         if message is None:
             return
-        assert "content" in message and "role" in message, "Message must contain 'content' and 'role'"
+        assert "role" in message, "Message must contain 'role'"
+        assert "content" in message or message["role"] == "tool", "Message must contain 'content' (or be a tool message)"
         self.chat.messages.append(message)
 
     def update_conversation(self, n_messages):
@@ -271,13 +272,13 @@ class Agent:
             print(f"[TOOL ERROR] {str(e)}")
 
         message = {
-            "role": "user",
-            'content': {
-                'type': 'text',
-                'text': json.dumps({
-                    "tool_name": name,
-                    "tool_response": str(out),
-                })
+            "role": "tool",
+            "tool_call_id": id,
+            "name": name,
+            "content": {
+                "type": "tool_result",
+                "result": str(out),
+                "success": success
             }
         }
         return message, success
@@ -401,20 +402,33 @@ class Agent:
         return "<br>".join(inner_parts)
 
     def render_message(self, message, st=False):
-        try:
-            parsed = json.dumps(message)
-            parsed = json.loads(parsed)["content"]['text']
-        except (KeyError, json.JSONDecodeError):
-            return
-
         role = message.get("role", "Unknown").capitalize()
-        tool_call_note = ""
-        '''
-        if "tool_call_id" in message:
-            tool_id = message["tool_call_id"]
-            tool_call_note = f" <span style='color:#666; font-size:0.85em;'>(Tool Call ID: <code>{tool_id}</code>)</span>"
-        '''
-        bg_color = "#e0f7fa" if role == "Assistant" else "#f8f9fa"
+
+        # Handle new tool message format
+        if role == "Tool":
+            tool_name = message.get("name", "unknown")
+            content = message.get("content", {})
+            if isinstance(content, dict) and content.get("type") == "tool_result":
+                result = html.escape(str(content.get("result", "")))
+                success = content.get("success", True)
+                status_icon = "✓" if success else "✗"
+                status_color = "#4CAF50" if success else "#f44336"
+
+                bg_color = "#f1f8e9" if success else "#ffebee"
+                content_block = f"<div style='margin-top:5px;'><span style='color:{status_color}; font-weight:bold;'>{status_icon}</span> <strong>Tool: {html.escape(tool_name)}</strong><br>{result.replace(chr(10), '<br>')}</div>"
+            else:
+                content_block = str(content)
+        else:
+            # Handle regular messages
+            try:
+                parsed = json.dumps(message)
+                parsed = json.loads(parsed)["content"]['text']
+                content_block = self.render_message_content(parsed)
+            except (KeyError, json.JSONDecodeError):
+                return
+
+            bg_color = "#e0f7fa" if role == "Assistant" else "#f8f9fa"
+
         text_color = "#111"
         border = "1px solid #ccc"
         border_radius = "10px"
@@ -422,12 +436,9 @@ class Agent:
         margin = "10px 0"
 
         html_parts = []
-
-        content_block = self.render_message_content(parsed)
-
         html_parts.append(
             f"<div style='background:{bg_color}; color:{text_color}; border:{border}; border-radius:{border_radius}; padding:{padding}; margin:{margin};'>"
-            f"<strong>{role}{tool_call_note}:</strong><br>{content_block}</div>"
+            f"<strong>{role}:</strong><br>{content_block}</div>"
         )
         return "".join(html_parts)
 
