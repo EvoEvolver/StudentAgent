@@ -254,47 +254,19 @@ class RaspaAgent(Agent):
         tools_text = "\n".join(tool_descriptions)
         return tools_text
 
-    def _request_and_store_memory(self, context: str, query: str) -> str:
+    def _create_memory_from_feedback(self, context: str, query: str, user_answer: str) -> str:
         """
-        Request input from human and store it as a new memory using LLM to generate content.
+        Create and store a memory based on user feedback using LLM to generate content.
 
         Args:
             context: The context/task being worked on
-            query: The specific query that didn't find memories
+            query: The specific query
+            user_answer: The user's feedback/answer
 
         Returns:
-            The user's feedback as a string, or empty string if failed
+            The generated memory content as a string, or empty string if failed
         """
         try:
-            # Ask human for input
-            ask_human_tool = self.tools.get("ask_human")
-            if not ask_human_tool:
-                if self.verbose:
-                    print("[WARNING] AskHuman tool not available")
-                return ""
-
-            question = f"""No relevant memories found for: "{query[:200]}"
-
-Context: {context[:300]}
-
-Do you have any guidance, best practices, or lessons learned for this type of task?
-If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
-
-            result = ask_human_tool.run(question)
-
-            # Check if the result contains an error
-            if "error" in result.lower() or not result:
-                if self.verbose:
-                    print("[WARNING] Could not get user input for memory")
-                return ""
-
-            # Parse the user's answer from the tool output
-            user_answer = ""
-            if "User's answer:" in result:
-                user_answer = result.split("User's answer:")[-1].strip()
-            else:
-                user_answer = result.strip()
-
             # Check if user wants to skip
             if user_answer.lower() in ['skip', 'no', 'n', '']:
                 if self.verbose:
@@ -365,15 +337,37 @@ Format it as a clear, concise paragraph that would be useful for an AI agent to 
                 if self.verbose:
                     print("[RASPA] No relevant memories found, requesting human input...")
 
-                # Request input from human and create new memory
-                new_memory = self._request_and_store_memory(
-                    context=f"Task decomposition for: {instruction}",
-                    query=instruction
-                )
+                # Ask human for input
+                ask_human_tool = self.tools.get("ask_human")
+                if ask_human_tool:
+                    question = f"""No relevant memories found for: "{instruction}"
 
-                if new_memory:
-                    # Add the newly created memory to the context
-                    relevant_memories = f"\n\nRelevant Past Experiences (newly added):\n\n1. {new_memory}\n"
+Do you have any guidance, best practices, or lessons learned for this type of task?
+If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
+
+                    result = ask_human_tool.run(question)
+
+                    # Check if the result contains an error
+                    if result and "error" not in result.lower():
+                        # Parse the user's answer from the tool output
+                        user_answer = ""
+                        if "User's answer:" in result:
+                            user_answer = result.split("User's answer:")[-1].strip()
+                        else:
+                            user_answer = result.strip()
+
+                        # Create memory from the answer
+                        new_memory = self._create_memory_from_feedback(
+                            context=f"Task decomposition for: {instruction}",
+                            query=instruction,
+                            user_answer=user_answer
+                        )
+
+                        if new_memory:
+                            # Add the newly created memory to the context
+                            relevant_memories = f"\n\nRelevant Past Experiences (newly added):\n\n1. {new_memory}\n"
+                    elif self.verbose:
+                        print("[WARNING] Could not get user input for memory")
         except Exception as e:
             if self.verbose:
                 print(f"[WARNING] Could not query memory: {str(e)}")
@@ -486,15 +480,39 @@ Format it as a clear, concise paragraph that would be useful for an AI agent to 
                     if self.verbose:
                         print("[RASPA] No relevant memories found for next task, requesting human input...")
 
-                    # Request input from human and create new memory
-                    new_memory = self._request_and_store_memory(
-                        context=f"Executing task: {next_incomplete_task}. Previous tasks: {completed_context[:500]}",
-                        query=next_incomplete_task
-                    )
+                    # Ask human for input
+                    ask_human_tool = self.tools.get("ask_human")
+                    if ask_human_tool:
+                        question = f"""No relevant memories found for: "{next_incomplete_task[:200]}"
 
-                    if new_memory:
-                        # Add the newly created memory to the context
-                        relevant_memories = f"\n\nRelevant Past Experiences for This Task (newly added):\n\n1. {new_memory}\n"
+Context: Executing task: {next_incomplete_task}. Previous tasks: {completed_context[:300]}
+
+Do you have any guidance, best practices, or lessons learned for this type of task?
+If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
+
+                        result = ask_human_tool.run(question)
+
+                        # Check if the result contains an error
+                        if result and "error" not in result.lower():
+                            # Parse the user's answer from the tool output
+                            user_answer = ""
+                            if "User's answer:" in result:
+                                user_answer = result.split("User's answer:")[-1].strip()
+                            else:
+                                user_answer = result.strip()
+
+                            # Create memory from the answer
+                            new_memory = self._create_memory_from_feedback(
+                                context=f"Executing task: {next_incomplete_task}. Previous tasks: {completed_context[:500]}",
+                                query=next_incomplete_task,
+                                user_answer=user_answer
+                            )
+
+                            if new_memory:
+                                # Add the newly created memory to the context
+                                relevant_memories = f"\n\nRelevant Past Experiences for This Task (newly added):\n\n1. {new_memory}\n"
+                        elif self.verbose:
+                            print("[WARNING] Could not get user input for memory")
             except Exception as e:
                 if self.verbose:
                     print(f"[WARNING] Could not query memory for next task: {str(e)}")
