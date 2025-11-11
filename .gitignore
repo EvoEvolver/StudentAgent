@@ -4,8 +4,11 @@ test_chatmof.ipynb
 test*/
 !benchmark_student/test*
 .DS_Store
+random_testing/
 
 test_streamlit_app.py
+
+!tests/
 
 __pycache__/
 CoRE-MOF/
@@ -28,3 +31,6 @@ tout/
 Movies/
 Restart/
 VTK/
+
+*.md
+README.md
