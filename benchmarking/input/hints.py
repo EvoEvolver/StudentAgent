@@ -1,68 +1,5 @@
-"""
-This file contains the tasks and instructions for new agent testing.
-"""
-
-# Task Instructions
-base_instruction = """Answer this question using simulations: """  # (ALWAYS USE 1/100 cycles and up to 5 molecules for speed.IGNORE the low accuracy!):
-
-mol_s = "methane"  # molecules_s = ["CO2", "N2", "methane", "ethane"]
-mol_l = "n-pentane"  # molecules_l = ["n-pentane", "n-hexane", "n-heptane"]
-rosenbluth = (
-    "0.0197439"  # rosenbluth = ["0.0197439", "0.0029442", "0.0004450"] # from Aastha
-)
-framework = "IRMOF-13"
-f_hvf = 0.877
-
-parameters = {
-    "framework": framework,
-    "hvf": f_hvf,
-    "molecule": mol_s,
-    "molecule_l": mol_l,
-    "rosenbluth": rosenbluth,
-}
-
-# Multistep Tasks
-ads_dil = "Determine the adsorption enthalpy of {molecule} on {framework} using a simulation at infinite dilution"
-ads_dil_l = "Determine the adsorption enthalpy of {molecule_l} on {framework} using a simulation at infinite dilution"
-ads_1 = "Determine the adsorption enthalpy of {molecule} on {framework}"
-ads_l = "Determine the adsorption enthalpy of {molecule_l} on {framework}"
-ads_2 = (
-    "Compare the adsorption enthalpies of {molecule} and {molecule_l} on {framework}"
-)
-h = "Determine the henry coefficient of {molecule} on {framework}"
-h_l = "Determine the henry coefficient of {molecule_l} on {framework}"
-h_2 = "Determine the henry coefficient of {molecule} and {molecule_l} on {framework}"
-tasks_multistep = [ads_dil, ads_1, ads_2, h, h_2]
-
-
-# Single Step Tasks
-add_hvf = " given the helium void fraction of {hvf}"
-add_rb_1 = " and the ideal gas rosenbluth weight of {rosenbluth} for {molecule}"
-hvf = "Calculate the helium void fraction of {framework}"
-surface = "Determine the surface area of {framework}"
-rosenbluth_1 = "Calculate the ideal Rosenbluth weights for {molecule_l}"
-
-tasks_framework = [hvf, surface]  # framework
-tasks_n1_s = [i + add_hvf for i in [ads_dil, ads_1, h]]  # molecule, framework, hvf
-tasks_n1_l = [rosenbluth_1] + [
-    i + add_hvf + add_rb_1 for i in [ads_dil_l, ads_l, h_l]
-]  # molecule, framework, hvf
-tasks_n2_sl = [
-    i + add_hvf + add_rb_1 for i in [ads_2, h_2]
-]  # molecule, molecule2, framework, hvf
-
-
-def task_prompt(task, instruction=base_instruction, parameters=parameters):
-    return instruction + task.format(**parameters)
-
-
-tasks_1 = {
-    i: task_prompt(task)
-    for i, task in enumerate(tasks_framework + tasks_n1_s + tasks_n1_l)
-}
-tasks_n = {i: task_prompt(task) for i, task in enumerate(tasks_n2_sl)}
-
-# Instruction Dictionaries
+# Hint Dictionaries
+import json
 
 steps = "NumberOfCycles                500\nNumberOfInitializationCycles  100"
 widom_steps = "NumberOfCycles                500\nNumberOfInitializationCycles  0"
@@ -118,11 +55,11 @@ ExternalPressure 1e3
 
 Component 0 MoleculeName             [molecule name]
             MoleculeDefinition       local
-		    IdealGasRosenbluthWeight [rosenbluth]
+            IdealGasRosenbluthWeight [rosenbluth]
             TranslationProbability   0.5
-		    RotationProbability      0.5
+            RotationProbability      0.5
             ReinsertionProbability   0.5
-		    PartialReinsertionProbability 1
+            PartialReinsertionProbability 1
             SwapProbability          1.0
             CreateNumberOfMolecules  0
 """
@@ -134,7 +71,7 @@ ComputeEnergyHistogram yes
 
 Component 0 MoleculeName               [molecule name 0]
             MoleculeDefinition         local
-	          IdealGasRosenbluthWeight   [rosenbluth]
+              IdealGasRosenbluthWeight   [rosenbluth]
             MolFraction                [fraction component 0]
             TranslationProbability     0.5
             RotationProbability.       0.5
@@ -147,10 +84,10 @@ Component 0 MoleculeName               [molecule name 0]
 
 Component 1 MoleculeName               [molecule name 1]
             MoleculeDefinition         local
-	          IdealGasRosenbluthWeight   [rosenbluth]
+              IdealGasRosenbluthWeight   [rosenbluth]
             MolFraction                [fraction component 1]
             TranslationProbability     0.5
-	        RotationProbability	       0.5
+            RotationProbability	       0.5
             RegrowProbability          0.5
             IdentityChangeProbability  1.0
               NumberOfIdentityChanges  2
@@ -170,7 +107,20 @@ Component 0 MoleculeName              [molecule name]
 
 hint_cbmc = """If a molecule has torsions, use CBMC for better sampling. This requires a ideal gas rosenbluth weight calculation first. Molecules without torsions have a rosenbluth weight of 1.0 (methane is treated as single-atom entity!)"""
 hint_hvf_add = "Use the helium void fraction to correct the adsorption properties. Ignore for henry coefficient calculations."
+hint_multi = "This is a multi-step simulation. You first have to determine properties such as the helium void fraction or ideal gas Rosenbluth weight in prior simulations, then use it for the final simulation to compute the desired property."
 
+hints = {
+    "henry": hint_henry + hint_hvf_add,
+    "hvf": hint_hvf,
+    "surface": hint_surface,
+    "ads_dil": hint_diluted,  # + hint_hvf_add + hint_hvf, # TODO: check if necessary!
+    "ads_iso": hint_ads + hint_hvf_add + hint_hvf,
+    "sl": hint_ads_n2,
+    "l": hint_cbmc + hint_rosenbluth,
+    "multi": hint_multi,
+}
+
+"""
 instructions_1 = {
     0: hint_hvf,
     1: hint_surface,
@@ -187,3 +137,11 @@ instructions_n = {
     0: hint_ads_n2 + hint_cbmc + hint_rosenbluth + hint_hvf_add + hint_hvf,
     1: hint_henry + hint_cbmc + hint_rosenbluth + hint_hvf_add + hint_hvf,
 }
+"""
+
+if __name__ == "__main__":
+    for key, hint in hints.items():
+        print(f"--- {key} ---")
+        print(hint)
+
+    json.dump(hints, open("hints.json", "w"), indent=4)
