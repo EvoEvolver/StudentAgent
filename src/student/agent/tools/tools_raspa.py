@@ -21,13 +21,12 @@ class MoleculeLoader(MoleculeLoaderTrappe):
     def __init__(self, path=None):
         name = "Molecule loader"
         description = """Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files.
+Accepts common molecule names and chemical formulas such as:
+- Simple formulas: CO2, N2, O2, CH4, H2O, NH3, Ar, Kr, Xe, He
+- Common names: carbon dioxide, nitrogen, oxygen, methane, water, ammonia, argon, krypton, xenon, helium
+- Organic molecules: ethane, propane, butane, pentane, hexane, heptane, octane, benzene, toluene
 
-        Accepts common molecule names and chemical formulas such as:
-        - Simple formulas: CO2, N2, O2, CH4, H2O, NH3, Ar, Kr, Xe, He
-        - Common names: carbon dioxide, nitrogen, oxygen, methane, water, ammonia, argon, krypton, xenon, helium
-        - Organic molecules: ethane, propane, butane, pentane, hexane, heptane, octane, benzene, toluene
-
-        The tool will automatically map common abbreviations to their proper names."""
+The tool will automatically map common abbreviations to their proper names."""
         super().__init__(name, description, path)
 
         # Common molecule name mappings
@@ -85,23 +84,27 @@ class MoleculeLoader(MoleculeLoaderTrappe):
             out = self._run(normalized_names)
         except Exception as e:
             return self.get_output(e=e)
-        response = f"""
-        Successfully generated the molecule input files (and force field files) for:
-        {', '.join([file(name) for name in out])}
-        (IMPORTANT: use these exact names in the simulation.input file!)
-        """
+        response = f"""Successfully generated the molecule input files (and force field files) for:
+{', '.join([file(name) for name in out.keys()])}
+(IMPORTANT: use these exact names in the simulation.input file!)"""
+
+        torsions = [name for name in out.keys() if out[name] is True]
+        if len(torsions) > 0:
+            response += f"The following molecules have torsions: {', '.join(torsions)}"
+        else:
+            response += "\nNone of the molecules has torsions."
+
         return self.get_output(content=response)
 
 
 class ReadFile(RaspaTool):
     def __init__(self, path=None):
         name = "read_file"
-        description = """
-        Use this tool to read the content of a text file (not directory!).
-        You must provide the path to the file as file name (based on the root directory NOT the current working directory).
-        For long documents, this tool only reads the beginning.
-        The tool does not work on RASPA output files directly, use the output_parser tool for that.
-        """
+        description = """Use this tool to read the content of a text file (not directory!).
+You must provide the path to the file as file name (based on the root directory NOT the current working directory).
+For long documents, this tool only reads the beginning.
+The tool does not work on RASPA output files directly, use the output_parser tool for that.
+"""
         super().__init__(name, description, path)
 
         self.blacklist = ["output/", "Output/"]
@@ -136,12 +139,11 @@ class ReadFile(RaspaTool):
 class WriteFile(RaspaTool):
     def __init__(self, path=None):
         name = "write_file"
-        description = """
-        Use this tool to write text into a new file.
-        IMPORTANT: You must provide a file name based on the root directory NOT the current working directory.
-        IMPORTANT: To edit a (small) file, you must first read a file with another tool and then write it completely new with this tool. Dont do this to copy files!
-        IMPORTANT: This will overwrite any existing file with the same name!
-        """
+        description = """Use this tool to write text into a new file.
+IMPORTANT: You must provide a file name based on the root directory NOT the current working directory.
+IMPORTANT: To edit a (small) file, you must first read a file with another tool and then write it completely new with this tool. Dont do this to copy files!
+IMPORTANT: This will overwrite any existing file with the same name!
+"""
         super().__init__(name, description, path)
 
     def run(self, file_content, file_name):
@@ -164,17 +166,15 @@ class InputFile(WriteFile):
         super().__init__(path)
 
         self.name = "input_file"
-        self.description = """
-        Use this tool to write the simulation input file.
-        You must provide the content as string. The filename is always simulation.input
-        ALWAYS use this template and modify based on examples from your memory!
+        self.description = """Use this tool to write the simulation input file.
+You must provide the content as string. The filename is always simulation.input
+ALWAYS use this template and modify based on examples from your memory!
 
-        CRITICAL: RASPA2 uses 0-based indexing for systems and components:
-        - First system: Box 0 or Framework 0 (NOT Box 1 or Framework 1)
-        - First component: Component 0 (NOT Component 1)
-        - Second component: Component 1, etc.
-        Using 1-based indexing will cause "system number is incorrect" errors!
-        """
+CRITICAL: RASPA2 uses 0-based indexing for systems and components:
+- First system: Box 0 or Framework 0 (NOT Box 1 or Framework 1)
+- First component: Component 0 (NOT Component 1)
+- Second component: Component 1, etc.
+Using 1-based indexing will cause "system number is incorrect" errors!"""
         self.has_file = False
         if template_filename is None:
             template_filename = os.path.join(
@@ -203,9 +203,7 @@ class InputFile(WriteFile):
 class ExecuteRaspa(RaspaTool):
     def __init__(self, agent, path=None):
         name = "execute raspa"
-        description = """
-        Use this to start a RASPA simulation. The output indicates the success of the simulation.
-        """
+        description = """Use this to start a RASPA simulation. The output indicates the success of the simulation."""
         super().__init__(name, description, path)
         self.agent = agent
 
@@ -260,9 +258,7 @@ class CoreMofLoader(RaspaTool):
 
     def __init__(self, path=None):
         name = "framework loader"
-        description = """
-        Load the framework (MOF) file using coremof.
-        """
+        description = """Load the framework (MOF) file using coremof."""
         super().__init__(name, description, path)
         self.has_file = False
         self.structures: Dict[str, List[str]] = None
@@ -339,11 +335,9 @@ _UNIT_TOKEN_RE = re.compile(r"^\[[^\]]+\]$")
 class OutputParser(RaspaTool):
     def __init__(self, path=None):
         name = "output_parser"
-        description = """
-        Use this tool to parse the raspa output files since they are too long to read directly.
-        Do not use for any .output file!
-        Provide the path of the output file you want to read (based on the root directory, NOT the current working directory).
-        """
+        description = """Use this tool to parse the raspa output files since they are too long to read directly.
+Do not use for any .output file!
+Provide the path of the output file you want to read (based on the root directory, NOT the current working directory)."""
         super().__init__(name, description, path)
 
     def _run(self, file_path):
@@ -597,8 +591,7 @@ class OutputExtractor(OutputParser):
 
         # Extract relevant information based on query using LLM
         chat = Chat()
-        chat += f"""
-You are an expert in RASPA simulation software output analysis.
+        chat += f"""You are an expert in RASPA simulation software output analysis.
 Here is the parsed output data from a RASPA simulation in JSON format:
 <output>
 {out}
@@ -620,9 +613,7 @@ class FrameworkLoader(RaspaTool):
 
     def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff=14.0):
         name = "framework loader"
-        description = """
-        Load a framework file as framework.cif
-        """
+        description = """Load a framework file as framework.cif"""
         super().__init__(name, description, path)
         self.has_file = False
         self.output_file = "framework.cif"
