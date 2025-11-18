@@ -2,10 +2,38 @@ import json
 import os
 import base64
 from typing import List, Dict, Optional
+from datetime import datetime
+from dataclasses import dataclass, asdict
 
 from dotenv import load_dotenv
 from openai import OpenAI
 load_dotenv()
+
+
+@dataclass
+class Memory:
+    """Represents a single memory item."""
+    title: str
+    content: str
+    creation_time: str
+
+    @classmethod
+    def create(cls, title: str, content: str) -> "Memory":
+        """Create a new memory with current timestamp."""
+        return cls(
+            title=title,
+            content=content,
+            creation_time=datetime.now().isoformat()
+        )
+
+    def to_dict(self) -> Dict[str, str]:
+        """Convert memory to dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, str]) -> "Memory":
+        """Create memory from dictionary."""
+        return cls(**data)
 
 class AgentMemoryV2:
     """
@@ -29,7 +57,7 @@ class AgentMemoryV2:
         self.client = OpenAI()
         self.model = model
         self.storage_file = storage_file
-        self.memories: Dict[str, str] = {}  # title -> content
+        self.memories: Dict[str, Memory] = {}  # title -> Memory object
 
         # Load from file if it exists
         if storage_file and os.path.exists(storage_file):
@@ -46,7 +74,7 @@ class AgentMemoryV2:
             The generated title
         """
         title = self._generate_title(content)
-        self.memories[title] = content
+        self.memories[title] = Memory.create(title=title, content=content)
 
         # Save to file if configured
         if self.storage_file:
@@ -64,7 +92,7 @@ class AgentMemoryV2:
             top_k: Optional limit on number of results to return
 
         Returns:
-            List of dicts with 'title' and 'content' keys
+            List of dicts with 'title', 'content', and 'creation_time' keys
         """
         if not self.memories:
             return []
@@ -75,10 +103,7 @@ class AgentMemoryV2:
         if top_k:
             relevant_titles = relevant_titles[:top_k]
 
-        results = [
-            {"title": title, "content": self.memories[title]}
-            for title in relevant_titles
-        ]
+        results = [self.memories[title].to_dict() for title in relevant_titles]
 
         return results
 
@@ -153,13 +178,15 @@ Titles:
 
     def _save_to_file(self):
         """Save memories to JSON file."""
+        memories_dict = {title: memory.to_dict() for title, memory in self.memories.items()}
         with open(self.storage_file, 'w', encoding='utf-8') as f:
-            json.dump(self.memories, f, indent=2, ensure_ascii=False)
+            json.dump(memories_dict, f, indent=2, ensure_ascii=False)
 
     def _load_from_file(self):
         """Load memories from JSON file."""
         with open(self.storage_file, 'r', encoding='utf-8') as f:
-            self.memories = json.load(f)
+            data = json.load(f)
+            self.memories = {title: Memory.from_dict(mem_data) for title, mem_data in data.items()}
 
     def clear(self):
         """Clear all memories."""
@@ -167,8 +194,8 @@ Titles:
         if self.storage_file and os.path.exists(self.storage_file):
             self._save_to_file()
 
-    def get_all_memories(self) -> Dict[str, str]:
-        """Get all stored memories."""
+    def get_all_memories(self) -> Dict[str, Memory]:
+        """Get all stored memories as Memory objects."""
         return self.memories.copy()
 
     def delete_memory(self, title: str) -> bool:
@@ -207,3 +234,4 @@ if __name__ == "__main__":
     for result in results:
         print(f"\nTitle: {result['title']}")
         print(f"Content: {result['content']}")
+        print(f"Created: {result['creation_time']}")
