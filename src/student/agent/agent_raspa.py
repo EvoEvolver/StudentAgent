@@ -21,6 +21,7 @@ class RaspaAgent(Agent):
     path_add: str
     auto_run: bool
     memory: AgentMemoryV2
+    ask_when_no_memory = False
 
     def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=True):
         if csd_path is not None:
@@ -333,7 +334,7 @@ Format it as a clear, concise paragraph that would be useful for an AI agent to 
                     relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:300]}...\n"
 
                 self.print_progress("memory_retrieved", f"Retrieved {len(memories)} relevant memories")
-            else:
+            elif self.ask_when_no_memory:
                 if self.verbose:
                     print("[RASPA] No relevant memories found, requesting human input...")
 
@@ -476,7 +477,7 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
                         relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:1000]}...\n"
 
                     self.print_progress("memory_for_task", f"Retrieved {len(memories)} memories for task: {next_incomplete_task[:80]}...")
-                else:
+                elif self.ask_when_no_memory:
                     if self.verbose:
                         print("[RASPA] No relevant memories found for next task, requesting human input...")
 
