@@ -1,6 +1,6 @@
 from . import Agent
 from .agent_student import StudentAgent
-from .agent_memory_v2 import AgentMemoryV2
+from .agent_memory_v2 import Memory
 
 from .tools.tools_raspa import ExecuteRaspa, InputFile, OutputExtractor, FrameworkLoader, MoleculeLoader, ReadFile, WriteFile
 from .tools.tools_system import  SystemAgent, ImageQuestionTool, AskHuman, ReportToHuman
@@ -20,7 +20,7 @@ class RaspaAgent(Agent):
     path: str
     path_add: str
     auto_run: bool
-    memory: AgentMemoryV2
+    memory: Memory
     ask_when_no_memory = False
 
     def __init__(self, path="output", version="v1", provider="anthropic", csd_path=None, verbose=True):
@@ -59,8 +59,8 @@ class RaspaAgent(Agent):
         self.reset(path)
 
         # Initialize memory system for storing and retrieving task experiences
-        memory_storage_path = os.path.join(path, "raspa_memory.json")
-        self.memory = AgentMemoryV2(storage_file=memory_storage_path)
+        self.memory_storage_path = os.path.join(path, "raspa_memory.json")
+        self.memory = Memory._load_from_file(self.memory_storage_path)
 
     def add_raspa_prompt(self):
         prompt = self._build_prompt("raspa", "v1")
@@ -331,7 +331,7 @@ Format it as a clear, concise paragraph that would be useful for an AI agent to 
 
                 relevant_memories = "\n\nRelevant Past Experiences:\n"
                 for i, mem in enumerate(memories, 1):
-                    relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:300]}...\n"
+                    relevant_memories += f"\n{i}. {mem.title}\n   {mem.content[:300]}...\n"
 
                 self.print_progress("memory_retrieved", f"Retrieved {len(memories)} relevant memories")
             elif self.ask_when_no_memory:
@@ -474,7 +474,7 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
 
                     relevant_memories = "\n\nRelevant Past Experiences for This Task:\n"
                     for i, mem in enumerate(memories, 1):
-                        relevant_memories += f"\n{i}. {mem['title']}\n   {mem['content'][:1000]}...\n"
+                        relevant_memories += f"\n{i}. {mem.title}\n   {mem.content[:1000]}...\n"
 
                     self.print_progress("memory_for_task", f"Retrieved {len(memories)} memories for task: {next_incomplete_task[:80]}...")
                 elif self.ask_when_no_memory:

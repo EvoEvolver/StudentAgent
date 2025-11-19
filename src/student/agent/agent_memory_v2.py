@@ -33,42 +33,53 @@ class Memory:
         self.content = content
         self.children = children if children is not None else []
 
-    @classmethod
-    def create_terminal(cls, title: str, content: str) -> Memory:
-        """Create a new terminal memory with current timestamp."""
-        return Memory(
-            title=title,
-            content=content,
-        )
-
-    @classmethod
-    def create_composite(cls, title: str, children: List[Memory]) -> Memory:
-        """Create a new composite memory that children other memories."""
-        return cls(
-            title=title,
-            children=children,
-        )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert memory to dictionary."""
+        children_dicts = [child.to_dict() for child in self.children]
         result = {
             "title": self.title,
             "creation_time": self.creation_time,
             "content": self.content,
-            "children": self.children
+            "children": children_dicts
         }
-
         return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Memory:
         """Create memory from dictionary."""
+        children = [cls.from_dict(child_data) for child_data in data.get("children", [])]
         return cls(
             title=data["title"],
-            creation_time=data["creation_time"],
             content=data.get("content"),
-            children=data.get("children", [])
+            children=children,
+            creation_time=data.get("creation_time")
         )
+
+    def _save_to_file(self, storage_file):
+        """Save memories to JSON file."""
+        memories_dict = self.to_dict()
+        with open(storage_file, 'w', encoding='utf-8') as f:
+            json.dump(memories_dict, f, indent=2, ensure_ascii=False)
+
+    @classmethod
+    def _load_from_file(cls, storage_file, create_if_missing=True) -> Memory:
+        """Load memories from JSON file."""
+        if not os.path.exists(storage_file):
+            if create_if_missing:
+                return cls(title="root")
+            else:
+                raise FileNotFoundError(f"Memory storage file not found: {storage_file}")
+        with open(storage_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return cls.from_dict(data)
+
+    def get_children_by_title(self, title: str) -> Optional[Memory]:
+        """Recursively search for a memory by title."""
+        for child in self.children:
+            if child.title == title:
+                return child
+        return None
 
 
     def retrieve(self, query: str, top_k: Optional[int] = None) -> List[Memory]:
@@ -82,7 +93,7 @@ class Memory:
             top_k: Optional limit on number of results to return (applied before resolution)
 
         Returns:
-            List of dicts with 'title', 'content', and 'creation_time' keys (only terminal memories)
+            List of Memory objects (includes both composite and terminal memories)
         """
         if len(self.children) == 0:
             return []
@@ -122,36 +133,42 @@ class Memory:
             The generated title
         """
         title = self._generate_title(content)
-        self.children.append(Memory.create_terminal(title=title, content=content))
-
+        self.children.append(Memory(title=title, content=content))
         return title
+
 
     def learn_composite(self, children: List[str], title: Optional[str] = None) -> str:
         """
-        Learn a composite memory that pairs other memories together.
+        Create a composite memory that groups related memories together.
 
         Args:
-            children: List of memory titles to reference
-            title: Optional custom title. If not provided, will generate one based on referenced memories.
+            children: List of memory titles to include in the composite
+            title: Optional title for the composite memory. If not provided, will be auto-generated.
 
         Returns:
-            The generated or provided title
+            The title of the created composite memory
         """
-        # Validate that all children exist
-        missing_refs = [ref for ref in children if ref not in self.memories]
-        if missing_refs:
-            raise ValueError(f"Referenced memories not found: {missing_refs}")
+        # Find the Memory objects for the given titles
+        child_memories = []
+        for child_title in children:
+            for child in self.children:
+                if child.title == child_title:
+                    child_memories.append(child)
+                    break
 
         # Generate title if not provided
         if title is None:
-            # Create a summary of the referenced memories for title generation
-            ref_titles = [ref for ref in children]
-            summary = "Composite memory of: " + ", ".join(ref_titles[:3])
-            if len(ref_titles) > 3:
-                summary += f" and {len(ref_titles) - 3} more"
-            title = self._generate_title(summary)
+            title = self._generate_composite_title(children)
 
-        self.memories[title] = Memory.create_composite(title=title, children=children)
+        # Create the composite memory
+        composite_memory = Memory(title=title, children=child_memories)
+
+        # Add to children
+        self.children.append(composite_memory)
+
+        # remove the individual memories that are now part of the composite
+        for child_memory in child_memories:
+            self.children.remove(child_memory)
 
         return title
 
@@ -181,7 +198,7 @@ Content:
         # Handle duplicate titles by appending a number
         original_title = title
         counter = 1
-        while title in self.memories:
+        while any(child.title == title for child in self.children):
             title = f"{original_title} ({counter})"
             counter += 1
 
@@ -252,23 +269,13 @@ Return ONLY the title, nothing else."""
         # Handle duplicate titles by appending a number
         original_title = title
         counter = 1
-        while title in self.memories:
+        while any(child.title == title for child in self.children):
             title = f"{original_title} ({counter})"
             counter += 1
 
         return title
 
-    def _save_to_file(self):
-        """Save memories to JSON file."""
-        memories_dict = {title: memory.to_dict() for title, memory in self.memories.items()}
-        with open(self.storage_file, 'w', encoding='utf-8') as f:
-            json.dump(memories_dict, f, indent=2, ensure_ascii=False)
 
-    def _load_from_file(self):
-        """Load memories from JSON file."""
-        with open(self.storage_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            self.memories = {title: Memory.from_dict(mem_data) for title, mem_data in data.items()}
 
     def check_similar_memories(self) -> List[Dict[str, Any]]:
         """
@@ -280,24 +287,25 @@ Return ONLY the title, nothing else."""
             - "description": Description of what makes these memories similar
             - "memory_titles": List of memory titles in this pair
         """
-        if not self.memories:
+        if len(self.children) == 0:
             return []
 
         # Prepare memory list for LLM
         memory_list = []
-        for idx, (title, memory) in enumerate(self.memories.items(), 1):
+        for idx, memory in enumerate(self.children, 1):
             if len(memory.children) == 0:
+                content = memory.content or ""
                 memory_list.append({
                     "index": idx,
-                    "title": title,
-                    "content": memory.content[:200] + "..." if len(memory.content) > 200 else memory.content
+                    "title": memory.title,
+                    "content": content[:200] + "..." if len(content) > 200 else content
                 })
             else:
                 memory_list.append({
                     "index": idx,
-                    "title": title,
+                    "title": memory.title,
                     "type": "composite",
-                    "children": memory.children
+                    "children": [child.title for child in memory.children]
                 })
 
         memories_text = json.dumps(memory_list, indent=2, ensure_ascii=False)
@@ -344,7 +352,7 @@ Return ONLY the JSON array, no other text."""
                 pairs = []
 
             # Convert memory indices back to titles
-            idx_to_title = {idx: title for idx, title in enumerate(self.memories.keys(), 1)}
+            idx_to_title = {idx: child.title for idx, child in enumerate(self.children, 1)}
 
             formatted_pairs = []
             for pair in pairs:
@@ -364,29 +372,6 @@ Return ONLY the JSON array, no other text."""
             print(f"Error parsing LLM response: {e}")
             return []
 
-    def clear(self):
-        """Clear all memories."""
-        self.memories.clear()
-        if self.storage_file and os.path.exists(self.storage_file):
-            self._save_to_file()
-
-    def get_all_memories(self) -> Dict[str, Memory]:
-        """Get all stored memories as Memory objects."""
-        return self.memories.copy()
-
-    def delete_memory(self, title: str) -> bool:
-        """
-        Delete a specific memory by title.
-
-        Returns:
-            True if deleted, False if title not found
-        """
-        if title in self.memories:
-            del self.memories[title]
-            if self.storage_file:
-                self._save_to_file()
-            return True
-        return False
 
 
 def _filter_relevant_titles(query: str, titles: List[str]) -> List[str]:
@@ -430,45 +415,43 @@ Titles:
 
 
 if __name__ == "__main__":
-    # Example usage
-    memory = AgentMemoryV2(storage_file="memory_storage.mem.json")
+    if os.path.exists("memories.json"):
+        memory = Memory._load_from_file("memories.json")
+    else:
+        # Example usage
+        memory = Memory("root")
 
-    res = memory.check_similar_memories()
-    print(res)
+        # Learn some terminal memories
+        print("Learning terminal memories...")
+        title1 = memory.learn("Python is a high-level programming language known for its simplicity and readability.")
+        print(f"Stored terminal memory: {title1}")
 
-if __name__ == "__main__1":
-    # Example usage
-    memory = AgentMemoryV2(storage_file="memory_storage.mem.json")
+        title2 = memory.learn("Machine learning is a subset of AI that enables systems to learn from data.")
+        print(f"Stored terminal memory: {title2}")
 
-    # Learn some terminal memories
-    print("Learning terminal memories...")
-    title1 = memory.learn("Python is a high-level programming language known for its simplicity and readability.")
-    print(f"Stored terminal memory: {title1}")
+        title3 = memory.learn("Neural networks are computing systems inspired by biological neural networks.")
+        print(f"Stored terminal memory: {title3}")
 
-    title2 = memory.learn("Machine learning is a subset of AI that enables systems to learn from data.")
-    print(f"Stored terminal memory: {title2}")
+        title4 = memory.learn("The Eiffel Tower is located in Paris, France and was completed in 1889.")
+        print(f"Stored terminal memory: {title4}")
 
-    title3 = memory.learn("Neural networks are computing systems inspired by biological neural networks.")
-    print(f"Stored terminal memory: {title3}")
+        # Create a composite memory that pairs related memories
+        print("\nCreating composite memory...")
+        composite_title = memory.learn_composite(
+            children=[title2, title3],
+            title="AI and Machine Learning Concepts"
+        )
+        print(f"Stored composite memory: {composite_title}")
 
-    title4 = memory.learn("The Eiffel Tower is located in Paris, France and was completed in 1889.")
-    print(f"Stored terminal memory: {title4}")
-
-    # Create a composite memory that pairs related memories
-    print("\nCreating composite memory...")
-    composite_title = memory.learn_composite(
-        children=[title2, title3],
-        title="AI and Machine Learning Concepts"
-    )
-    print(f"Stored composite memory: {composite_title}")
+        memory._save_to_file("memories.json")
+        print("\nMemories saved to 'memories.json'.")
 
     # Retrieve information - composite memories are automatically resolved
     print("\nRetrieving information about AI (will resolve composite memory)...")
     results = memory.retrieve("Tell me about AI and machine learning")
     for result in results:
-        print(f"\nTitle: {result['title']}")
-        print(f"Content: {result['content']}")
-        print(f"Created: {result['creation_time']}")
+        print(f"\nTitle: {result.title}")
+        print(f"Content: {result.content if result.content else '[Composite Memory]'}")
 
     print("\n" + "=" * 50)
     print("Note: The composite memory was automatically resolved to terminal memories!")
