@@ -121,7 +121,7 @@ class AgentMemoryV2:
 
     def learn_composite(self, references: List[str], title: Optional[str] = None) -> str:
         """
-        Learn a composite memory that groups other memories together.
+        Learn a composite memory that pairs other memories together.
 
         Args:
             references: List of memory titles to reference
@@ -302,6 +302,99 @@ Titles:
             data = json.load(f)
             self.memories = {title: Memory.from_dict(mem_data) for title, mem_data in data.items()}
 
+    def check_similar_memories(self) -> List[Dict[str, Any]]:
+        """
+        Analyze all memories and identify pairs of similar memories using LLM.
+
+        Returns:
+            List of similarity pairs, where each pair is a dict with:
+            - "pair_id": Unique identifier for the pair
+            - "description": Description of what makes these memories similar
+            - "memory_titles": List of memory titles in this pair
+        """
+        if not self.memories:
+            return []
+
+        # Prepare memory list for LLM
+        memory_list = []
+        for idx, (title, memory) in enumerate(self.memories.items(), 1):
+            if memory.memory_type == MemoryType.TERMINAL:
+                memory_list.append({
+                    "index": idx,
+                    "title": title,
+                    "content": memory.content[:200] + "..." if len(memory.content) > 200 else memory.content
+                })
+            else:
+                memory_list.append({
+                    "index": idx,
+                    "title": title,
+                    "type": "composite",
+                    "references": memory.references
+                })
+
+        memories_text = json.dumps(memory_list, indent=2, ensure_ascii=False)
+
+        prompt = f"""Analyze the following memories and identify pairs of similar or related memories.
+Group memories should share common themes, topics, or concepts.
+
+Memories:
+{memories_text}
+
+Return your response as a JSON array of pairs from the most similar to less similar pairs. 
+Return at most 3 pairs.
+Each pair should have:
+- "pair_id": A number starting from 1
+- "description": A brief description of what makes these memories similar
+- "memory_indices": An array of memory indices that belong to this pair
+
+If a memory doesn't fit into any pair, you can omit it or create a single-item pair if it's important.
+
+Return ONLY the JSON array, no other text."""
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that analyzes and pairs similar information. Always respond with valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+
+        result_text = response.choices[0].message.content.strip()
+
+        try:
+            # Parse the JSON response
+            result_data = json.loads(result_text)
+
+            # Handle both {"pairs": [...]} and direct array formats
+            if isinstance(result_data, dict) and "pairs" in result_data:
+                pairs = result_data["pairs"]
+            elif isinstance(result_data, list):
+                pairs = result_data
+            else:
+                pairs = []
+
+            # Convert memory indices back to titles
+            idx_to_title = {idx: title for idx, title in enumerate(self.memories.keys(), 1)}
+
+            formatted_pairs = []
+            for pair in pairs:
+                memory_indices = pair.get("memory_indices", [])
+                memory_titles = [idx_to_title[idx] for idx in memory_indices if idx in idx_to_title]
+
+                formatted_pairs.append({
+                    "pair_id": pair.get("pair_id", 0),
+                    "description": pair.get("description", ""),
+                    "memory_titles": memory_titles
+                })
+
+            return formatted_pairs
+
+        except (json.JSONDecodeError, KeyError) as e:
+            # If parsing fails, return empty list
+            print(f"Error parsing LLM response: {e}")
+            return []
+
     def clear(self):
         """Clear all memories."""
         self.memories.clear()
@@ -326,8 +419,15 @@ Titles:
             return True
         return False
 
-
 if __name__ == "__main__":
+    # Example usage
+    memory = AgentMemoryV2(storage_file="memory_storage.mem.json")
+
+    res = memory.check_similar_memories()
+    print(res)
+
+
+if __name__ == "__main__1":
     # Example usage
     memory = AgentMemoryV2(storage_file="memory_storage.mem.json")
 
@@ -345,7 +445,7 @@ if __name__ == "__main__":
     title4 = memory.learn("The Eiffel Tower is located in Paris, France and was completed in 1889.")
     print(f"Stored terminal memory: {title4}")
 
-    # Create a composite memory that groups related memories
+    # Create a composite memory that pairs related memories
     print("\nCreating composite memory...")
     composite_title = memory.learn_composite(
         references=[title2, title3],
@@ -363,3 +463,12 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 50)
     print("Note: The composite memory was automatically resolved to terminal memories!")
+
+    # Check for similar memories
+    print("\n" + "=" * 50)
+    print("Checking for similar memories...")
+    similar_pairs = memory.check_similar_memories()
+    print(f"\nFound {len(similar_pairs)} pairs of similar memories:")
+    for pair in similar_pairs:
+        print(f"\nGroup {pair['pair_id']}: {pair['description']}")
+        print(f"  Memories: {', '.join(pair['memory_titles'])}")
