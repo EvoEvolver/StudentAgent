@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import json
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
 from typing import List, Dict, Optional, Any
 
 from dotenv import load_dotenv
@@ -11,148 +12,66 @@ from openai import OpenAI
 load_dotenv()
 
 
-class MemoryType(Enum):
-    """Type of memory item."""
-    TERMINAL = "terminal"  # Contains actual content
-    COMPOSITE = "composite"  # Contains references to other memories
+LLM_MODEL: str = "gpt-5-nano"
 
-
-@dataclass
 class Memory:
     """Represents a single memory item."""
     title: str
-    memory_type: MemoryType
     creation_time: str
     content: Optional[str] = None  # Only for terminal memories
-    references: List[str] = field(default_factory=list)  # Only for composite memories
+    children: List[Memory] = field(default_factory=list)  # Only for composite memories
+    
+    def __init__(
+            self,
+            title: str,
+            content: Optional[str] = None,
+            children: Optional[List[Memory]] = None,
+            creation_time: Optional[str] = None
+    ):
+        self.title = title
+        self.creation_time = creation_time if creation_time is not None else datetime.now().isoformat()
+        self.content = content
+        self.children = children if children is not None else []
 
     @classmethod
-    def create_terminal(cls, title: str, content: str) -> "Memory":
+    def create_terminal(cls, title: str, content: str) -> Memory:
         """Create a new terminal memory with current timestamp."""
-        return cls(
+        return Memory(
             title=title,
-            memory_type=MemoryType.TERMINAL,
             content=content,
-            creation_time=datetime.now().isoformat()
         )
 
     @classmethod
-    def create_composite(cls, title: str, references: List[str]) -> "Memory":
-        """Create a new composite memory that references other memories."""
+    def create_composite(cls, title: str, children: List[Memory]) -> Memory:
+        """Create a new composite memory that children other memories."""
         return cls(
             title=title,
-            memory_type=MemoryType.COMPOSITE,
-            references=references,
-            creation_time=datetime.now().isoformat()
+            children=children,
         )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert memory to dictionary."""
         result = {
             "title": self.title,
-            "memory_type": self.memory_type.value,
-            "creation_time": self.creation_time
+            "creation_time": self.creation_time,
+            "content": self.content,
+            "children": self.children
         }
-        if self.memory_type == MemoryType.TERMINAL:
-            result["content"] = self.content
-        else:
-            result["references"] = self.references
+
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Memory":
+    def from_dict(cls, data: Dict[str, Any]) -> Memory:
         """Create memory from dictionary."""
-        memory_type = MemoryType(data["memory_type"])
         return cls(
             title=data["title"],
-            memory_type=memory_type,
             creation_time=data["creation_time"],
             content=data.get("content"),
-            references=data.get("references", [])
+            children=data.get("children", [])
         )
 
 
-class AgentMemoryV2:
-    """
-    Agent memory system that stores information as title-content pairs.
-    Uses OpenAI LLM to generate titles when learning and filter relevant titles when retrieving.
-    """
-
-    def __init__(
-            self,
-            model: str = "gpt-5-nano",
-            storage_file: Optional[str] = None
-    ):
-        """
-        Initialize the memory system.
-
-        Args:
-            api_key: OpenAI API key (if None, will use OPENAI_API_KEY env var)
-            model: OpenAI model to use for title generation and filtering
-            storage_file: Optional path to JSON file for persistent storage
-        """
-        self.client = OpenAI()
-        self.model = model
-        self.storage_file = storage_file
-        self.memories: Dict[str, Memory] = {}  # title -> Memory object
-
-        # Load from file if it exists
-        if storage_file and os.path.exists(storage_file):
-            self._load_from_file()
-
-    def learn(self, content: str) -> str:
-        """
-        Learn new information by generating a title and storing the content as a terminal memory.
-
-        Args:
-            content: The content to store
-
-        Returns:
-            The generated title
-        """
-        title = self._generate_title(content)
-        self.memories[title] = Memory.create_terminal(title=title, content=content)
-
-        # Save to file if configured
-        if self.storage_file:
-            self._save_to_file()
-
-        return title
-
-    def learn_composite(self, references: List[str], title: Optional[str] = None) -> str:
-        """
-        Learn a composite memory that pairs other memories together.
-
-        Args:
-            references: List of memory titles to reference
-            title: Optional custom title. If not provided, will generate one based on referenced memories.
-
-        Returns:
-            The generated or provided title
-        """
-        # Validate that all references exist
-        missing_refs = [ref for ref in references if ref not in self.memories]
-        if missing_refs:
-            raise ValueError(f"Referenced memories not found: {missing_refs}")
-
-        # Generate title if not provided
-        if title is None:
-            # Create a summary of the referenced memories for title generation
-            ref_titles = [ref for ref in references]
-            summary = "Composite memory of: " + ", ".join(ref_titles[:3])
-            if len(ref_titles) > 3:
-                summary += f" and {len(ref_titles) - 3} more"
-            title = self._generate_title(summary)
-
-        self.memories[title] = Memory.create_composite(title=title, references=references)
-
-        # Save to file if configured
-        if self.storage_file:
-            self._save_to_file()
-
-        return title
-
-    def retrieve(self, query: str, top_k: Optional[int] = None) -> List[Dict[str, Any]]:
+    def retrieve(self, query: str, top_k: Optional[int] = None) -> List[Memory]:
         """
         Retrieve relevant memories based on a query.
         Uses LLM to filter titles and return matching contents.
@@ -165,61 +84,78 @@ class AgentMemoryV2:
         Returns:
             List of dicts with 'title', 'content', and 'creation_time' keys (only terminal memories)
         """
-        if not self.memories:
+        if len(self.children) == 0:
             return []
 
-        relevant_titles = self._filter_relevant_titles(query, list(self.memories.keys()))
+        relevant_titles = _filter_relevant_titles(query, [mem.title for mem in self.children])
 
         # Apply top_k limit if specified (before resolution)
         if top_k:
             relevant_titles = relevant_titles[:top_k]
 
-        # Recursively resolve composite memories to get only terminal memories
-        terminal_memories = self._resolve_to_terminal(relevant_titles)
+        relevant_memories = []
+        for title in relevant_titles:
+            for mem in self.children:
+                if mem.title == title:
+                    relevant_memories.append(mem)
+                    break
 
-        # Convert to dict format
-        results = [memory.to_dict() for memory in terminal_memories]
+        results = []
+        for mem in relevant_memories:
+            results.append(mem)
+            if len(mem.children) > 0:
+                # Composite memory - resolve recursively
+                resolved = mem.retrieve(query)
+                results.extend(resolved)
 
         return results
 
-    def _resolve_to_terminal(self, titles: List[str]) -> List[Memory]:
+
+    def learn(self, content: str) -> str:
         """
-        Recursively resolve a list of memory titles to terminal memories only.
+        Learn new information by generating a title and storing the content as a terminal memory.
 
         Args:
-            titles: List of memory titles to resolve
+            content: The content to store
 
         Returns:
-            List of terminal Memory objects
+            The generated title
         """
-        terminal_memories = []
-        visited = set()  # Track visited titles to avoid infinite loops
+        title = self._generate_title(content)
+        self.children.append(Memory.create_terminal(title=title, content=content))
 
-        def resolve_recursive(title: str):
-            # Avoid infinite loops
-            if title in visited:
-                return
-            visited.add(title)
+        return title
 
-            # Check if memory exists
-            if title not in self.memories:
-                return
+    def learn_composite(self, children: List[str], title: Optional[str] = None) -> str:
+        """
+        Learn a composite memory that pairs other memories together.
 
-            memory = self.memories[title]
+        Args:
+            children: List of memory titles to reference
+            title: Optional custom title. If not provided, will generate one based on referenced memories.
 
-            if memory.memory_type == MemoryType.TERMINAL:
-                # Add terminal memory to results
-                terminal_memories.append(memory)
-            elif memory.memory_type == MemoryType.COMPOSITE:
-                # Recursively resolve referenced memories
-                for ref_title in memory.references:
-                    resolve_recursive(ref_title)
+        Returns:
+            The generated or provided title
+        """
+        # Validate that all children exist
+        missing_refs = [ref for ref in children if ref not in self.memories]
+        if missing_refs:
+            raise ValueError(f"Referenced memories not found: {missing_refs}")
 
-        # Resolve each title
-        for title in titles:
-            resolve_recursive(title)
+        # Generate title if not provided
+        if title is None:
+            # Create a summary of the referenced memories for title generation
+            ref_titles = [ref for ref in children]
+            summary = "Composite memory of: " + ", ".join(ref_titles[:3])
+            if len(ref_titles) > 3:
+                summary += f" and {len(ref_titles) - 3} more"
+            title = self._generate_title(summary)
 
-        return terminal_memories
+        self.memories[title] = Memory.create_composite(title=title, children=children)
+
+        return title
+
+   
 
     def _generate_title(self, content: str) -> str:
         """
@@ -232,8 +168,8 @@ Only return the title, nothing else.
 Content:
 {content}"""
 
-        response = self.client.chat.completions.create(
-            model=self.model,
+        response = OpenAI().chat.completions.create(
+            model=LLM_MODEL,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that creates concise titles."},
                 {"role": "user", "content": prompt}
@@ -251,44 +187,76 @@ Content:
 
         return title
 
-    def _filter_relevant_titles(self, query: str, titles: List[str]) -> List[str]:
+
+    def _merge_contents(self, content1: str, content2: str) -> str:
         """
-        Use LLM to filter and rank titles by relevance to the query.
+        Use LLM to merge two memory contents into a single coherent content.
+
+        Args:
+            content1: First memory content
+            content2: Second memory content
+
+        Returns:
+            Merged content
         """
-        titles_text = "\n".join([f"{i + 1}. {title}" for i, title in enumerate(titles)])
+        prompt = f"""Merge the following two pieces of information into a single coherent text.
+Preserve all important details from both pieces while eliminating redundancy.
+Keep the merged content concise and well-organized.
 
-        prompt = f"""Given the following query and list of titles, select the titles that are relevant to the query.
-Return ONLY the numbers of the relevant titles, ranked by relevance (most relevant first).
-Format: comma-separated numbers (e.g., "3,1,7")
-If no titles are relevant, return "NONE".
+Content 1:
+{content1}
 
-Query: {query}
+Content 2:
+{content2}
 
-Titles:
-{titles_text}"""
+Return ONLY the merged content, nothing else."""
 
-        response = self.client.chat.completions.create(
-            model=self.model,
+        response = OpenAI().chat.completions.create(
+            model=LLM_MODEL,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that filters information by relevance."},
+                {"role": "system", "content": "You are a helpful assistant that merges information efficiently."},
                 {"role": "user", "content": prompt}
             ]
         )
 
-        result = response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip()
 
-        if result == "NONE":
-            return []
+    def _generate_composite_title(self, referenced_titles: List[str]) -> str:
+        """
+        Use LLM to generate a title for a composite memory based on referenced memory titles.
 
-        try:
-            # Parse the returned indices
-            indices = [int(x.strip()) - 1 for x in result.split(",")]
-            # Validate indices and return corresponding titles
-            relevant_titles = [titles[i] for i in indices if 0 <= i < len(titles)]
-            return relevant_titles
-        except (ValueError, IndexError):
-            # If parsing fails, return empty list
-            return []
+        Args:
+            referenced_titles: List of memory titles being referenced
+
+        Returns:
+            Generated title for the composite memory
+        """
+        titles_text = "\n".join([f"- {title}" for title in referenced_titles])
+
+        prompt = f"""Generate a concise, descriptive title (max 10 words) that captures the common theme or topic of these related memories:
+
+{titles_text}
+
+Return ONLY the title, nothing else."""
+
+        response = OpenAI().chat.completions.create(
+            model=LLM_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that creates concise titles."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        title = response.choices[0].message.content.strip()
+
+        # Handle duplicate titles by appending a number
+        original_title = title
+        counter = 1
+        while title in self.memories:
+            title = f"{original_title} ({counter})"
+            counter += 1
+
+        return title
 
     def _save_to_file(self):
         """Save memories to JSON file."""
@@ -318,7 +286,7 @@ Titles:
         # Prepare memory list for LLM
         memory_list = []
         for idx, (title, memory) in enumerate(self.memories.items(), 1):
-            if memory.memory_type == MemoryType.TERMINAL:
+            if len(memory.children) == 0:
                 memory_list.append({
                     "index": idx,
                     "title": title,
@@ -329,7 +297,7 @@ Titles:
                     "index": idx,
                     "title": title,
                     "type": "composite",
-                    "references": memory.references
+                    "children": memory.children
                 })
 
         memories_text = json.dumps(memory_list, indent=2, ensure_ascii=False)
@@ -351,10 +319,11 @@ If a memory doesn't fit into any pair, you can omit it or create a single-item p
 
 Return ONLY the JSON array, no other text."""
 
-        response = self.client.chat.completions.create(
-            model=self.model,
+        response = OpenAI().chat.completions.create(
+            model=LLM_MODEL,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that analyzes and pairs similar information. Always respond with valid JSON."},
+                {"role": "system",
+                 "content": "You are a helpful assistant that analyzes and pairs similar information. Always respond with valid JSON."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
@@ -419,13 +388,53 @@ Return ONLY the JSON array, no other text."""
             return True
         return False
 
+
+def _filter_relevant_titles(query: str, titles: List[str]) -> List[str]:
+    """
+    Use LLM to filter and rank titles by relevance to the query.
+    """
+    titles_text = "\n".join([f"{i + 1}. {title}" for i, title in enumerate(titles)])
+
+    prompt = f"""Given the following query and list of titles, select the titles that are relevant to the query.
+Return ONLY the numbers of the relevant titles, ranked by relevance (most relevant first).
+Format: comma-separated numbers (e.g., "3,1,7")
+If no titles are relevant, return "NONE".
+
+Query: {query}
+
+Titles:
+{titles_text}"""
+
+    response = OpenAI().chat.completions.create(
+        model=LLM_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that filters information by relevance."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    result = response.choices[0].message.content.strip()
+
+    if result == "NONE":
+        return []
+
+    try:
+        # Parse the returned indices
+        indices = [int(x.strip()) - 1 for x in result.split(",")]
+        # Validate indices and return corresponding titles
+        relevant_titles = [titles[i] for i in indices if 0 <= i < len(titles)]
+        return relevant_titles
+    except (ValueError, IndexError):
+        # If parsing fails, return empty list
+        return []
+
+
 if __name__ == "__main__":
     # Example usage
     memory = AgentMemoryV2(storage_file="memory_storage.mem.json")
 
     res = memory.check_similar_memories()
     print(res)
-
 
 if __name__ == "__main__1":
     # Example usage
@@ -448,7 +457,7 @@ if __name__ == "__main__1":
     # Create a composite memory that pairs related memories
     print("\nCreating composite memory...")
     composite_title = memory.learn_composite(
-        references=[title2, title3],
+        children=[title2, title3],
         title="AI and Machine Learning Concepts"
     )
     print(f"Stored composite memory: {composite_title}")
