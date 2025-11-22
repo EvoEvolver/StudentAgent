@@ -19,7 +19,7 @@ from .tools import RaspaTool
 
 class MoleculeLoader(MoleculeLoaderTrappe):
     def __init__(self, path=None):
-        name = "Molecule loader"
+        name = "molecule_loader"
         description = """Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files.
 Accepts common molecule names and chemical formulas such as:
 - Simple formulas: CO2, N2, O2, CH4, H2O, NH3, Ar, Kr, Xe, He
@@ -33,8 +33,10 @@ The tool will automatically map common abbreviations to their proper names."""
         # IMPORTANT: Map to names that work with BOTH:
         # 1. TraPPE fuzzy search (can match "CO2" to "carbon dioxide")
         # 2. PubChem API (recognizes chemical formulas, NOT "carbon_dioxide" with underscore)
-        self.name_mappings = {
-            # Small molecules - use formulas PubChem recognizes
+        self.name_mappings = {}  # {
+        # Small molecules - use formulas PubChem recognizes
+
+        {
             "co2": "CO2",
             "co₂": "CO2",
             "carbon_dioxide": "CO2",
@@ -202,7 +204,7 @@ Using 1-based indexing will cause "system number is incorrect" errors!"""
 
 class ExecuteRaspa(RaspaTool):
     def __init__(self, agent, path=None):
-        name = "execute raspa"
+        name = "execute_raspa"
         description = """Use this to start a RASPA simulation. The output indicates the success of the simulation."""
         super().__init__(name, description, path)
         self.agent = agent
@@ -257,7 +259,7 @@ class ExecuteRaspa(RaspaTool):
 class CoreMofLoader(RaspaTool):
 
     def __init__(self, path=None):
-        name = "framework loader"
+        name = "framework_loader"
         description = """Load the framework (MOF) file using coremof."""
         super().__init__(name, description, path)
         self.has_file = False
@@ -596,7 +598,7 @@ Here is the parsed output data from a RASPA simulation in JSON format:
 <output>
 {out}
 </output>\n
-Please answer the query based on this data.
+Please answer the query based on this data. Provide only the specific information requested, without additional explanation.
 <query>
 {query}
 </query>
@@ -612,7 +614,7 @@ Please answer the query based on this data.
 class FrameworkLoader(RaspaTool):
 
     def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff=14.0):
-        name = "framework loader"
+        name = "framework_loader"
         description = """Load a framework file as framework.cif"""
         super().__init__(name, description, path)
         self.has_file = False
