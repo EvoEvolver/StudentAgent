@@ -1,10 +1,10 @@
 SimulationType                [simulation type]   # MonteCarlo or MolecularDynamics
-NumberOfCycles                [int]
-NumberOfInitializationCycles  [int]
+NumberOfCycles                [int] # The number of cycles for the production run.
+NumberOfInitializationCycles  [int] # The number of cycles used to initialize the system to equilibrate the positions of the atoms in the system.
 PrintEvery                    [int]
 
-Forcefield                    local               # ALWAYS local
-CutOff                        14.0                # ALWAYS this value
+Forcefield                    local
+CutOff                        14.0
 RemoveAtomNumberCodeFromLabel yes
 
 ...                                                # Optional: Add here if properties should be computed
@@ -20,18 +20,18 @@ ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
 Framework [int]                                    # IMPORTANT: System numbering is 0-based (always use 0 for first system)
 FrameworkName framework                            # same as framework.cif file
 UnitCells [int] [int] [int]                        # number of unit cells in each dimension (must be twice the CutOff), calcuated automatically when generating a framework.cif with the tool
-HeliumVoidFraction [real]                          # calculate in a separate simulation before!
+HeliumVoidFraction [real]                          # has to be obtained from a separate simulation (essential to compute excess-adsorption)
 ExternalTemperature [real]                         # in Kelvin
 ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
 ...
 ]
 
 Component 0 MoleculeName       [molecule name]     # IMPORTANT: same as the file name of [molecule name].def
-            MoleculeDefinition  local              # always 
-            ...                                    # other component information (e.g. Monte Carlo moves)
+            MoleculeDefinition  local
+            ...                                    # Monte Carlo move probabilities or properties
 
 [
 Component 1 MoleculeName        [molecule name]    # Optional: second component (use 1 for second component)
-            ...
+            MolFraction [real]                     # For multiple components, specify mol fraction (0 to 1) for all components
 ]
-                                                # always empty line in the end!
+# always empty line in the end!

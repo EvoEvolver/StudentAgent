@@ -1,0 +1,49 @@
+SimulationType                [simulation type]   # MonteCarlo or MolecularDynamics
+NumberOfCycles                [int] # The number of cycles for the production run.
+NumberOfInitializationCycles  [int] # The number of cycles used to initialize the system to equilibrate the positions of the atoms in the system.
+PrintEvery                    [int]
+
+Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
+
+...                                                # Optional: Add here if properties should be computed
+# The square brackets respresent that this is optional! They have to be removed in a real setting!
+[                                                  # Optional: box specifications (NEVER use a .cif file for a box!)
+Box [int]                                          # IMPORTANT: System numbering is 0-based (always use 0 for first system)
+BoxLengths [real] [real] [real]                    # in Angström (MUST BE twice the CutOff)
+ExternalTemperature [real]                         # in Kelvin
+ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
+]
+
+[                                                  # Optional: framework specifications
+Framework [int]                                    # IMPORTANT: System numbering is 0-based (always use 0 for first system)
+FrameworkName framework                            # same as framework.cif file
+UnitCells [int] [int] [int]                        # number of unit cells in each dimension (must be twice the CutOff), calcuated automatically when generating a framework.cif with the tool
+HeliumVoidFraction [real]                          # has to be obtained from a separate simulation (essential to compute excess-adsorption)
+ExternalTemperature [real]                         # in Kelvin
+ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
+...
+]
+
+Component 0 MoleculeName        [molecule name]    # IMPORTANT: same as the file name of [molecule name].def
+            MoleculeDefinition  local
+            MolFraction         [real]
+            IdealGasRosenbluthWeight [real]        # The ideal Rosenbluth weight is the growth factor of the CBMC algorithm for a single chain in an empty box. The value only depends on temperature and therefore needs to be computed only once. For adsorption, specifying the value in advance is convenient because the applied pressure does not need to be corrected afterwards (the Rosenbluth weight corresponds to a shift in the chemical potential reference value, and the chemical potential is directly obtained from the fugacity). For equimolar mixtures this is essential.
+            CreateNumberOfMolecules [int]          # The number of molecule to create for the current component. Note these molecules are \emph{in addition} to anything read in by using a restart-file. Usually, when the restart-file is used the amount here should be put back to zero. A warning, putting this value unreasonably high results in an infinite loop. The routine accepts molecules that are grown causing no overlap (energy smaller than `EnergyOverlapCriteria'). Also the initial starting configurations are far from optimal and substantial equilibration is needed to reduce the energy. However, the CBMC growth is able to reach very high densities.
+            [ # definition of monte carlo moves: all values are relative probabilities to attampt a corresponding move for the current component.
+            TranslationProbability [real]          # A random displacement is chosen in the allowed directions. Note that the internal configuration of the molecule is unchanged by this move. The maximum displacement is scaled during the simulation to achieve an acceptance ratio of 50\%.
+            RotationProbability [real]             # The rotation is around the starting bead. A random vector on a sphere is generated, and the rotation is random around this vector.
+            ReinsertionProbability [real]          # Multiple first beads are chosen, and one of these is selected according to its Boltzmann weight. The remaining part of the molecule is grown using biasing. This move is very useful, and often necessary, to change the internal configuration of flexible molecules.
+            PartialReinsertionProbability [real]   # Part of the molecule is regrown, while part of the molecule can remain fixed. The list of partial reinsertion moves is specified in the `molecule.def' file.
+            SwapProbability [real]                 # Whether to insert or delete is decided randomly with a probability of 50\% for each. The swap move imposes a chemical equilibrium between the system and an imaginary particle reservoir for the current component. The move starts with multiple first bead, and grows the remainder of the molecule using biasing.
+            WidomProbability [real]                # The Widom particle insertion moves measure the chemical potential and can be directly related to Henry coefficients and heats of adsorption.
+            ]
+[
+Component 1 MoleculeName        [molecule name]    # Optional: additional component (use 1 for second component). The parameters below have to be specified under Component 0 too!
+            MolFraction [real]                     # Mol fraction of each component
+            IdentityChangeProbability [real]       # The relative probability to attempt an identity-change move for the current component. A molecule of type $A$ is reinsertion, in the same place as the starting bead of $A$, as type $B$ using the starting bead of component $B$. The $A-B$ list is defined using `IdentityChangesList' defining $B$ for each component $A$, i.e. the current component can be reinserted into any component defined in the `IdentityChangesList' list, and from that list the component is chosen randomly.
+                NumberOfIdentityChanges [int]      # The number of `IdentityChangesList' elements for the current component.
+                IdentityChangesList [list-of-int]  # The list of components that the current component can be changed into. The identity-change move will randomly choose the new component from this list.
+]
+# always empty line in the end!
