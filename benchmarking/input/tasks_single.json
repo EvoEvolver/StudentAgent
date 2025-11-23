@@ -1,57 +1,57 @@
 {
-    "hvf___x": [
-        "Calculate the helium void fraction of IRMOF-13",
-        "Calculate the helium void fraction of MFI_SI",
-        "Calculate the helium void fraction of MIL-47"
+    "total___l": [
+        "Calculate the total energy of n-hexane in the gas phase to determine the internal energy at 1 bar and at 300 K",
+        "Calculate the total energy of n-pentane in the gas phase to determine the internal energy at 1 bar and at 300 K",
+        "Calculate the total energy of n-heptane in the gas phase to determine the internal energy at 1 bar and at 300 K"
     ],
-    "surface___x": [
-        "Determine the surface area of IRMOF-13",
-        "Determine the surface area of MFI_SI",
-        "Determine the surface area of MIL-47"
+    "hvf___x": [
+        "Calculate the helium void fraction of IRMOF-13 at 300 K",
+        "Calculate the helium void fraction of MFI_SI at 300 K",
+        "Calculate the helium void fraction of MIL-47 at 300 K"
     ],
     "rosenbluth___l": [
-        "Calculate the ideal Rosenbluth weights for n-hexane",
-        "Calculate the ideal Rosenbluth weights for n-pentane",
-        "Calculate the ideal Rosenbluth weights for n-heptane"
+        "Calculate the ideal Rosenbluth weights for n-hexane at 300 K",
+        "Calculate the ideal Rosenbluth weights for n-pentane at 300 K",
+        "Calculate the ideal Rosenbluth weights for n-heptane at 300 K"
     ],
     "henry___s": [
-        "Determine the henry coefficient of carbon dioxide on IRMOF-13",
-        "Determine the henry coefficient of nitrogen on MFI_SI",
-        "Determine the henry coefficient of ethane on MIL-47"
+        "Determine the henry coefficient of carbon dioxide on IRMOF-13 at 300 K",
+        "Determine the henry coefficient of nitrogen on MFI_SI at 300 K",
+        "Determine the henry coefficient of ethane on MIL-47 at 300 K"
     ],
     "henry___l": [
-        "Determine the henry coefficient of n-hexane on IRMOF-13 given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
-        "Determine the henry coefficient of n-pentane on MFI_SI given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
-        "Determine the henry coefficient of n-heptane on MIL-47 given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
+        "Determine the henry coefficient of n-hexane on IRMOF-13 at 300 K given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
+        "Determine the henry coefficient of n-pentane on MFI_SI at 300 K given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
+        "Determine the henry coefficient of n-heptane on MIL-47 at 300 K given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
     ],
     "henry___sl": [
-        "Determine the henry coefficient of carbon dioxide and n-hexane on IRMOF-13 given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
-        "Determine the henry coefficient of nitrogen and n-pentane on MFI_SI given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
-        "Determine the henry coefficient of ethane and n-heptane on MIL-47 given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
+        "Determine the henry coefficient of carbon dioxide and n-hexane on IRMOF-13 at 300 K given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
+        "Determine the henry coefficient of nitrogen and n-pentane on MFI_SI at 300 K given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
+        "Determine the henry coefficient of ethane and n-heptane on MIL-47 at 300 K given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
     ],
     "ads_dil___s": [
-        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.8",
-        "Determine the adsorption enthalpy of nitrogen on MFI_SI using a simulation at infinite dilution given the helium void fraction of 0.29",
-        "Determine the adsorption enthalpy of ethane on MIL-47 using a simulation at infinite dilution given the helium void fraction of 0.608"
+        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13 using a simulation at infinite dilution at 300 K given the helium void fraction of 0.8",
+        "Determine the adsorption enthalpy of nitrogen on MFI_SI using a simulation at infinite dilution at 300 K given the helium void fraction of 0.29",
+        "Determine the adsorption enthalpy of ethane on MIL-47 using a simulation at infinite dilution at 300 K given the helium void fraction of 0.608"
     ],
     "ads_dil___l": [
-        "Determine the adsorption enthalpy of n-hexane on IRMOF-13 using a simulation at infinite dilution given the helium void fraction of 0.8",
-        "Determine the adsorption enthalpy of n-pentane on MFI_SI using a simulation at infinite dilution given the helium void fraction of 0.29",
-        "Determine the adsorption enthalpy of n-heptane on MIL-47 using a simulation at infinite dilution given the helium void fraction of 0.608"
+        "Determine the adsorption enthalpy of n-hexane on IRMOF-13 using a simulation at infinite dilution at 300 K given the helium void fraction of 0.8",
+        "Determine the adsorption enthalpy of n-pentane on MFI_SI using a simulation at infinite dilution at 300 K given the helium void fraction of 0.29",
+        "Determine the adsorption enthalpy of n-heptane on MIL-47 using a simulation at infinite dilution at 300 K given the helium void fraction of 0.608"
     ],
     "ads_iso___s": [
-        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13 given the helium void fraction of 0.8",
-        "Determine the adsorption enthalpy of nitrogen on MFI_SI given the helium void fraction of 0.29",
-        "Determine the adsorption enthalpy of ethane on MIL-47 given the helium void fraction of 0.608"
+        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13 at 1 bar and at 300 K given the helium void fraction of 0.8",
+        "Determine the adsorption enthalpy of nitrogen on MFI_SI at 1 bar and at 300 K given the helium void fraction of 0.29",
+        "Determine the adsorption enthalpy of ethane on MIL-47 at 1 bar and at 300 K given the helium void fraction of 0.608"
     ],
     "ads_iso___l": [
-        "Determine the adsorption enthalpy of n-hexane on IRMOF-13 given the helium void fraction of 0.8 and given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
-        "Determine the adsorption enthalpy of n-pentane on MFI_SI given the helium void fraction of 0.29 and given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
-        "Determine the adsorption enthalpy of n-heptane on MIL-47 given the helium void fraction of 0.608 and given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
+        "Determine the adsorption enthalpy of n-hexane on IRMOF-13 at 1 bar and at 300 K given the helium void fraction of 0.8 and given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
+        "Determine the adsorption enthalpy of n-pentane on MFI_SI at 1 bar and at 300 K given the helium void fraction of 0.29 and given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
+        "Determine the adsorption enthalpy of n-heptane on MIL-47 at 1 bar and at 300 K given the helium void fraction of 0.608 and given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
     ],
     "ads_iso___sl": [
-        "Compare the adsorption enthalpies of carbon dioxide and n-hexane on IRMOF-13 given the helium void fraction of 0.8 and given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
-        "Compare the adsorption enthalpies of nitrogen and n-pentane on MFI_SI given the helium void fraction of 0.29 and given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
-        "Compare the adsorption enthalpies of ethane and n-heptane on MIL-47 given the helium void fraction of 0.608 and given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
+        "Determine the adsorption enthalpies of a 1:1 mixture of carbon dioxide and n-hexane on IRMOF-13 at 1 bar and at 300 K given the helium void fraction of 0.8 and given the ideal gas rosenbluth weight of 0.0029442 for n-hexane",
+        "Determine the adsorption enthalpies of a 1:1 mixture of nitrogen and n-pentane on MFI_SI at 1 bar and at 300 K given the helium void fraction of 0.29 and given the ideal gas rosenbluth weight of 0.0197439 for n-pentane",
+        "Determine the adsorption enthalpies of a 1:1 mixture of ethane and n-heptane on MIL-47 at 1 bar and at 300 K given the helium void fraction of 0.608 and given the ideal gas rosenbluth weight of 0.000445 for n-heptane"
     ]
 }

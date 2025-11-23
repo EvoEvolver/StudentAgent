@@ -1,37 +1,37 @@
 {
     "henry___l": [
-        "Determine the henry coefficient of n-hexane on IRMOF-13",
-        "Determine the henry coefficient of n-pentane on MFI_SI",
-        "Determine the henry coefficient of n-heptane on MIL-47"
+        "Determine the henry coefficient of n-hexane on IRMOF-13 at 300 K",
+        "Determine the henry coefficient of n-pentane on MFI_SI at 300 K",
+        "Determine the henry coefficient of n-heptane on MIL-47 at 300 K"
     ],
     "henry___sl": [
-        "Determine the henry coefficient of carbon dioxide and n-hexane on IRMOF-13",
-        "Determine the henry coefficient of nitrogen and n-pentane on MFI_SI",
-        "Determine the henry coefficient of ethane and n-heptane on MIL-47"
+        "Determine the henry coefficient of carbon dioxide and n-hexane on IRMOF-13 at 300 K",
+        "Determine the henry coefficient of nitrogen and n-pentane on MFI_SI at 300 K",
+        "Determine the henry coefficient of ethane and n-heptane on MIL-47 at 300 K"
     ],
     "ads_dil___s": [
-        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13 using a simulation at infinite dilution",
-        "Determine the adsorption enthalpy of nitrogen on MFI_SI using a simulation at infinite dilution",
-        "Determine the adsorption enthalpy of ethane on MIL-47 using a simulation at infinite dilution"
+        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13 using a simulation at infinite dilution at 300 K",
+        "Determine the adsorption enthalpy of nitrogen on MFI_SI using a simulation at infinite dilution at 300 K",
+        "Determine the adsorption enthalpy of ethane on MIL-47 using a simulation at infinite dilution at 300 K"
     ],
     "ads_dil___l": [
-        "Determine the adsorption enthalpy of n-hexane on IRMOF-13 using a simulation at infinite dilution",
-        "Determine the adsorption enthalpy of n-pentane on MFI_SI using a simulation at infinite dilution",
-        "Determine the adsorption enthalpy of n-heptane on MIL-47 using a simulation at infinite dilution"
+        "Determine the adsorption enthalpy of n-hexane on IRMOF-13 using a simulation at infinite dilution at 300 K",
+        "Determine the adsorption enthalpy of n-pentane on MFI_SI using a simulation at infinite dilution at 300 K",
+        "Determine the adsorption enthalpy of n-heptane on MIL-47 using a simulation at infinite dilution at 300 K"
     ],
     "ads_iso___s": [
-        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13",
-        "Determine the adsorption enthalpy of nitrogen on MFI_SI",
-        "Determine the adsorption enthalpy of ethane on MIL-47"
+        "Determine the adsorption enthalpy of carbon dioxide on IRMOF-13 at 1 bar and at 300 K",
+        "Determine the adsorption enthalpy of nitrogen on MFI_SI at 1 bar and at 300 K",
+        "Determine the adsorption enthalpy of ethane on MIL-47 at 1 bar and at 300 K"
     ],
     "ads_iso___l": [
-        "Determine the adsorption enthalpy of n-hexane on IRMOF-13",
-        "Determine the adsorption enthalpy of n-pentane on MFI_SI",
-        "Determine the adsorption enthalpy of n-heptane on MIL-47"
+        "Determine the adsorption enthalpy of n-hexane on IRMOF-13 at 1 bar and at 300 K",
+        "Determine the adsorption enthalpy of n-pentane on MFI_SI at 1 bar and at 300 K",
+        "Determine the adsorption enthalpy of n-heptane on MIL-47 at 1 bar and at 300 K"
     ],
     "ads_iso___sl": [
-        "Compare the adsorption enthalpies of carbon dioxide and n-hexane on IRMOF-13",
-        "Compare the adsorption enthalpies of nitrogen and n-pentane on MFI_SI",
-        "Compare the adsorption enthalpies of ethane and n-heptane on MIL-47"
+        "Determine the adsorption enthalpies of a 1:1 mixture of carbon dioxide and n-hexane on IRMOF-13 at 1 bar and at 300 K",
+        "Determine the adsorption enthalpies of a 1:1 mixture of nitrogen and n-pentane on MFI_SI at 1 bar and at 300 K",
+        "Determine the adsorption enthalpies of a 1:1 mixture of ethane and n-heptane on MIL-47 at 1 bar and at 300 K"
     ]
 }

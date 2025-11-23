@@ -32,16 +32,29 @@ parameters = {
 }
 
 # Multistep Tasks
-ads_dil = "Determine the adsorption enthalpy of {molecule} on {framework} using a simulation at infinite dilution"
-ads_dil_l = "Determine the adsorption enthalpy of {molecule_l} on {framework} using a simulation at infinite dilution"
-ads_1 = "Determine the adsorption enthalpy of {molecule} on {framework}"
-ads_l = "Determine the adsorption enthalpy of {molecule_l} on {framework}"
-ads_2 = (
-    "Compare the adsorption enthalpies of {molecule} and {molecule_l} on {framework}"
+p = " at 1 bar"
+T = " at 300 K"
+pT = p + " and" + T
+
+ads_dil = (
+    "Determine the adsorption enthalpy of {molecule} on {framework} using a simulation at infinite dilution"
+    + T
 )
-h = "Determine the henry coefficient of {molecule} on {framework}"
-h_l = "Determine the henry coefficient of {molecule_l} on {framework}"
-h_2 = "Determine the henry coefficient of {molecule} and {molecule_l} on {framework}"
+ads_dil_l = (
+    "Determine the adsorption enthalpy of {molecule_l} on {framework} using a simulation at infinite dilution"
+    + T
+)
+ads_1 = "Determine the adsorption enthalpy of {molecule} on {framework}" + pT
+ads_l = "Determine the adsorption enthalpy of {molecule_l} on {framework}" + pT
+ads_2 = (
+    "Determine the adsorption enthalpies of a 1:1 mixture of {molecule} and {molecule_l} on {framework}"
+    + pT
+)
+h = "Determine the henry coefficient of {molecule} on {framework}" + T
+h_l = "Determine the henry coefficient of {molecule_l} on {framework}" + T
+h_2 = (
+    "Determine the henry coefficient of {molecule} and {molecule_l} on {framework}" + T
+)
 
 
 tasks_multi = {
@@ -58,14 +71,16 @@ tasks_multi = {
 add_hvf = " given the helium void fraction of {hvf}"
 add_rb_1 = " given the ideal gas rosenbluth weight of {rosenbluth} for {molecule_l}"
 
-hvf = "Calculate the helium void fraction of {framework}"
-surface = "Determine the surface area of {framework}"
-rosenbluth_1 = "Calculate the ideal Rosenbluth weights for {molecule_l}"
-
+hvf = "Calculate the helium void fraction of {framework}" + T
+rosenbluth_1 = "Calculate the ideal Rosenbluth weights for {molecule_l}" + T
+total = (
+    "Calculate the total energy of {molecule_l} in the gas phase to determine the internal energy"
+    + pT
+)
 
 tasks_single = {
+    "total": {"l": total},
     "hvf": {"x": hvf},
-    "surface": {"x": surface},
     "rosenbluth": {"l": rosenbluth_1},
     "henry": {"s": h, "l": h_l + add_rb_1, "sl": h_2 + add_rb_1},
     "ads_dil": {"s": ads_dil + add_hvf, "l": ads_dil_l + add_hvf},
