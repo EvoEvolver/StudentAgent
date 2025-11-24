@@ -2,16 +2,17 @@
 Keep track of the full agentic process across multiple agents.
 """
 
-import os
 import json
+import os
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class LogEntry:
     """Structured log entry for agent interactions."""
+
     timestamp: str
     agent_id: str
     agent_type: str
@@ -69,7 +70,9 @@ class Logger:
                 if self.format == "json":
                     pass  # JSON lines format - no header needed
                 else:
-                    f.write(f"=== Agent Log Started: {datetime.now().isoformat()} ===\n\n")
+                    f.write(
+                        f"=== Agent Log Started: {datetime.now().isoformat()} ===\n\n"
+                    )
 
     def set_file(self, file: str, auto_load: bool = True):
         """
@@ -92,7 +95,7 @@ class Logger:
         model: str,
         input_messages: List[Dict[str, Any]],
         output_message: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Log an LLM API call.
@@ -113,7 +116,7 @@ class Logger:
             event_type="llm_call",
             input_data=input_messages,
             output_data=output_message,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self._write_entry(entry)
 
@@ -124,7 +127,7 @@ class Logger:
         tool_name: str,
         tool_input: Dict[str, Any],
         tool_output: Any,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Log a tool execution.
@@ -145,7 +148,7 @@ class Logger:
             event_type="tool_call",
             input_data={"tool": tool_name, "parameters": tool_input},
             output_data=tool_output,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self._write_entry(entry)
 
@@ -155,7 +158,7 @@ class Logger:
         agent_type: str,
         error_message: str,
         error_type: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Log an error occurrence.
@@ -175,7 +178,7 @@ class Logger:
             event_type="error",
             input_data={"error_type": error_type},
             output_data=error_message,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self._write_entry(entry)
 
@@ -184,7 +187,7 @@ class Logger:
         agent_id: str,
         agent_type: str,
         message: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Log general information or events.
@@ -203,7 +206,7 @@ class Logger:
             event_type="info",
             input_data=None,
             output_data=message,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self._write_entry(entry)
 
@@ -223,7 +226,7 @@ class Logger:
             f"{'='*80}",
             f"[{entry.timestamp}] {entry.agent_type} ({entry.agent_id})",
             f"Event: {entry.event_type.upper()} | Model: {entry.model}",
-            ""
+            "",
         ]
 
         if entry.input_data is not None:
@@ -254,7 +257,7 @@ class Logger:
         self,
         agent_id: Optional[str] = None,
         agent_type: Optional[str] = None,
-        event_type: Optional[str] = None
+        event_type: Optional[str] = None,
     ) -> List[LogEntry]:
         """
         Retrieve log entries with optional filtering.
@@ -296,13 +299,14 @@ class Logger:
             "event_counts": {},
             "models_used": set(),
             "total_tokens": 0,
-            "errors": 0
+            "errors": 0,
         }
 
         for entry in entries:
             # Count events by type
-            summary["event_counts"][entry.event_type] = \
+            summary["event_counts"][entry.event_type] = (
                 summary["event_counts"].get(entry.event_type, 0) + 1
+            )
 
             # Track models
             if entry.model != "N/A":
@@ -342,7 +346,9 @@ class Logger:
             self.entries = []
 
         # Track existing timestamps to avoid duplicates
-        existing_timestamps = {(e.timestamp, e.agent_id, e.event_type) for e in self.entries}
+        existing_timestamps = {
+            (e.timestamp, e.agent_id, e.event_type) for e in self.entries
+        }
 
         loaded_count = 0
         with open(self.file, "r") as f:

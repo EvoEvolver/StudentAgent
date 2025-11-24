@@ -4,8 +4,6 @@ from typing import Dict
 
 from mllm import Chat
 
-from . import Agent
-from .agent_student import StudentAgent
 from .agent_todolist import TodoListAgent
 from .memory import Memory
 from .tools.tools import Tool
@@ -68,13 +66,13 @@ class RaspaAgent(TodoListAgent):
         self.reset(path)  # base path
         self.path_add = ""  # add onto path for simulations
 
-        self.auto_run = False
+        self.auto_run = True
         self.add_raspa_prompt()
         self._advance_to_next_folder()
         self.reset(path)
 
     def add_raspa_prompt(self):
-        prompt = self._build_prompt("raspa", "v1")
+        prompt = self._build_prompt("raspa", "v2")
         self.reset_system_prompt(prompt, append=True)
 
     def setup_path(self, path: str) -> None:
