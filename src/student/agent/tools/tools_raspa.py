@@ -33,22 +33,15 @@ The tool will automatically map common abbreviations to their proper names."""
         # IMPORTANT: Map to names that work with BOTH:
         # 1. TraPPE fuzzy search (can match "CO2" to "carbon dioxide")
         # 2. PubChem API (recognizes chemical formulas, NOT "carbon_dioxide" with underscore)
-        self.name_mappings = {}  # {
-        # Small molecules - use formulas PubChem recognizes
-
-        {
-            "co2": "CO2",
-            "co₂": "CO2",
-            "carbon_dioxide": "CO2",
-            "n2": "N2",
-            "nitrogen": "N2",
-            "o2": "O2",
-            "oxygen": "O2",
-            "nh3": "NH3",
-            "ammonia": "NH3",
-            "h2s": "H2S",
-            "hydrogen_sulfide": "H2S",
-            # Alkanes - keep as single-word names (no spaces)
+        self.name_mappings = {
+            "oxirane": "ethylene oxide",
+            "co2": "carbon dioxide",
+            "carbon_dioxide": "carbon dioxide",
+            "co₂": "carbon dioxide",
+            "n2": "nitrogen",
+            "o2": "oxygen",
+            "nh3": "ammonia",
+            "h2s": "hydrogen sulfide",
             "ch4": "methane",
             "c2h6": "ethane",
             "c3h8": "propane",
@@ -57,7 +50,6 @@ The tool will automatically map common abbreviations to their proper names."""
             "c6h14": "hexane",
             "c7h16": "heptane",
             "c8h18": "octane",
-            # Aromatics - single-word names
             "c6h6": "benzene",
             "c7h8": "toluene",
         }
@@ -65,14 +57,13 @@ The tool will automatically map common abbreviations to their proper names."""
     def normalize_name(self, name: str) -> str:
         """Convert common chemical formulas and abbreviations to standard names."""
         # Convert to lowercase and remove spaces for matching
-        normalized = name.lower().strip().replace(" ", "_")
+        normalized = name.lower().strip().replace("_", " ")
 
         # Check if we have a mapping for this name
         if normalized in self.name_mappings:
-            return self.name_mappings[normalized]
+            return self.normalize_name(self.name_mappings[normalized])
 
-        # Return original name if no mapping found
-        return name
+        return normalized
 
     def run(self, molecule_names: Union[List[str], str]):
         self.reset()
@@ -86,6 +77,7 @@ The tool will automatically map common abbreviations to their proper names."""
             out = self._run(normalized_names)
         except Exception as e:
             return self.get_output(e=e)
+
         response = f"""Successfully generated the molecule input files (and force field files) for:
 {', '.join([file(name) for name in out.keys()])}
 (IMPORTANT: use these exact names in the simulation.input file!)"""
