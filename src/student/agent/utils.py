@@ -1,10 +1,13 @@
 import json
 import os
-import requests
 from typing import List
 
+import requests
+from rapidfuzz import fuzz, process
+
+
 def pretty_json(json_dict):
-    print(json.dumps(json_dict,indent=2, separators=(',', ': ')))
+    print(json.dumps(json_dict, indent=2, separators=(",", ": ")))
 
 
 def get_prompt(file_name, path="./prompts/"):
@@ -19,47 +22,52 @@ def get_prompt(file_name, path="./prompts/"):
 def instructions(s):
     return f"<instructions>{s}</instructions>"
 
+
 def keyword(s):
     return f"<keyword name={s}/>"
 
+
 def tool(s):
     return f"<tool name={s}/>"
+
 
 def tool_response(tool_name, response, LIMIT=2000):
     return f"<tool response name={tool_name}>\n{response[:LIMIT]}\n</tool response>"
     # return response[:LIMIT]
 
+
 def recalled(s):
     return f"<recalled>{s}</recalled>"
+
 
 def error(s):
     return f"<error>{s}</error>"
 
+
 def file(name, content=""):
     return f"<file name={name}>{content}</file>"
+
 
 def question(s):
     return f"<question>{s}</question>"
 
+
 def context(s):
     return f"<context>{s}</context>"
+
 
 def molecule(s):
     return f"<molecule name={s}/>"
 
-def mol_name(name, wrong_names : List[str]):
+
+def mol_name(name, wrong_names: List[str]):
     w_names = [f"<wrong_name name={w}/>" for w in wrong_names]
     return f"<use_name name={name}>{''.join(w_names)}</name>"
 
 
-from rapidfuzz import process, fuzz
 def quick_search(query, candidates, limit=10, score_cutoff=80):
     return process.extract(
-        query,
-        candidates,
-        scorer=fuzz.WRatio,
-        limit=limit,
-        score_cutoff=score_cutoff
+        query, candidates, scorer=fuzz.WRatio, limit=limit, score_cutoff=score_cutoff
     )
 
 
@@ -115,4 +123,3 @@ def all_files(path: str) -> List[str]:
             # ensure a single trailing slash
             result.append(reldir.rstrip(os.sep) + os.sep)
     return result
-

@@ -1,390 +1,399 @@
-import pandas as pd
+from __future__ import annotations
+
 import json
-import uuid
-import numpy as np
-from mllm import Chat, get_embeddings
-from typing import Dict, List, Set, Iterable
+import os
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from .agent_memory_helper import MemoryHelperAgent
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-class MemoryNode:
-    id : str
-    keys : Set[str]
-    embeddings : List[str]
-    content : str    
+@dataclass
+class Memory:
+    """Represents a single memory item in a hierarchical structure."""
 
-    def __init__(self, content: str = "", keys: List[str] = []):
-        self.id = str(uuid.uuid4())[:8]
+    title: str
+    creation_time: str
+    content: Optional[str] = None  # Only for terminal memories
+    children: List[Memory] = field(default_factory=list)  # Only for composite memories
+    _helper_agent: Optional[MemoryHelperAgent] = field(default=None, repr=False)
+
+    def __init__(
+        self,
+        title: str,
+        content: Optional[str] = None,
+        children: Optional[List[Memory]] = None,
+        creation_time: Optional[str] = None,
+        helper_agent: Optional[MemoryHelperAgent] = None,
+    ):
+        self.title = title
+        self.creation_time = (
+            creation_time if creation_time is not None else datetime.now().isoformat()
+        )
         self.content = content
-        self.keys = set()
-        self.embeddings = []
+        self.children = children if children is not None else []
+        self._helper_agent = helper_agent
 
-        self.add_keys(keys)
-
-
-    def check_keys(self):
-        if len(self.keys) == 0:
-            raise ValueError("MemoryNode must have at least one key of length > 0")
- 
-    def get_keys(self):
-        return list(self.keys)
-
-    def add_keys(self, new_keys: List[str]):
-        assert isinstance(new_keys, List)
-        for key in new_keys:
-            assert isinstance(key, str)
-            key = self.format_key(key)
-            if len(key) > 0:    # avoid empty strings as key
-                self.keys.add(key)
-        return self.keys
-    
-    def format_key(self, key):
-        return key.strip(" \t\n")
-
-    def remove_keys(self, rem_keys: Set[str], check=True):
-        assert isinstance(rem_keys, Set)
-        for key in list(rem_keys):
-            assert isinstance(key, str)
-            self.keys.remove(key)
-        if check is True:
-            self.check_keys()
-        return self.keys
-
-    def clean_keys(self):
-        for key in self.keys:
-            if key and len(self.format_key(key)) == 0:
-                self.keys.remove(key)
-    
-    def set_embeddings(self):
-        if len(self.embeddings) == len(self.keys):
-            return True
-            
-        self.clean_keys() # keys are not allowed to be empty!
-        keys = list(self.keys) 
-
-        if len(keys) > 0:
-            self.embeddings = get_embeddings(keys)
-            return True
-        else: 
-            return False
-
-
-    def _get_embedding_score(self, query : List[str], keys: List[str]=None, sensitivity=0.4):
-        q_emb = np.array(get_embeddings(query))
-        
-        if keys is None:
-            keys = self.keys
-            if self.embeddings == []:
-                if self.set_embeddings() is False:
-                    return np.array([0])
-
-            k_emb = np.array(self.embeddings)
+    def __breadth__(self) -> int:
+        """Calculate the size of the memory (number of terminal memories)."""
+        if len(self.children) == 0:
+            return 1
         else:
-            k_emb = np.array(get_embeddings(keys))
-        
-        similarity = np.dot(q_emb, k_emb.T) # len(query) x len(keys)
-        q = np.linalg.norm(q_emb, axis=1, keepdims=True)
-        k = np.linalg.norm(k_emb, axis=1)
+            return sum(child.__size__() for child in self.children)
 
-        norm = q * k + (q-k)**2 + 1
-        similarity = 2 * similarity / norm
-        '''
-        for i in range(len(query)):
-            q = np.linalg.norm(q_emb[i])
-            for j in range(len(keys)):
-                k = np.linalg.norm(k_emb[i])
+    def __depth__(self) -> int:
+        """Calculate the depth of the memory tree."""
+        if len(self.children) == 0:
+            return 1
+        else:
+            return 1 + max(child.__depth__() for child in self.children)
 
-                similarity[i][j] /= k * q +((q-k)**2 + 1)
-                similarity[i][j] *= 2
-        '''     
+    def get_memory_size(self) -> Dict[str, int]:
+        """Get the size and depth of the memory tree."""
+        return {"size": self.__breadth__(), "depth": self.__depth__()}
 
-        similarity = similarity * (similarity > sensitivity) # filter out bad matches
-        return similarity 
+    def _get_helper_agent(self) -> MemoryHelperAgent:
+        """Get or create the helper agent for LLM operations."""
+        if self._helper_agent is None:
+            from .agent_memory_helper import MemoryHelperAgent
 
+            self._helper_agent = MemoryHelperAgent(provider="openai", expensive=False)
+        return self._helper_agent
 
-    def get_score(self, query : List[str], keys: List[str] = None, sensitivity=0.4):
-        scores_emb = self._get_embedding_score(query, keys, sensitivity) # len(query) x len(keys)
-        scores_max = np.max(scores_emb, axis=0) # max score per key # len(keys)
-        score_final = np.mean(scores_max) # average over keys
-        return score_final
+    def set_helper_agent(self, agent: MemoryHelperAgent):
+        """Set the helper agent for this memory and all children."""
+        self._helper_agent = agent
+        for child in self.children:
+            child.set_helper_agent(agent)
 
-
-    def to_dict(self, include_embeddings: bool=True) -> dict:
-        d = {
-            "id":      self.id,
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert memory to dictionary."""
+        children_dicts = [child.to_dict() for child in self.children]
+        result = {
+            "title": self.title,
+            "creation_time": self.creation_time,
             "content": self.content,
-            "keys":    list(self.keys),
+            "children": children_dicts,
         }
-        if include_embeddings:
-            d["embeddings"] = self.embeddings
-        return d
-
-    def _from_dict(self, d: dict) -> None:
-        self.content = d["content"]
-        #self.add_keys(d["keys"])
-        self.id = d.get("id", self.id)
-
-        raw_keys = d.get("keys", [])
-        if isinstance(raw_keys, (list, tuple, set, np.ndarray)):
-            key_list = list(raw_keys)
-
-        elif isinstance(raw_keys, str):
-            try:
-                decoded = json.loads(raw_keys)
-                key_list = list(decoded) if isinstance(decoded, Iterable) else [raw_keys]
-            except json.JSONDecodeError:
-                key_list = [raw_keys]
-
-        else:
-            raise NotImplementedError("Wrong key type")
-
-        self.add_keys(key_list)
-        self.embeddings = [list(vec) for vec in d.get("embeddings", [])]
-        return
+        return result
 
     @classmethod
-    def from_dict(cls, d):
-        new_node = MemoryNode()  
-        new_node._from_dict(d)
-        return new_node
-
-    def __str__(self):
-        return f"""
-        <memory id="{self.id}">
-            <stimuli>{", ".join(self.keys)}</stimuli>
-            <content>{self.content}</content>
-        </memory>
-        """
-    
-
-    def render_html(self) -> str:
-        import html
-
-        keys_html = "".join(f"<li>{html.escape(k)}</li>" for k in sorted(self.keys))
-        content_html = html.escape(self.content).replace("\n", "<br>")
-
-        return f"""\
-    <style>
-    .memory-node {{
-        font-family: system-ui, sans-serif;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: .5rem 0;
-        max-width: 200px;
-    }}
-    .memory-node h3 {{ margin: 0 0 .5rem 0; font-size: 1.25rem; }}
-    .memory-node ul {{ margin: .25rem 0 .75rem 1rem; }}
-    .memory-node p {{ margin: 0; white-space: pre-wrap; }}
-    </style>
-
-    <div class="memory-node">
-    <strong>Keys</strong>
-    <ul>{keys_html}</ul>
-
-    <strong>Content</strong>
-    <p>{content_html}</p>
-    </div>
-    """
-
-
-
-class Memory:
-    memory : Dict[str, MemoryNode]
-    keywords : Set[str]
-
-    def __init__(self):
-        self.memory : Dict[str, MemoryNode] = {}
-        self.keywords : Dict[str, int] = {}
-    
-    def __size__(self) -> int:
-        return len(self.memory.keys())
-    
-    def get_node(self, id):
-        return self.memory.get(id)
-    
-    def delete_node(self, id):
-        node : MemoryNode = self.get_node(id)
-        if node is None:
-            return None
-        
-        del self.memory[id]
-        return node
-
-    def add(self, node: MemoryNode):
-        self.memory[node.id] = node
-        for k in node.keys:
-            self.update_keywords(k)
-    
-    def update_keywords(self, keyword):
-        if keyword in self.keywords:
-            self.keywords[keyword] += 1
-        else:
-            self.keywords[keyword] = 1
-    
-    def add_from_dict(self, node_dict: Dict) -> None:
-        node = MemoryNode()
-        node._from_dict(node_dict)
-        self.add(node)
-
-    def get_keywords(self, topk=50):
-        '''Returns the topk most frequent keys in memory'''
-        keys = self.keywords
-        return sorted(keys, key=keys.get, reverse=True)[:topk]
-
-
-    def get_nodes(self) -> List[MemoryNode]:
-        nodes = []
-        for node in self.memory.values():
-            if len(node.content) > 0 and len(node.keys) > 0:
-                nodes.append(node)
-                node.set_embeddings()
-        return nodes
-    
-    def get_scores(self, nodes, queries: List[str], sensitivity=0.01):
-        scores = []
-        for node in nodes:
-            node_scores = node.get_score(queries, sensitivity=sensitivity)
-            node_scores = np.array(node_scores)
-            scores.append(node_scores)
-
-        scores = np.array(scores) # m
-
-        #score_summation_for_src = np.sum(scores, axis=0)
-
-        #score_norm_factor_for_src = score_summation_for_src + (score_summation_for_src == 0.0)
-        #scores = scores / score_norm_factor_for_src
-        #scores = np.sum(scores, axis=1)
-        return scores
-
-    def _recall(self, queries: List[str], max_recall=5, sensitivity=0.3, thres=0.3) -> Dict[str, float]:
-        nodes = self.get_nodes()
-        if len(nodes) == 0:
-            return {}
-        
-        excited_nodes = {}
-        scores = self.get_scores(nodes, queries, sensitivity)
-        
-        top_k_indices = np.argsort(-scores)
-        
-        for i in range(min(max_recall, len(top_k_indices))):
-            s = scores[top_k_indices[i]]
-            if s <= thres:
-                break
-
-            node : MemoryNode = nodes[top_k_indices[i]]
-            excited_nodes[node.id] = s
-        
-        return excited_nodes
-    
-    def recall(self, queries: List[str], max_recall=5, sensitivity=0.3, thres=0.3) -> Dict[str, str]:
-        excited_nodes = self._recall(queries, max_recall=max_recall, sensitivity=sensitivity, thres=thres)
-        out = {}
-        for id, score in excited_nodes.items():
-            node = self.get_node(id)
-            out[id] = node.__str__() 
-        return out
-
-    def modify_keywords(self, old_keys: Set[str], new_keys: List[str]) -> None:
-        """
-        Modify the keywords in the memory by removing old keys and adding new ones.
-        """
-        for key in old_keys:
-            if key in self.keywords:
-                self.keywords[key] -= 1
-        for key in new_keys:
-            self.update_keywords(key)
-        
-    
-    def modify(self, id: str, new_stimuli: List[str] = None, new_content: str = None) -> None:
-        node : MemoryNode = self.get_node(id)
-
-        if node is None:
-            return None, None
-        
-        if new_stimuli is not None:
-            self.modify_keywords(node.keys, new_stimuli)
-            node.remove_keys(node.keys, check=False)
-            node.add_keys(new_stimuli)
-            
-
-        if new_content is not None:
-            node.content = new_content
-        
-        return node, False
-
-
-    def save_text(self, save_path):
-        # save the memory to a .txt file
-        memory_list = []
-        for node in self.memory.values():
-            memory_list.append(node.to_dict())
-        # save by json
-        with open(save_path, "w") as f:
-            json.dump(memory_list, f)
-
-    def save(self, save_path: str, include_embeddings=True) -> None:
-        rows = [n.to_dict(include_embeddings=include_embeddings) for n in self.memory.values()]
-        pd.DataFrame(rows).to_parquet(save_path, compression="zstd")
-
-    def load_text(self, load_path):
-        # load the memory from a file
-        with open(load_path) as f:
-            memory_list = json.load(f)
-        for d in memory_list:
-            try:
-                node = MemoryNode().from_dict(d)
-                self.memory[node.id] = node
-            except ValueError as e:
-                print(e, "for dictionary: ", d)
-        self.load_keywords()
-
-    def load(self, load_path: str, clear=False) -> None:
-        df = pd.read_parquet(load_path)
-        if clear is True:
-            self.memory.clear()
-        for _, row in df.iterrows():
-            node = MemoryNode.from_dict(row.to_dict())
-            self.memory[node.id] = node
-
-        self.load_keywords()
-
-
-    def load_keywords(self):
-        """
-        Load keywords from the memory nodes into the keyword dictionary.
-        This is useful after loading a memory from a file.
-        """
-        self.keywords = {}
-        for node in self.memory.values():
-            for key in node.keys:
-                self.update_keywords(key)
-                
-
-    def render_html(self):
-        """
-        Render an entire Memory object, laying each MemoryNode side-by-side.
-        """
-        import html
-        node_snippets = [
-            node.render_html()
-            for node in self.memory.values()
+    def from_dict(cls, data: Dict[str, Any]) -> Memory:
+        """Create memory from dictionary."""
+        children = [
+            cls.from_dict(child_data) for child_data in data.get("children", [])
         ]
+        return cls(
+            title=data["title"],
+            content=data.get("content"),
+            children=children,
+            creation_time=data.get("creation_time"),
+        )
 
-        combined_html = f"""\
-    <style>
-    /* Flex container to place nodes side-by-side and wrap nicely. */
-    .memory-container {{
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }}
-    </style>
-    <div class="memory-container">
-        {''.join(node_snippets)}
-    </div>
-    """
-        return combined_html
-    
-    def render(self):
-        from IPython.display import HTML
-        return HTML(self.render_html())
+    def _save_to_file(self, storage_file):
+        """Save memories to JSON file."""
+        memories_dict = self.to_dict()
+        with open(storage_file, "w", encoding="utf-8") as f:
+            json.dump(memories_dict, f, indent=2, ensure_ascii=False)
+
+    @classmethod
+    def _load_from_file(cls, storage_file, create_if_missing=True) -> Memory:
+        """Load memories from JSON file."""
+        if not os.path.exists(storage_file):
+            if create_if_missing:
+                return cls(title="root")
+            else:
+                raise FileNotFoundError(
+                    f"Memory storage file not found: {storage_file}"
+                )
+        with open(storage_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return cls.from_dict(data)
+
+    def get_children_by_title(self, title: str) -> Optional[Memory]:
+        """Recursively search for a memory by title."""
+        for child in self.children:
+            if child.title == title:
+                return child
+        return None
+
+    def retrieve(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        max_depth: int = 5,
+        _current_depth: int = 0,
+    ) -> List[Memory]:
+        """
+        Retrieve relevant memories based on a query.
+        Uses LLM to filter titles and return matching contents.
+        If composite memories are retrieved, recursively resolves them to return only terminal memories.
+
+        Args:
+            query: The search query
+            top_k: Optional limit on number of results to return (applied before resolution)
+            max_depth: Maximum recursion depth to prevent stack overflow
+            _current_depth: Internal parameter tracking current recursion depth
+
+        Returns:
+            List of Memory objects (includes both composite and terminal memories)
+        """
+        if len(self.children) == 0 or _current_depth >= max_depth:
+            return []
+
+        agent = self._get_helper_agent()
+        relevant_titles = agent.filter_relevant_titles(
+            query, [mem.title for mem in self.children], top_k=top_k
+        )
+
+        relevant_memories = []
+        for title in relevant_titles:
+            for mem in self.children:
+                if mem.title == title:
+                    relevant_memories.append(mem)
+                    break
+
+        results = []
+        for mem in relevant_memories:
+            results.append(mem)
+            if len(mem.children) > 0:
+                # Composite memory - resolve recursively
+                # Ensure child memories have access to the helper agent
+                if mem._helper_agent is None:
+                    mem._helper_agent = self._helper_agent
+                resolved = mem.retrieve(
+                    query,
+                    top_k=None,
+                    max_depth=max_depth,
+                    _current_depth=_current_depth + 1,
+                )
+                results.extend(resolved)
+
+        return results
+
+    def learn(self, content: str) -> str:
+        """
+        Learn new information by generating a title and storing the content as a terminal memory.
+
+        Args:
+            content: The content to store
+
+        Returns:
+            The generated title
+        """
+        agent = self._get_helper_agent()
+        existing_titles = [child.title for child in self.children]
+        title = agent.generate_title(content, existing_titles=existing_titles)
+
+        # Handle duplicate titles by appending a number
+        original_title = title
+        counter = 1
+        while any(child.title == title for child in self.children):
+            title = f"{original_title} ({counter})"
+            counter += 1
+
+        # Create new memory with same helper agent
+        new_memory = Memory(
+            title=title, content=content, helper_agent=self._helper_agent
+        )
+        self.children.append(new_memory)
+        return title
+
+    def learn_composite(self, children: List[str], title: Optional[str] = None) -> str:
+        """
+        Create a composite memory that groups related memories together.
+
+        Args:
+            children: List of memory titles to include in the composite
+            title: Optional title for the composite memory. If not provided, will be auto-generated.
+
+        Returns:
+            The title of the created composite memory
+        """
+        # Find the Memory objects for the given titles
+        child_memories = []
+        for child_title in children:
+            for child in self.children:
+                if child.title == child_title:
+                    child_memories.append(child)
+                    break
+
+        if not child_memories:
+            raise ValueError("No valid child memories found with the provided titles")
+
+        # Generate title if not provided
+        if title is None:
+            agent = self._get_helper_agent()
+            title = agent.generate_composite_title(children)
+
+            # Handle duplicate titles
+            original_title = title
+            counter = 1
+            while any(child.title == title for child in self.children):
+                title = f"{original_title} ({counter})"
+                counter += 1
+
+        # Create the composite memory with same helper agent
+        composite_memory = Memory(
+            title=title, children=child_memories, helper_agent=self._helper_agent
+        )
+
+        # Add to children
+        self.children.append(composite_memory)
+
+        # remove the individual memories that are now part of the composite
+        for child_memory in child_memories:
+            self.children.remove(child_memory)
+
+        return title
+
+    def merge_contents(self, content1: str, content2: str) -> str:
+        """
+        Merge two memory contents into a single coherent content.
+
+        Args:
+            content1: First memory content
+            content2: Second memory content
+
+        Returns:
+            Merged content
+        """
+        agent = self._get_helper_agent()
+        return agent.merge_contents(content1, content2)
+
+    def check_similar_memories(self, max_pairs: int = 3) -> List[Dict[str, Any]]:
+        """
+        Analyze all memories and identify pairs of similar memories using LLM.
+
+        Args:
+            max_pairs: Maximum number of similar pairs to return (default: 3)
+
+        Returns:
+            List of similarity pairs, where each pair is a dict with:
+            - "pair_id": Unique identifier for the pair
+            - "description": Description of what makes these memories similar
+            - "memory_titles": List of memory titles in this pair
+        """
+        if len(self.children) == 0:
+            return []
+
+        # Prepare memory list for LLM
+        memory_list = []
+        for idx, memory in enumerate(self.children, 1):
+            if len(memory.children) == 0:
+                content = memory.content or ""
+                memory_list.append(
+                    {
+                        "index": idx,
+                        "title": memory.title,
+                        "content": (
+                            content[:200] + "..." if len(content) > 200 else content
+                        ),
+                    }
+                )
+            else:
+                memory_list.append(
+                    {
+                        "index": idx,
+                        "title": memory.title,
+                        "type": "composite",
+                        "children": [child.title for child in memory.children],
+                    }
+                )
+
+        agent = self._get_helper_agent()
+        pairs = agent.check_similar_memories(memory_list, max_pairs=max_pairs)
+
+        # Convert memory indices back to titles
+        idx_to_title = {idx: child.title for idx, child in enumerate(self.children, 1)}
+
+        formatted_pairs = []
+        for pair in pairs:
+            memory_indices = pair.get("memory_indices", [])
+            memory_titles = [
+                idx_to_title[idx] for idx in memory_indices if idx in idx_to_title
+            ]
+
+            formatted_pairs.append(
+                {
+                    "pair_id": pair.get("pair_id", 0),
+                    "description": pair.get("description", ""),
+                    "memory_titles": memory_titles,
+                }
+            )
+
+        return formatted_pairs
+
+
+if __name__ == "__main__":
+    from student.agent.agent_memory_helper import MemoryHelperAgent
+
+    print("Initializing MemoryHelperAgent...")
+    helper_agent = MemoryHelperAgent(
+        provider="openai",
+        verbose=True,
+    )
+
+    if os.path.exists("memories.json"):
+        memory = Memory._load_from_file("memories.json")
+        memory.set_helper_agent(helper_agent)  # Set agent for loaded memory
+    else:
+        # Example usage
+        memory = Memory("root", helper_agent=helper_agent)
+
+        # Learn some terminal memories
+        print("\nLearning terminal memories...")
+        title1 = memory.learn(
+            "Python is a high-level programming language known for its simplicity and readability."
+        )
+        print(f"Stored terminal memory: {title1}")
+
+        title2 = memory.learn(
+            "Machine learning is a subset of AI that enables systems to learn from data."
+        )
+        print(f"Stored terminal memory: {title2}")
+
+        title3 = memory.learn(
+            "Neural networks are computing systems inspired by biological neural networks."
+        )
+        print(f"Stored terminal memory: {title3}")
+
+        title4 = memory.learn(
+            "The Eiffel Tower is located in Paris, France and was completed in 1889."
+        )
+        print(f"Stored terminal memory: {title4}")
+
+        # Create a composite memory that pairs related memories
+        print("\nCreating composite memory...")
+        composite_title = memory.learn_composite(
+            children=[title2, title3], title="AI and Machine Learning Concepts"
+        )
+        print(f"Stored composite memory: {composite_title}")
+
+        memory._save_to_file("memories.json")
+        print("\nMemories saved to 'memories.json'.")
+
+    # Retrieve information - composite memories are automatically resolved
+    print("\nRetrieving information about AI (will resolve composite memory)...")
+    results = memory.retrieve("Tell me about AI and machine learning")
+    for result in results:
+        print(f"\nTitle: {result.title}")
+        print(f"Content: {result.content if result.content else '[Composite Memory]'}")
+
+    print("\n" + "=" * 50)
+    print("Note: The composite memory was automatically resolved to terminal memories!")
+
+    # Check for similar memories
+    print("\n" + "=" * 50)
+    print("Checking for similar memories...")
+    similar_pairs = memory.check_similar_memories()
+    print(f"\nFound {len(similar_pairs)} pairs of similar memories:")
+    for pair in similar_pairs:
+        print(f"\nGroup {pair['pair_id']}: {pair['description']}")
+        print(f"  Memories: {', '.join(pair['memory_titles'])}")

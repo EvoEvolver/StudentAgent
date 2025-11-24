@@ -1,14 +1,17 @@
 import os
 
-from student.agent.agent_memory import MemoryAgent
+from student.agent.memory import MemoryAgent
 from student.agent.agent_raspa import RaspaAgent
 from student.agent.agent_student import StudentAgent
 from student.session_manager import load_agent, save_agent
 
-MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_memory", "mc5_5", "memory.txt")
+MEMORY_PATH = os.path.join(
+    os.path.dirname(__file__), "agent", "memory", "raspa_memory", "mc5_5", "memory.txt"
+)
 
 
 ############ Agent utils ############
+
 
 def setup_agent(st, session):
     if "agent" not in st.session_state:
@@ -77,12 +80,16 @@ def get_path(st, full=False):
         return agent.path_add
     elif full and st.session_state.agent_mode == "Manager":
         agent = get_agent(st)
-        if hasattr(agent, 'raspa_agent') and hasattr(agent.raspa_agent, 'path_add'):
+        if hasattr(agent, "raspa_agent") and hasattr(agent.raspa_agent, "path_add"):
             return agent.raspa_agent.path_add
         else:
-            return os.path.join(st.session_state.session.path, st.session_state.session.output_path)
+            return os.path.join(
+                st.session_state.session.path, st.session_state.session.output_path
+            )
     else:
-        return os.path.join(st.session_state.session.path, st.session_state.session.output_path)
+        return os.path.join(
+            st.session_state.session.path, st.session_state.session.output_path
+        )
 
 
 def reset_messages(st):
@@ -92,6 +99,7 @@ def reset_messages(st):
 
 
 ############ RASPA utils ############
+
 
 def run_raspa(st):
     with st.spinner("Running..."):
@@ -104,6 +112,7 @@ def run_raspa(st):
 
 
 ############ Streamlit stuff ############
+
 
 def toggle_sidebar():
     st.session_state.sb_state = (
@@ -133,7 +142,7 @@ def display_chat(st, show_reasoning=False, memory=False):
             if message == "reset":
                 st.info("🔄 Conversation has been reset.")
             else:
-                role = message['role']
+                role = message["role"]
                 content = render_content(st, message)
                 # add_message(st, role, content, html=True)
                 with st.chat_message(role):
@@ -149,38 +158,38 @@ def display_memory(st):
 def add_message(st, role, content, html=True):
     background_color = "light_amber"
     background_color_set = {
-        'light_orange': '#FFF7EB',
-        'light_blue': '#F0F8FF',
-        'light_green': '#F0FFF0',
-        'light_red': '#FFF0F5',
-        'light_yellow': '#FFFFE0',
-        'light_purple': '#F8F8FF',
-        'light_pink': '#FFF0F5',
-        'light_cyan': '#E0FFFF',
-        'light_lime': '#F0FFF0',
-        'light_teal': '#E0FFFF',
-        'light_mint': '#F0FFF0',
-        'light_lavender': '#F8F8FF',
-        'light_peach': '#FFEFD5',
-        'light_rose': '#FFF0F5',
-        'light_amber': '#FFFFE0',
-        'light_emerald': '#F0FFF0',
-        'light_platinum': '#F1EEE9',
+        "light_orange": "#FFF7EB",
+        "light_blue": "#F0F8FF",
+        "light_green": "#F0FFF0",
+        "light_red": "#FFF0F5",
+        "light_yellow": "#FFFFE0",
+        "light_purple": "#F8F8FF",
+        "light_pink": "#FFF0F5",
+        "light_cyan": "#E0FFFF",
+        "light_lime": "#F0FFF0",
+        "light_teal": "#E0FFFF",
+        "light_mint": "#F0FFF0",
+        "light_lavender": "#F8F8FF",
+        "light_peach": "#FFEFD5",
+        "light_rose": "#FFF0F5",
+        "light_amber": "#FFFFE0",
+        "light_emerald": "#F0FFF0",
+        "light_platinum": "#F1EEE9",
     }
 
     if background_color in background_color_set:
         background_color = background_color_set[background_color]
     if not html:
         content = html.escape(content)
-        content = content.replace('\n', '<br/>')
+        content = content.replace("\n", "<br/>")
 
-    output_html = f'''
+    output_html = f"""
     <p style="background-color: {background_color}; padding: 20px; border-radius: 8px; color: #333;">
         <strong>{role}</strong> 
         <br/>
         {content}
     </p>
-    '''
+    """
     with st.chat_message(role):
         st.html(output_html)
 
@@ -197,16 +206,15 @@ from typing import Optional, List, Dict, Any
 
 class StreamlitFileManager:
     def __init__(
-            self,
-            root_path: str = "files",
-            key_prefix: str = "",
-            items_per_page_options: List[int] = [10, 25, 50, 100],
-            initial_path: Optional[str] = None
-
+        self,
+        root_path: str = "files",
+        key_prefix: str = "",
+        items_per_page_options: List[int] = [10, 25, 50, 100],
+        initial_path: Optional[str] = None,
     ):
         """
         Initialize the File Manager component.
-        
+
         Args:
             root_path (str): Root directory for the file manager
             key_prefix (str): Prefix for session state keys to allow multiple instances
@@ -246,16 +254,16 @@ class StreamlitFileManager:
     def _init_session_state(self):
         """Initialize session state variables."""
         state_vars = {
-            'current_path': self.initial_path,
-            'previous_path': None,
-            'show_new_folder_input': False,
-            'show_upload': False,
-            'current_page': 1,
-            'items_per_page': 10,
-            'upload_success': [],
-            'upload_progress': 0,
-            'preview_path': None,
-            'show_preview': False,
+            "current_path": self.initial_path,
+            "previous_path": None,
+            "show_new_folder_input": False,
+            "show_upload": False,
+            "current_page": 1,
+            "items_per_page": 10,
+            "upload_success": [],
+            "upload_progress": 0,
+            "preview_path": None,
+            "show_preview": False,
         }
 
         for key, default_value in state_vars.items():
@@ -267,19 +275,22 @@ class StreamlitFileManager:
         """Get list of files and folders in current directory."""
         items = []
         try:
-            for item in os.listdir(st.session_state[self._get_state_key('current_path')]):
+            for item in os.listdir(
+                st.session_state[self._get_state_key("current_path")]
+            ):
                 full_path = os.path.join(
-                    st.session_state[self._get_state_key('current_path')],
-                    item
+                    st.session_state[self._get_state_key("current_path")], item
                 )
                 is_directory = os.path.isdir(full_path)
-                items.append({
-                    'name': item,
-                    'path': full_path,
-                    'is_directory': is_directory,
-                    'size': os.path.getsize(full_path) if not is_directory else 0,
-                    'modified': os.path.getmtime(full_path)
-                })
+                items.append(
+                    {
+                        "name": item,
+                        "path": full_path,
+                        "is_directory": is_directory,
+                        "size": os.path.getsize(full_path) if not is_directory else 0,
+                        "modified": os.path.getmtime(full_path),
+                    }
+                )
         except Exception as e:
             print(f"Error accessing path: {e}")
         return items
@@ -290,36 +301,44 @@ class StreamlitFileManager:
             return False
 
         total_files = len(uploaded_files)
-        st.session_state[self._get_state_key('upload_success')] = []
+        st.session_state[self._get_state_key("upload_success")] = []
         progress_bar = st.progress(0)
         status_text = st.empty()
 
         for idx, uploaded_file in enumerate(uploaded_files, 1):
             try:
                 file_path = os.path.join(
-                    st.session_state[self._get_state_key('current_path')],
-                    uploaded_file.name
+                    st.session_state[self._get_state_key("current_path")],
+                    uploaded_file.name,
                 )
                 with open(file_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
-                st.session_state[self._get_state_key('upload_success')].append(
+                st.session_state[self._get_state_key("upload_success")].append(
                     {"name": uploaded_file.name, "status": "success"}
                 )
             except Exception as e:
-                st.session_state[self._get_state_key('upload_success')].append(
+                st.session_state[self._get_state_key("upload_success")].append(
                     {"name": uploaded_file.name, "status": "error", "message": str(e)}
                 )
 
             progress = int(idx * 100 / total_files)
             progress_bar.progress(progress)
-            status_text.text(f"Uploading file {idx} of {total_files}: {uploaded_file.name}")
+            status_text.text(
+                f"Uploading file {idx} of {total_files}: {uploaded_file.name}"
+            )
 
-        success_count = sum(1 for item in st.session_state[self._get_state_key('upload_success')]
-                            if item["status"] == "success")
+        success_count = sum(
+            1
+            for item in st.session_state[self._get_state_key("upload_success")]
+            if item["status"] == "success"
+        )
         st.success(f"Successfully uploaded {success_count} of {total_files} files")
 
-        errors = [item for item in st.session_state[self._get_state_key('upload_success')]
-                  if item["status"] == "error"]
+        errors = [
+            item
+            for item in st.session_state[self._get_state_key("upload_success")]
+            if item["status"] == "error"
+        ]
         if errors:
             st.error("Failed to upload the following files:")
             for error in errors:
@@ -331,8 +350,7 @@ class StreamlitFileManager:
         """Create a new folder in the current directory."""
         try:
             new_folder_path = os.path.join(
-                st.session_state[self._get_state_key('current_path')],
-                folder_name
+                st.session_state[self._get_state_key("current_path")], folder_name
             )
             if os.path.exists(new_folder_path):
                 st.error("A folder with this name already exists!")
@@ -357,7 +375,7 @@ class StreamlitFileManager:
 
     def _format_size(self, size: int) -> str:
         """Format file size in human-readable format."""
-        for unit in ['B', 'KB', 'MB', 'GB']:
+        for unit in ["B", "KB", "MB", "GB"]:
             if size < 1024:
                 return f"{size:.1f} {unit}"
             size /= 1024
@@ -365,39 +383,54 @@ class StreamlitFileManager:
 
     def _render_pagination(self, total_items: int):
         """Render pagination controls."""
-        total_pages = math.ceil(total_items / st.session_state[self._get_state_key('items_per_page')])
+        total_pages = math.ceil(
+            total_items / st.session_state[self._get_state_key("items_per_page")]
+        )
 
         if total_pages > 1:
             col1, col2, col3, col4, col5 = st.columns([1, 2, 1, 2, 1])
-            current_page = st.session_state[self._get_state_key('current_page')]
+            current_page = st.session_state[self._get_state_key("current_page")]
 
             with col1:
-                if st.button("⏮️", disabled=current_page == 1, key=f"{self.key_prefix}first"):
-                    st.session_state[self._get_state_key('current_page')] = 1
+                if st.button(
+                    "⏮️", disabled=current_page == 1, key=f"{self.key_prefix}first"
+                ):
+                    st.session_state[self._get_state_key("current_page")] = 1
                     st.rerun()
 
             with col2:
-                if st.button("◀️", disabled=current_page == 1, key=f"{self.key_prefix}prev"):
-                    st.session_state[self._get_state_key('current_page')] -= 1
+                if st.button(
+                    "◀️", disabled=current_page == 1, key=f"{self.key_prefix}prev"
+                ):
+                    st.session_state[self._get_state_key("current_page")] -= 1
                     st.rerun()
 
             with col3:
                 st.write(f"Page {current_page} of {total_pages}")
 
             with col4:
-                if st.button("▶️", disabled=current_page == total_pages, key=f"{self.key_prefix}next"):
-                    st.session_state[self._get_state_key('current_page')] += 1
+                if st.button(
+                    "▶️",
+                    disabled=current_page == total_pages,
+                    key=f"{self.key_prefix}next",
+                ):
+                    st.session_state[self._get_state_key("current_page")] += 1
                     st.rerun()
 
             with col5:
-                if st.button("⏭️", disabled=current_page == total_pages, key=f"{self.key_prefix}last"):
-                    st.session_state[self._get_state_key('current_page')] = total_pages
+                if st.button(
+                    "⏭️",
+                    disabled=current_page == total_pages,
+                    key=f"{self.key_prefix}last",
+                ):
+                    st.session_state[self._get_state_key("current_page")] = total_pages
                     st.rerun()
 
     def render(self):
         """Render the file manager component."""
         # Custom styling example
-        st.html("""
+        st.html(
+            """
             <style>
                 /* Style the main container */
                 .st-key-file_manager_container {
@@ -420,105 +453,137 @@ class StreamlitFileManager:
 
     
             </style>
-        """)
+        """
+        )
         with st.container(border=True, key=f"{self.key_prefix}file_manager_container"):
             # Top navigation bar
             col3, col4, col5 = st.columns([1, 1, 1])
 
             with col3:
-                with st.popover('📁 New Folder', ):
+                with st.popover(
+                    "📁 New Folder",
+                ):
                     with st.container(border=False):
                         folder_name = st.text_input(
                             "Enter folder name:",
-                            key=f"{self.key_prefix}new_folder_name"
+                            key=f"{self.key_prefix}new_folder_name",
                         )
                         col1, col2 = st.columns([1, 1])
                         with col1:
-                            if st.button("Create", key=f"{self.key_prefix}create_folder"):
+                            if st.button(
+                                "Create", key=f"{self.key_prefix}create_folder"
+                            ):
                                 if folder_name and folder_name.strip():
                                     if self._create_new_folder(folder_name):
                                         st.success(f"Created folder: {folder_name}")
-                                        st.session_state[self._get_state_key('show_new_folder_input')] = False
+                                        st.session_state[
+                                            self._get_state_key("show_new_folder_input")
+                                        ] = False
                                         st.rerun()
                                 else:
                                     st.error("Please enter a folder name")
 
             with col4:
-                if st.button('📤 Upload', key=f"{self.key_prefix}upload"):
-                    st.session_state[self._get_state_key('show_upload')] = True
+                if st.button("📤 Upload", key=f"{self.key_prefix}upload"):
+                    st.session_state[self._get_state_key("show_upload")] = True
 
             with col5:
                 items_per_page = st.selectbox(
                     "Items per page",
                     options=self.items_per_page_options,
                     key=f"{self.key_prefix}items_per_page_selector",
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
                 )
-                if items_per_page != st.session_state[self._get_state_key('items_per_page')]:
-                    st.session_state[self._get_state_key('items_per_page')] = items_per_page
-                    st.session_state[self._get_state_key('current_page')] = 1
+                if (
+                    items_per_page
+                    != st.session_state[self._get_state_key("items_per_page")]
+                ):
+                    st.session_state[self._get_state_key("items_per_page")] = (
+                        items_per_page
+                    )
+                    st.session_state[self._get_state_key("current_page")] = 1
                     st.rerun()
             # Upload Component
-            if st.session_state[self._get_state_key('show_upload')]:
+            if st.session_state[self._get_state_key("show_upload")]:
                 with st.container(border=True):
                     uploaded_files = st.file_uploader(
                         "Choose files",
                         accept_multiple_files=True,
-                        key=f"{self.key_prefix}file_uploader"
+                        key=f"{self.key_prefix}file_uploader",
                     )
 
                     col1, col2 = st.columns([1, 5])
                     with col1:
                         if st.button("Close", key=f"{self.key_prefix}close_upload"):
-                            st.session_state[self._get_state_key('show_upload')] = False
-                            st.session_state[self._get_state_key('upload_success')] = []
+                            st.session_state[self._get_state_key("show_upload")] = False
+                            st.session_state[self._get_state_key("upload_success")] = []
                             st.rerun()
 
                     if uploaded_files:
                         if self._handle_file_upload(uploaded_files):
-                            st.session_state[self._get_state_key('show_upload')] = False
+                            st.session_state[self._get_state_key("show_upload")] = False
                             st.rerun()
             st.divider()
             col1, col2 = st.columns([1, 1])
             # New Folder Input
             with col1:
-                st.text(f"Current: {st.session_state[self._get_state_key('current_path')]}")
+                st.text(
+                    f"Current: {st.session_state[self._get_state_key('current_path')]}"
+                )
             with col2:
-                if st.session_state[self._get_state_key('current_path')] != self.root_path:
-                    if st.button('⬆️ Up', key=f"{self.key_prefix}up"):
-                        st.session_state[self._get_state_key('current_path')] = str(
-                            Path(st.session_state[self._get_state_key('current_path')]).parent
+                if (
+                    st.session_state[self._get_state_key("current_path")]
+                    != self.root_path
+                ):
+                    if st.button("⬆️ Up", key=f"{self.key_prefix}up"):
+                        st.session_state[self._get_state_key("current_path")] = str(
+                            Path(
+                                st.session_state[self._get_state_key("current_path")]
+                            ).parent
                         )
-                        st.session_state[self._get_state_key('show_new_folder_input')] = False
-                        st.session_state[self._get_state_key('current_page')] = 1
+                        st.session_state[
+                            self._get_state_key("show_new_folder_input")
+                        ] = False
+                        st.session_state[self._get_state_key("current_page")] = 1
                         st.rerun()
 
             st.divider()
 
             # File/Folder List
             items = self._get_files_and_folders()
-            items.sort(key=lambda x: (not x['is_directory'], x['name'].lower()))
+            items.sort(key=lambda x: (not x["is_directory"], x["name"].lower()))
 
-            start_idx = (st.session_state[self._get_state_key('current_page')] - 1) * \
-                        st.session_state[self._get_state_key('items_per_page')]
-            end_idx = start_idx + st.session_state[self._get_state_key('items_per_page')]
+            start_idx = (
+                st.session_state[self._get_state_key("current_page")] - 1
+            ) * st.session_state[self._get_state_key("items_per_page")]
+            end_idx = (
+                start_idx + st.session_state[self._get_state_key("items_per_page")]
+            )
             paginated_items = items[start_idx:end_idx]
 
             for item in paginated_items:
                 col1, col2, col3, col4 = st.columns([4, 1, 1, 1])
-                is_active = (st.session_state[self._get_state_key('previous_path')] == item['path'])
+                is_active = (
+                    st.session_state[self._get_state_key("previous_path")]
+                    == item["path"]
+                )
 
                 with col1:
-                    if item['is_directory']:
+                    if item["is_directory"]:
                         if st.button(
-                                f"📁 {item['name']}",
-                                key=f"{self.key_prefix}dir_{item['path']}",
+                            f"📁 {item['name']}",
+                            key=f"{self.key_prefix}dir_{item['path']}",
                         ):
-                            st.session_state[self._get_state_key('previous_path')] = \
-                                st.session_state[self._get_state_key('current_path')]
-                            st.session_state[self._get_state_key('current_path')] = item['path']
-                            st.session_state[self._get_state_key('show_new_folder_input')] = False
-                            st.session_state[self._get_state_key('current_page')] = 1
+                            st.session_state[self._get_state_key("previous_path")] = (
+                                st.session_state[self._get_state_key("current_path")]
+                            )
+                            st.session_state[self._get_state_key("current_path")] = (
+                                item["path"]
+                            )
+                            st.session_state[
+                                self._get_state_key("show_new_folder_input")
+                            ] = False
+                            st.session_state[self._get_state_key("current_page")] = 1
                             st.rerun()
                     else:
                         st.text(f"📄 {item['name']}")
@@ -528,31 +593,50 @@ class StreamlitFileManager:
                         #    st.rerun()
 
                 with col2:
-                    if not item['is_directory']:
-                        st.text(self._format_size(item['size']))
+                    if not item["is_directory"]:
+                        st.text(self._format_size(item["size"]))
 
                 with col3:
-                    if st.button('🗑️', key=f"{self.key_prefix}del_{item['path']}", help="Delete item"):
-                        if self._delete_item(item['path']):
+                    if st.button(
+                        "🗑️",
+                        key=f"{self.key_prefix}del_{item['path']}",
+                        help="Delete item",
+                    ):
+                        if self._delete_item(item["path"]):
                             st.success(f"Deleted {item['name']}")
                             st.rerun()
                 with col4:
-                    if not item['is_directory']:
+                    if not item["is_directory"]:
                         cols = st.columns([1, 1])
                         with cols[0]:
-                            if st.button("👁️", key=f"{self.key_prefix}preview_{item['path']}", help="Preview"):
-                                st.session_state[self._get_state_key('preview_path')] = item['path']
-                                st.session_state[self._get_state_key('show_preview')] = True
+                            if st.button(
+                                "👁️",
+                                key=f"{self.key_prefix}preview_{item['path']}",
+                                help="Preview",
+                            ):
+                                st.session_state[
+                                    self._get_state_key("preview_path")
+                                ] = item["path"]
+                                st.session_state[
+                                    self._get_state_key("show_preview")
+                                ] = True
                                 st.rerun()
                         with cols[1]:
-                            with open(item['path'], 'rb') as f:
-                                st.download_button('⬇️', f, file_name=item['name'], help="Download",
-                                                   key=f"{self.key_prefix}download_{item['path']}")
+                            with open(item["path"], "rb") as f:
+                                st.download_button(
+                                    "⬇️",
+                                    f,
+                                    file_name=item["name"],
+                                    help="Download",
+                                    key=f"{self.key_prefix}download_{item['path']}",
+                                )
 
             st.divider()
 
-            if st.session_state.get(self._get_state_key('show_preview'), False):
-                preview_path = st.session_state.get(self._get_state_key('preview_path'), None)
+            if st.session_state.get(self._get_state_key("show_preview"), False):
+                preview_path = st.session_state.get(
+                    self._get_state_key("preview_path"), None
+                )
                 if preview_path and os.path.isfile(preview_path):
                     st.subheader(f"Preview: {os.path.basename(preview_path)}")
                     # Only preview for small text files for simplicity
@@ -562,9 +646,11 @@ class StreamlitFileManager:
                         st.code(file_content)
                     except Exception as e:
                         st.warning(f"Cannot preview this file: {e}")
-                    if st.button("Close Preview", key=f"{self.key_prefix}close_preview"):
-                        st.session_state[self._get_state_key('show_preview')] = False
-                        st.session_state[self._get_state_key('preview_path')] = None
+                    if st.button(
+                        "Close Preview", key=f"{self.key_prefix}close_preview"
+                    ):
+                        st.session_state[self._get_state_key("show_preview")] = False
+                        st.session_state[self._get_state_key("preview_path")] = None
                         st.rerun()
 
             self._render_pagination(len(items))
@@ -572,12 +658,13 @@ class StreamlitFileManager:
     @property
     def current_path(self) -> str:
         """Get current directory path."""
-        return st.session_state[self._get_state_key('current_path')]
+        return st.session_state[self._get_state_key("current_path")]
 
     @property
     def selected_items(self) -> List[str]:
         """Get list of selected items (for future implementation)."""
         return []  # Placeholder for future feature
+
 
 # def main():
 #    st.title("File Manager Demo")

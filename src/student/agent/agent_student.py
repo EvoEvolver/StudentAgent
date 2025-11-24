@@ -1,88 +1,99 @@
-from .agent import Agent
-from .agent_memory import MemoryAgent
-from .agent_memory import memory_agent_tools
+import os
+from typing import Dict
 
-from typing import List, Dict
+from .agent import Agent
+from .agent_memory_helper import MemoryHelperAgent
+from .memory import Memory
 from .tools.tools import Tool
-from .utils import *
-from .utils import context as c
 
 
 class StudentAgent(Agent):
-    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, version=None, provider="openai", verbose=False, active_learning=True):
-        super().__init__(tools=tools, cache=cache, expensive=expensive, version=version, provider=provider, verbose=verbose)
+    name = "StudentAgent"
 
-        self.reset_system_prompt(self.student_prompt())
-        self.get_memory_tools()
+    def __init__(
+        self,
+        tools: Dict[str, Tool] = {},
+        cache=None,
+        expensive=None,
+        version=None,
+        provider="openai",
+        verbose=False,
+        active_learning=True,
+        memory_path="memory.json",
+    ):
+        super().__init__(
+            tools=tools,
+            cache=cache,
+            expensive=expensive,
+            version=version,
+            provider=provider,
+            verbose=verbose,
+        )
+
         self.active_learning = active_learning
+        self.initialize_memory(memory_path)
 
-    def get_memory_tools(self):
-        memory = memory_agent_tools(provider=self.provider)
-        
-        self.memory_agent : MemoryAgent = memory['agent']
-        for tool in memory['tools']:
-            self.tools[tool.name] = tool
-        
+    def initialize_memory(self, memory_path):
+        self.memory_agent = MemoryHelperAgent(
+            provider="openai",
+            verbose=self.verbose,
+            expensive=False,
+            cache=True,
+            logger=self.logger,
+        )
+        memory = Memory._load_from_file(memory_path)
+        memory.set_helper_agent(self.memory_agent)
+        self.memory = memory
+        self.memory_path = memory_path
 
     def get_memory_agent(self):
         return self.memory_agent
 
-    def student_prompt(self):
-        general = self._build_prompt("student/general", "v2")
-        learning_instructions = self._build_prompt("student/learning", "v2")
-        retrieval_instructions = self._build_prompt("student/retrieval", "v2")
+    def get_memory(self):
+        return self.memory
 
-        full = general.format(retrieval_instructions=retrieval_instructions, learning_instructions=learning_instructions)
-        full += "\n"
-        full += self._build_prompt("output", "v3")
-        return full
-    
-    def run(self, prompt: str, max_iter: int=10, remove_tools=[]):
-        # 1. Decompose into learning and asking
-        # 2. Ask -> Knowledge
-        # 3. ReAct using knowledge
-        # 4. Update learning
-        # 5. Summarize for response
-        remove_tools.append(self.get_tool_mask())
-        return super().run(prompt, max_iter=max_iter, remove_tools=remove_tools)
-    
+    def memory_size(self):
+        return self.get_memory().get_memory_size()
 
     def get_tool_mask(self):
         mask = []
         if self.active_learning is False:
-            mask.append("learn")
+            mask.append("learning")
         return mask
 
-    def decompose(self, input):
-        prompt = self.get_prompt("decompose")
-        prompt += f"Decompose this context: {c(input)}"
-        return self.single_run(prompt)
-    
+    def _build_prompt(self, dir, version) -> str:
+        # Reads the prompt file and returns it as a string.
+        here = os.path.dirname(__file__)
+        base_dir = os.path.join(here, "prompts", "system")
+
+        path = os.path.join(base_dir, dir)
+        path = os.path.join(path, f"{version}.xml")
+
+        if not os.path.isfile(path):
+            raise RuntimeError(f"Required prompt file missing: {path}")
+
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read().strip()
+
+        return text
+
     def save(self, folder_name):
         os.makedirs(folder_name, exist_ok=True)
-        
+
         super().save(folder_name)
-        self.get_memory_agent().save_memory(os.path.join(folder_name,"memory.parquet"))
-        self.get_memory_agent().save_conversation(os.path.join(folder_name,"conversation_memory.txt"))
+        # self.get_memory_agent().save_memory(os.path.join(folder_name, "memory.parquet"))
+        # self.get_memory_agent().save_conversation(os.path.join(folder_name, "conversation_memory.txt"))
 
     def load(self, folder_name):
         if len(self.conversation) == 0:
             return
         super().load(folder_name)
-        
-        mem_path = os.path.join(folder_name,"memory.parquet")
-        mem_conv_path = os.path.join(folder_name,"conversation_memory.txt")
-        if os.path.exists(mem_path) and os.path.exists(mem_conv_path):
-            try:
-                self.get_memory_agent().load_memory(mem_path)
-                self.get_memory_agent().load_conversation(mem_conv_path)
-            except Exception as e:
-                return e
-        
 
-    def render_memory(self):
-        return self.get_memory_agent().render_memory()
-    
-    def memory_size(self):
-        return self.get_memory_agent().memory_size()
-    
+        # mem_path = os.path.join(folder_name, "memory.parquet")
+        # mem_conv_path = os.path.join(folder_name, "conversation_memory.txt")
+        # if os.path.exists(mem_path) and os.path.exists(mem_conv_path):
+        #    try:
+        #        self.get_memory_agent().load_memory(mem_path)
+        #        self.get_memory_agent().load_conversation(mem_conv_path)
+        #    except Exception as e:
+        #        return e

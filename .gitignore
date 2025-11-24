@@ -3,7 +3,7 @@ test_raspa.ipynb
 test_chatmof.ipynb
 test*/
 !benchmark_student/test*
-.DS_Store
+*/.DS_Store
 random_testing/
 
 test_streamlit_app.py

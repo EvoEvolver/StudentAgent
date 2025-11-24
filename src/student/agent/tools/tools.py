@@ -1,13 +1,14 @@
+import inspect
 import os
 from abc import ABC, abstractmethod
-import inspect
-from typing import get_origin, get_args, List, Dict
+from typing import Dict, List, get_args, get_origin
+
 from ..utils import error, tool_response
 
 
 class Tool(ABC):
-    name : str
-    description : str
+    name: str
+    description: str
 
     def __init__(self, name, description):
         self.name = name
@@ -17,21 +18,23 @@ class Tool(ABC):
     def run(self):
         pass
 
-
     def get_output(self, content=None, e=None, LIMIT=2500):
         if e is not None:
             return tool_response(self.name, error(e), LIMIT=LIMIT)
         return tool_response(self.name, content, LIMIT=LIMIT)
 
-    def parse(self, name=None) -> Dict:
+    def parse(self, name=None, json=True) -> Dict:
+        if json is False:
+            return f"- {name if name is not None else self.name}: {self.description}"
+
         func = self.run
 
         sig = inspect.signature(func)
         properties = {}
         required = []
         for param_name, param in sig.parameters.items():
-            if param_name == 'self':
-                continue 
+            if param_name == "self":
+                continue
 
             param_schema = {}
             default_json_type = "string"
@@ -78,7 +81,7 @@ class Tool(ABC):
 
             if param.default == inspect.Parameter.empty:
                 properties[param_name] = param_schema
-        
+
         required = list(properties.keys())
         return {
             "type": "object",
@@ -92,13 +95,12 @@ class Tool(ABC):
                     "type": "object",
                     "properties": properties,
                     "required": required,
-                    "additionalProperties": False
-                }
+                    "additionalProperties": False,
+                },
             },
             "required": ["function", "parameters"],
-            "additionalProperties": False
+            "additionalProperties": False,
         }
-
 
 
 class RaspaTool(Tool):
@@ -106,10 +108,10 @@ class RaspaTool(Tool):
         super().__init__(name, description)
         self.path = path
         self.path_add = path_add
-    
+
     def get_path(self, full=False):
         if self.path is None:
-            #raise RuntimeWarning(f"No path was set for {self.name}.")
+            # raise RuntimeWarning(f"No path was set for {self.name}.")
             print(f"Warning: No path was set for {self.name}!")
             return "./"
         else:

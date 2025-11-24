@@ -1,31 +1,52 @@
 import html
-from typing import Dict, Union
+import json
+import os
+import uuid
+from typing import Any, Dict, List, Optional, Union
 
+import mllm
 import mllm.provider_switch
 from json_repair import repair_json
 from mllm import Chat
 
+from .logger import Logger
 from .tools.tools import Tool
-from .utils import *
 
 
 class Agent:
+    name = "DefaultAgent"
     tools: Dict[str, Tool]
     system_prompt: str
     chat: Chat
     id: int
     conversation: List
+    logger: Optional[Logger]
+    agent_id: str
+    model_name: str
 
-    def __init__(self, tools: Dict[str, Tool] = {}, cache=None, expensive=None, dir=None, version=None,
-                 provider="openai", verbose=False):
+    def __init__(
+        self,
+        tools: Dict[str, Tool] = {},
+        cache=None,
+        expensive=None,
+        dir=None,
+        version=None,
+        provider="openai",
+        verbose=False,
+        logger: Optional[Logger] = None,
+    ):
         self.tools = tools
         self.id = 0
         self.conversation = []  # list of conversations. new list starts at each reset
         self.system_prompt = ""
+        self.logger = logger
+        self.agent_id = str(uuid.uuid4())[:8]  # Short unique ID for this agent instance
+        self.model_name = "unknown"  # Will be set by setup_provider
 
         if dir is not None and version is not None:
             self.reset_system_prompt(self.get_prompt(dir=dir, version=version))
 
+        self.setup_logger()
         self.chat_config(cache, expensive)
         self.reset_chat()
         self.reset_id()
@@ -37,8 +58,93 @@ class Agent:
         self.provider = provider
         if provider == "anthropic":
             mllm.provider_switch.set_default_to_anthropic()
-            mllm.config.default_models.expensive = "claude-sonnet-4-20250514"
-            mllm.config.default_models.normal = "claude-3-5-haiku-20241022"
+            mllm.config.default_models.expensive = "claude-sonnet-4-5"
+            mllm.config.default_models.normal = "claude-haiku-4-5"
+        if provider == "openai":
+            mllm.provider_switch.set_default_to_openai()
+            mllm.config.default_models.expensive = "gpt-5.1"
+            mllm.config.default_models.normal = "gpt-5-nano"
+            mllm.config.default_options.temperature = 1
+
+        self._update_model_name()
+
+    def setup_logger(self):
+        """Initialize logger if not provided."""
+        if self.logger is None:
+            # Create default log directory and file
+            log_dir = os.path.join(os.getcwd(), "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            log_file = os.path.join(log_dir, f"agent_{self.agent_id}.json")
+            self.logger = Logger(file=log_file, format="json", auto_load=False)
+
+    def _update_model_name(self):
+        """Update the model name based on current config."""
+        if self.expensive:
+            self.model_name = mllm.config.default_models.expensive
+        else:
+            self.model_name = mllm.config.default_models.normal
+
+    def _get_agent_type(self) -> str:
+        """Get the agent type name."""
+        return self.__class__.__name__
+
+    def _log_llm_call(
+        self,
+        input_messages: List[Dict],
+        output_message: str,
+        metadata: Optional[Dict] = None,
+    ):
+        """Log an LLM call if logger is available."""
+        if self.logger:
+            self.logger.log_llm_call(
+                agent_id=self.agent_id,
+                agent_type=self._get_agent_type(),
+                model=self.model_name,
+                input_messages=input_messages,
+                output_message={"content": output_message},
+                metadata=metadata,
+            )
+
+    def _log_tool_call(
+        self,
+        tool_name: str,
+        tool_input: Dict,
+        tool_output: Any,
+        metadata: Optional[Dict] = None,
+    ):
+        """Log a tool call if logger is available."""
+        if self.logger:
+            self.logger.log_tool_call(
+                agent_id=self.agent_id,
+                agent_type=self._get_agent_type(),
+                tool_name=tool_name,
+                tool_input=tool_input,
+                tool_output=tool_output,
+                metadata=metadata,
+            )
+
+    def _log_error(
+        self, error_message: str, error_type: str, metadata: Optional[Dict] = None
+    ):
+        """Log an error if logger is available."""
+        if self.logger:
+            self.logger.log_error(
+                agent_id=self.agent_id,
+                agent_type=self._get_agent_type(),
+                error_message=error_message,
+                error_type=error_type,
+                metadata=metadata,
+            )
+
+    def _log_info(self, message: str, metadata: Optional[Dict] = None):
+        """Log general information if logger is available."""
+        if self.logger:
+            self.logger.log_info(
+                agent_id=self.agent_id,
+                agent_type=self._get_agent_type(),
+                message=message,
+                metadata=metadata,
+            )
 
     def _build_prompt(self, dir, version) -> str:
         # Reads the prompt file and returns it as a string.
@@ -56,10 +162,25 @@ class Agent:
 
         return text
 
-    def get_prompt(self, type, dir=None, version="v1", version_general="v3", version_output="v3", json=True,
-                   general=True):
+    def chat_length(self):
+        return len(self.chat.messages)
 
-        full = self._build_prompt(f"{dir}/general", version_general) if general is True else ""
+    def get_prompt(
+        self,
+        type,
+        dir=None,
+        version="v1",
+        version_general="v3",
+        version_output="v3",
+        json=True,
+        general=True,
+    ):
+
+        full = (
+            self._build_prompt(f"{dir}/general", version_general)
+            if general is True
+            else ""
+        )
 
         if type != "general":
             p = os.path.join(dir, type)
@@ -94,6 +215,7 @@ class Agent:
         self.id = 0
 
     ########### Checkpointing #######
+
     def save(self, folder_name):
         os.makedirs(folder_name, exist_ok=True)
         self.save_conversation(os.path.join(folder_name, "conversation.txt"))
@@ -111,41 +233,94 @@ class Agent:
 
     ############ Running ############
 
-    def single_run(self, prompt, expensive=False, parse=None):
+    def single_run(self, prompt, expensive=False, parse=None, info=""):
+        """Run a single prompt without conversation context. Logs if logger is available."""
         chat = Chat(dedent=True)
         chat += prompt
-        res = chat.complete(cache=True, expensive=expensive, parse=parse)  # TODO: check cache
+
+        # Log input
+        input_messages = [{"role": "user", "content": prompt}]
+
+        res = chat.complete(cache=False, expensive=expensive, parse=parse)
+
+        # Log output
+        self._log_llm_call(
+            input_messages=input_messages,
+            output_message=res,
+            metadata={"expensive": expensive, "method": "single_run: " + str(info)},
+        )
+
         return res
 
-    def run(self, prompt: str, max_iter: int = 15, schema: str = None, remove_tools: List[str] = []):
+    def run(
+        self,
+        prompt: str,
+        max_iter: int = 15,
+        schema: str = None,
+        remove_tools: List[str] = [],
+    ):
+        """Run agent with ReAct loop. Logs all LLM calls and tool executions."""
         if schema is None:
             schema = self.get_output_jsonschema(remove_tools=remove_tools)
         options = self.get_options(schema)
 
+        # Log the start of the run
+        self._log_info(
+            "Starting run with prompt",
+            metadata={"max_iter": max_iter, "prompt_preview": prompt[:100]},
+        )
+
         self.chat += prompt
         n_tool_responses = 0
         for i in range(max_iter):
-            response, done, n = self._run(options)
+            response, done, n = self._run(options, iteration=i)
             n_tool_responses += n
             if done:
                 break
 
-        n = i + 2 + n_tool_responses  # number of new messages = (i+1) responses + 1 user message
+        n = (
+            i + 2 + n_tool_responses
+        )  # number of new messages = (i+1) responses + 1 user message
         self.update_conversation(n)
-        return self.response(response)
 
-    def _run(self, options):
-        res = self.chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
+        final_response = self.response(response)
+        # Log completion
+        self._log_info(
+            "Run completed",
+            metadata={
+                "iterations": i + 1,
+                "tool_calls": n_tool_responses,
+                "response_preview": final_response[:100] if final_response else "",
+            },
+        )
+
+        return final_response
+
+    def _run(self, options, iteration=0):
+        """Single iteration of the ReAct loop. Logs LLM call."""
+        # Extract input messages for logging
+        input_messages = [
+            {"role": msg.get("role", "unknown"), "content": str(msg.get("content", ""))}
+            for msg in self.chat.messages[-5:]
+        ]  # Last 5 messages for context
+
+        res = self.chat.complete(
+            parse=None, cache=self.cache, expensive=self.expensive, options=options
+        )
         res = json.loads(repair_json(res))
-        """
-        self.chat.messages.append({
-            "role": "assistant",
-            "content": {
-                "type": "text",
-                "text": json.dumps(res)
-            }
-        })
-        """
+
+        # Log the LLM call
+        self._log_llm_call(
+            input_messages=input_messages,
+            output_message=json.dumps(res),
+            metadata={
+                "iteration": iteration,
+                "cache": self.cache,
+                "expensive": self.expensive,
+                "method": "_run",
+            },
+        )
+
         done, n_tool_responses, tool_messages = self.use_tools(res)
 
         if self.verbose is True:
@@ -158,30 +333,30 @@ class Agent:
         options = self.get_options(schema)
         chat = Chat(system_message=self.system_prompt)
         chat += prompt
-        res = chat.complete(parse=None, cache=self.cache, expensive=self.expensive, options=options)
+        res = chat.complete(
+            parse=None, cache=self.cache, expensive=self.expensive, options=options
+        )
         res = json.loads(repair_json(res))
         done, n_tool_responses, tool_messages = self.use_tools(res)
 
         # Concatenate all tool messages into a single string
         concatenated = "\n\n".join(
-            msg['content']['text'] for msg in tool_messages if msg.get('content', {}).get('text')
+            msg["content"]["text"]
+            for msg in tool_messages
+            if msg.get("content", {}).get("text")
         )
         return concatenated
 
-
     def response(self, message: Dict):
-        response = message.get("response", '')
+        response = message.get("response", "")
         return response
 
     def get_options(self, schema):
-        options = {"response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "test",
-                "schema": schema,
-                "strict": True
-            },
-        }
+        options = {
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {"name": "test", "schema": schema, "strict": True},
+            }
         }
         return options
 
@@ -193,7 +368,9 @@ class Agent:
         if message is None:
             return
         assert "role" in message, "Message must contain 'role'"
-        assert "content" in message or message["role"] == "tool", "Message must contain 'content' (or be a tool message)"
+        assert (
+            "content" in message or message["role"] == "tool"
+        ), "Message must contain 'content' (or be a tool message)"
         self.chat.messages.append(message)
 
     def update_conversation(self, n_messages):
@@ -216,17 +393,17 @@ class Agent:
         return self.id
 
     def use_tools(self, message: Dict):
-        '''
+        """
         Return a boolean indicating, >=1 tool call is present.
-        '''
+        """
         n = 0
         done = True
         tool_messages = []
 
         react = message["actions"]
-        if type(react) != list:
+        if not isinstance(react, list):
             try:
-                react = json.loads(repair_json(message['actions']))
+                react = json.loads(repair_json(message["actions"]))
             except Exception as e:
                 raise e
         for call in react:
@@ -243,17 +420,23 @@ class Agent:
 
     def _use_tool(self, call):
         success = False
-        name = call['function']
-        args = call['parameters']
+        name = call["function"]
+        args = call["parameters"]
         if "parameters" in args.keys():
-            args = args['parameters']
+            args = args["parameters"]
         tool = self.tools.get(name, None)
         id = self.get_next_id()
-        call['tool_call_id'] = id
+        call["tool_call_id"] = id
 
         # Print tool call information
         if tool is None:
             print(f"\n[TOOL ERROR] Invalid tool name: {name}")
+            error_msg = f"Invalid tool name: {name}"
+            self._log_error(
+                error_msg,
+                "InvalidToolError",
+                metadata={"requested_tool": name, "tool_call_id": id},
+            )
             name = "INVALID TOOL NAME"
         else:
             print(f"\n[TOOL CALL] {tool.name}")
@@ -261,25 +444,55 @@ class Agent:
                 print(f"[ARGUMENTS] {json.dumps(args, indent=2)}")
             name = tool.name
 
+        import time
+
+        start_time = time.time()
+
         try:
             out = tool.run(**args)
             success = True
+            execution_time = time.time() - start_time
+
             # Print tool result
-            print(f"[TOOL RESULT] {str(out)[:500]}{'...' if len(str(out)) > 500 else ''}")
+            print(
+                f"[TOOL RESULT] {str(out)[:500]}{'...' if len(str(out)) > 500 else ''}"
+            )
+
+            # Log successful tool execution
+            self._log_tool_call(
+                tool_name=name,
+                tool_input=args,
+                tool_output=str(out)[:1000],  # Limit output size
+                metadata={
+                    "success": True,
+                    "execution_time": execution_time,
+                    "tool_call_id": id,
+                },
+            )
+
         except Exception as e:
             success = False
             out = e
+            execution_time = time.time() - start_time
             print(f"[TOOL ERROR] {str(e)}")
+
+            # Log tool error
+            self._log_error(
+                error_message=str(e),
+                error_type=type(e).__name__,
+                metadata={
+                    "tool_name": name,
+                    "tool_input": args,
+                    "execution_time": execution_time,
+                    "tool_call_id": id,
+                },
+            )
 
         message = {
             "role": "tool",
             "tool_call_id": id,
             "name": name,
-            "content": {
-                "type": "tool_result",
-                "result": str(out),
-                "success": success
-            }
+            "content": {"type": "tool_result", "result": str(out), "success": success},
         }
         return message, success
 
@@ -289,21 +502,21 @@ class Agent:
     ############ Load/Save ############
 
     def save_conversation(self, filename, note=""):
-        with open(filename, 'w', encoding='utf-8') as f:
+        with open(filename, "w", encoding="utf-8") as f:
             json.dump(
                 {
                     "note": note,
                     "messages": self.conversation,
-                    'id': self.id,
+                    "id": self.id,
                 },
                 f,
                 ensure_ascii=False,
-                indent=2
+                indent=2,
             )
         return
 
     def load_conversation(self, filename, reset=True):
-        with open(filename, 'r', encoding='utf-8') as f:
+        with open(filename, "r", encoding="utf-8") as f:
             data = json.load(f)
         messages = data.get("messages", [])
         id = data.get("id", 0)
@@ -320,30 +533,32 @@ class Agent:
 
     def render_content(self, message, no_background=False):
         parsed = json.dumps(message)
-        parsed = json.loads(repair_json(parsed))["content"]['text']
+        parsed = json.loads(repair_json(parsed))["content"]["text"]
         return self.render_message_content(parsed, no_background=no_background)
 
     def render_message_content(self, parsed, no_background=False):
         inner_parts = []
 
-        if type(parsed) == str and len(parsed) > 0 and parsed[0] != "{":
+        if isinstance(parsed, str) and len(parsed) > 0 and parsed[0] != "{":
             text = parsed
             escaped_text = html.escape(text).replace("\n", "<br>")
             inner_parts.append(f"<div style='margin-top:5px;'>{escaped_text}</div>")
         else:
-            if type(parsed) == str:
+            if isinstance(parsed, str):
                 parsed = json.loads(repair_json(parsed))
             if "react" in parsed:
                 actions_trace = parsed["actions"]
-                if type(actions_trace) != list:
+                if not isinstance(actions_trace, list):
                     try:
-                        actions_trace = json.loads(repair_json(parsed['actions']))
-                    except Exception as e:
+                        actions_trace = json.loads(repair_json(parsed["actions"]))
+                    except Exception:
                         return
                 for i, item in enumerate(actions_trace):
 
                     if "thought" in item:
-                        inner_parts.append(f"💭 <strong>Thought:</strong> {html.escape(item['thought'])}")
+                        inner_parts.append(
+                            f"💭 <strong>Thought:</strong> {html.escape(item['thought'])}"
+                        )
                     elif "function" in item:
                         function = html.escape(item.get("function", "unknown"))
                         params = item.get("parameters", {})
@@ -367,10 +582,15 @@ class Agent:
                                 else:
                                     value_str = html.escape(str(value))
 
-                                param_lines.append(f"<li><strong>{label}:</strong> {value_str}</li>")
+                                param_lines.append(
+                                    f"<li><strong>{label}:</strong> {value_str}</li>"
+                                )
 
-                            param_block = "<ul style='margin-left: 1.5em; margin-top: 0.3em'>" + "".join(
-                                param_lines) + "</ul>"
+                            param_block = (
+                                "<ul style='margin-left: 1.5em; margin-top: 0.3em'>"
+                                + "".join(param_lines)
+                                + "</ul>"
+                            )
                             lines.append(param_block)
 
                         inner_parts.append("<br>".join(lines))
@@ -379,13 +599,15 @@ class Agent:
                 text = parsed["response"].strip()
                 if text:
                     escaped_text = html.escape(text).replace("\n", "<br>")
-                    inner_parts.append(f"<div style='margin-top:5px;'><strong>Response:</strong>: {escaped_text}</div>")
+                    inner_parts.append(
+                        f"<div style='margin-top:5px;'><strong>Response:</strong>: {escaped_text}</div>"
+                    )
 
             if "tool_response" in parsed:
                 text = parsed["tool_response"].strip()
-                tool_id = str(parsed['tool_call_id']).strip()
+                # tool_id = str(parsed["tool_call_id"]).strip()
                 # tool_call_note = f" <span style='color:#666; font-size:0.85em;'>(Tool Call ID: <code>{tool_id}</code>)</span>"
-                tool_name = str(parsed['tool_name']).strip()
+                tool_name = str(parsed["tool_name"]).strip()
 
                 if text:
                     if text.strip().startswith("<"):
@@ -397,7 +619,8 @@ class Agent:
                         formatted_text = html.escape(text).replace("\n", "<br>")
                     # inner_parts.append(f"<div style='margin-top:5px;'><strong>Tool:</strong><br>{formatted_text}</div>")
                     inner_parts.append(
-                        f"<div style='margin-top:5px;'><strong>Tool: {tool_name}</strong><br>{formatted_text}</div>")
+                        f"<div style='margin-top:5px;'><strong>Tool: {tool_name}</strong><br>{formatted_text}</div>"
+                    )
 
         return "<br>".join(inner_parts)
 
@@ -422,7 +645,7 @@ class Agent:
             # Handle regular messages
             try:
                 parsed = json.dumps(message)
-                parsed = json.loads(parsed)["content"]['text']
+                parsed = json.loads(parsed)["content"]["text"]
                 content_block = self.render_message_content(parsed)
             except (KeyError, json.JSONDecodeError):
                 return
@@ -472,17 +695,20 @@ class Agent:
 
         return HTML("".join(html_parts))
 
-    def get_output_jsonschema(self, remove_tools=[]):
-        function_branches = []
-        tools = self.tools
+    def get_tool_schema(self, remove_tools=[], json=True):
+        """Generate tool descriptions dynamically."""
+        tool_schema = []
 
-        for name, tool in tools.items():
+        for name, tool in self.tools.items():
             tool_name = name
             if name in remove_tools:
                 continue
-            tool_schema = tool.parse(tool_name)
+            tool_schema.append(tool.parse(tool_name, json=json))
 
-            function_branches.append(tool_schema)
+        return tool_schema
+
+    def get_output_jsonschema(self, remove_tools=[]):
+        function_branches = self.get_tool_schema(remove_tools=remove_tools, json=True)
 
         schema = {
             "type": "object",
@@ -497,19 +723,24 @@ class Agent:
                                 "properties": {
                                     "thought": {
                                         "type": "string",
-                                        "description": "A reasoning step or internal reflection."
+                                        "description": "A reasoning step or internal reflection.",
                                     }
                                 },
                                 "required": ["thought"],
-                                "additionalProperties": False
+                                "additionalProperties": False,
                             },
-                            *function_branches
+                            *function_branches,
                         ]
-                    }
+                    },
                 }
             },
             "required": ["actions"],
-            "additionalProperties": False
+            "additionalProperties": False,
         }
 
         return schema
+
+    def print_progress(self, message_type: str, details: str):
+        """Print progress messages during execution."""
+        if self.verbose:
+            print(f"[{message_type}]: {details}")
