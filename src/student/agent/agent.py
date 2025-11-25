@@ -39,8 +39,10 @@ class Agent:
         self.id = 0
         self.conversation = []  # list of conversations. new list starts at each reset
         self.system_prompt = ""
+        self.token_counter = []
         self.logger = logger
         self.agent_id = str(uuid.uuid4())[:8]  # Short unique ID for this agent instance
+
         self.model_name = "unknown"  # Will be set by setup_provider
 
         if dir is not None and version is not None:
@@ -52,6 +54,11 @@ class Agent:
         self.reset_id()
         self.setup_provider(provider)
         self.verbose = verbose
+        if self.verbose:
+            print(f"Created agent with agent_id: {self.agent_id}")
+
+        self.max_message_content = 4000
+        self.reset_token_count()
 
     ############ General Setup ############
     def setup_provider(self, provider="openai"):
@@ -242,12 +249,17 @@ class Agent:
         input_messages = [{"role": "user", "content": prompt}]
 
         res = chat.complete(cache=False, expensive=expensive, parse=parse)
+        token_count = self.token_count(chat)
 
         # Log output
         self._log_llm_call(
             input_messages=input_messages,
             output_message=res,
-            metadata={"expensive": expensive, "method": "single_run: " + str(info)},
+            metadata={
+                "expensive": expensive,
+                "method": "single_run: " + str(info),
+                "token_count": token_count,
+            },
         )
 
         return res
@@ -307,6 +319,7 @@ class Agent:
         res = self.chat.complete(
             parse=None, cache=self.cache, expensive=self.expensive, options=options
         )
+        token_count = self.token_count()
         res = json.loads(repair_json(res))
 
         # Log the LLM call
@@ -318,6 +331,7 @@ class Agent:
                 "cache": self.cache,
                 "expensive": self.expensive,
                 "method": "_run",
+                "token_count": token_count,
             },
         )
 
@@ -498,6 +512,56 @@ class Agent:
 
     def get_memory_tool_mask(self):
         return []
+
+    ############ Token counting ############
+
+    def reset_token_count(self):
+        """Reset the token counter to an empty list."""
+        token_sum_old = self._sum_token_count()
+        self.token_counter = []
+        return token_sum_old
+
+    def _sum_token_count(self) -> tuple[int, int]:
+        """
+        Get the total number of input and output tokens used.
+
+        Returns:
+            tuple[int, int]: Total (input_tokens, output_tokens) used across all interactions
+        """
+        in_tokens = 0
+        out_tokens = 0
+        for count in self.token_counter:
+            in_tokens += count.get("input_tokens", 0)
+            out_tokens += count.get("output_tokens", 0)
+        return {"input_tokens": in_tokens, "output_tokens": out_tokens}
+
+    def token_count(self, chat: Chat = None) -> None:
+        """
+        Count tokens for a chat interaction and add to the token counter.
+
+        Args:
+            chat: The chat to count tokens for. If None, uses self.chat
+        """
+        if chat is None:
+            chat = self.chat
+        count = self._token_count(chat)
+        self.token_counter.append(count)
+        return count
+
+    def _token_count(self, chat: Chat) -> Dict[str, int]:
+        """
+        Get the token counts for a specific chat interaction.
+
+        Args:
+            chat: The chat to count tokens for
+
+        Returns:
+            Dict with input_tokens and output_tokens counts
+        """
+        input_tokens = chat.additional_res["prompt_tokens"]
+        output_tokens = chat.additional_res["completion_tokens"]
+
+        return {"input_tokens": input_tokens, "output_tokens": output_tokens}
 
     ############ Load/Save ############
 
@@ -739,8 +803,3 @@ class Agent:
         }
 
         return schema
-
-    def print_progress(self, message_type: str, details: str):
-        """Print progress messages during execution."""
-        if self.verbose:
-            print(f"[{message_type}]: {details}")

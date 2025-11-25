@@ -15,6 +15,10 @@ class TodoListAgent(StudentAgent):
         self.current_todo_list = ""
         self.ask_human = self.tools.get("ask_human") is not None
 
+    def print_progress(self, message_type: str, details: str):
+        """Print progress messages during execution."""
+        print(f"[{message_type}]: {details}")
+
     def run(self, prompt: str, max_iter: int = 25) -> str:
         if self.verbose:
             print(f"[{self.name}] received instruction: {prompt}")
@@ -498,7 +502,8 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
                 print(f"\n[{self.name}] Iteration {iteration}: {next_action}")
 
             self.print_progress(
-                "task_start", f"Starting task {iteration}: {next_action}"
+                "task_start",
+                f"Iteration {iteration} - Starting task {iteration}: {next_action}",
             )
 
             try:

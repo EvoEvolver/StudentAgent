@@ -73,6 +73,7 @@ class Logger:
                     f.write(
                         f"=== Agent Log Started: {datetime.now().isoformat()} ===\n\n"
                     )
+            print(f"Logger: Created new log file at {self.file}")
 
     def set_file(self, file: str, auto_load: bool = True):
         """
