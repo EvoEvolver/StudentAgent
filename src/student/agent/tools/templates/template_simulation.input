@@ -1,4 +1,4 @@
-SimulationType                [simulation type]   # MonteCarlo or MolecularDynamics
+SimulationType                MonteCarlo
 NumberOfCycles                [int] # The number of cycles for the production run.
 NumberOfInitializationCycles  [int] # The number of cycles used to initialize the system to equilibrate the positions of the atoms in the system.
 PrintEvery                    [int]

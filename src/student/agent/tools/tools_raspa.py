@@ -156,24 +156,27 @@ IMPORTANT: This will overwrite any existing file with the same name!
 
 
 class InputFile(WriteFile):
-    def __init__(self, path=None, template_filename=None):
+    def __init__(self, path=None, template_filename=None, advanced_template=False):
         super().__init__(path)
 
         self.name = "input_file"
-        self.description = """Use this tool to write the simulation input file.
-You must provide the content as string. The filename is always simulation.input
-ALWAYS use this template and modify based on examples from your memory!
-
-CRITICAL: RASPA2 uses 0-based indexing for systems and components:
-- First system: Box 0 or Framework 0 (NOT Box 1 or Framework 1)
-- First component: Component 0 (NOT Component 1)
-- Second component: Component 1, etc.
-Using 1-based indexing will cause "system number is incorrect" errors!"""
+        self.description = """Use this tool to write the simulation input file. The filename is always simulation.input.
+ALWAYS use the template and modify it based on examples from your memory!
+"""
         self.has_file = False
+        self.set_template(template_filename, advanced_template)
+
+    def set_template(self, template_filename=None, advanced_template=False):
         if template_filename is None:
-            template_filename = os.path.join(
-                os.path.dirname(__file__), "templates/template_simulation.input"
-            )
+            if advanced_template:
+                template_filename = os.path.join(
+                    os.path.dirname(__file__),
+                    "templates/full_template_simulation.input",
+                )
+            else:
+                template_filename = os.path.join(
+                    os.path.dirname(__file__), "templates/template_simulation.input"
+                )
         self.add_template(template_filename)
 
     def add_template(self, template_filename):
@@ -330,8 +333,7 @@ class OutputParser(RaspaTool):
     def __init__(self, path=None):
         name = "output_parser"
         description = """Use this tool to parse the raspa output files since they are too long to read directly.
-Do not use for any .output file!
-Provide the path of the output file you want to read (based on the root directory, NOT the current working directory)."""
+Provide the path of the output file you want to read based on the root directory (ALWAYS include the active subdirectory). Example: path=simulation_3/Output/System_0/output_Box_1.1.1_300.000000_100000.data"""
         super().__init__(name, description, path)
 
     def _run(self, file_path):
