@@ -2,6 +2,7 @@ import html
 import json
 import os
 import uuid
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 import mllm
@@ -41,7 +42,9 @@ class Agent:
         self.system_prompt = ""
         self.token_counter = []
         self.logger = logger
-        self.agent_id = str(uuid.uuid4())[:8]  # Short unique ID for this agent instance
+        self.agent_id = (
+            datetime.now().strftime("%Y-%m-%d %H-%M-%S-") + str(uuid.uuid4())[:4]
+        )
 
         self.model_name = "unknown"  # Will be set by setup_provider
 
@@ -54,8 +57,6 @@ class Agent:
         self.reset_id()
         self.setup_provider(provider)
         self.verbose = verbose
-        if self.verbose:
-            print(f"Created agent with agent_id: {self.agent_id}")
 
         self.max_message_content = 4000
         self.reset_token_count()

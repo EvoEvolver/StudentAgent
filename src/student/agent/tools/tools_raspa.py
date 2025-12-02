@@ -212,7 +212,7 @@ class ExecuteRaspa(RaspaTool):
             if self.check_success:
                 self.agent._advance_to_next_folder()
             return self.get_output(
-                content=f"<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created! To rerun, you must create all input files again!)"
+                content=f"<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created.)"
             )
         return self.get_output(e=out)
 

@@ -30,6 +30,7 @@ class RaspaAgent(TodoListAgent):
     path_add: str
     auto_run: bool
     memory: Memory
+    memory_path: str
     ask_when_no_memory = False
 
     def __init__(
@@ -40,6 +41,7 @@ class RaspaAgent(TodoListAgent):
         verbose=True,
         ask_human=False,
         expensive=True,
+        memory_path=None,
     ):
         if csd_path is not None:
             framework_loader = FrameworkLoader(path, coremof=False, csd_path=csd_path)
@@ -60,7 +62,11 @@ class RaspaAgent(TodoListAgent):
         tools = {tool.name: tool for tool in raspa_tools}
 
         super().__init__(
-            tools=tools, provider=provider, verbose=verbose, expensive=expensive
+            tools=tools,
+            provider=provider,
+            verbose=verbose,
+            expensive=expensive,
+            memory_path=memory_path,
         )
         self.ask_human = ask_human
         if self.ask_human:
