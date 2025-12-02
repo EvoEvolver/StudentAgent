@@ -879,8 +879,10 @@ The selection of MC moves implicitly defines the thermodynamic ensemble for the 
 Since reinsertion moves are unlikely to succeed, partial reinsertion moves are used instead.
 For accurate sampling, the ideal gas Rosenbluth weight is required as an additional input.
 This value is 1 for small molecules and exponentially decreases for molecules with a lot of torsions.
-
-**MC moves**
+"""
+raspa_knowledge[
+    "mc_moves"
+] = """**Detailed MC moves**
 
 <keyword>
     <name>MolFraction </name>
@@ -1013,8 +1015,10 @@ This value is 1 for small molecules and exponentially decreases for molecules wi
     However, the CBMC growth is able to reach very high densities.
     </description>
 </keyword>
-
-Here are additional expert annotations for the MC moves to consider:
+"""
+raspa_knowledge[
+    "mc_moves_expert"
+] = """Here are additional expert annotations for the MC moves to consider:
 - TranslationProbability can be safely used for all simulations in a framework
 - RotationProbability can be safely used for all simulations in a framework
 - PartialReinsertionProbability can be safely used for all simulations involving molecules with any torsion parameters in the molecule definition file
@@ -1023,3 +1027,10 @@ Here are additional expert annotations for the MC moves to consider:
 - WidomProbability can be safely used for all simulations to calculate Henry’s constant, IdealGasRosenbluthWeight, and helium void fraction
 - IdentityChangeProbability can be safely used for all simulations to calculate adsorption isotherms of mixtures(more than one component) using GCMC simulations
 """
+
+
+if __name__ == "__main__":
+    import json
+
+    path = "knowledge.json"
+    json.dump(raspa_knowledge, open(path, "w"), indent=4)

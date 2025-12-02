@@ -14,6 +14,7 @@ parameters = {
         "molecule": "carbon dioxide",
         "molecule_l": "n-hexane",
         "rosenbluth": 0.0029442,  # from Aastha
+        "ug": 539482111.2,
     },
     1: {
         "framework": "MFI_SI",
@@ -21,13 +22,15 @@ parameters = {
         "molecule": "nitrogen",
         "molecule_l": "n-pentane",
         "rosenbluth": 0.0197439,  # from Aastha
+        "ug": 926.4,
     },
     2: {
         "framework": "MIL-47",
         "hvf": 0.608,  # from RASPA manual
         "molecule": "ethane",
-        "molecule_l": "n-heptane",
-        "rosenbluth": 0.0004450,  # from Aastha
+        "molecule_l": "n-butane",
+        "rosenbluth": 0.1296930,  # from Aastha
+        "ug": 587.0,
     },
 }
 
@@ -43,6 +46,7 @@ ads_dil = (
 ads_dil_l = (
     "Determine the adsorption enthalpy of {molecule_l} on {framework} using a simulation at infinite dilution"
     + T
+    + ". The internal energy of {molecule_l} is {ug}"
 )
 ads_1 = "Determine the adsorption enthalpy of {molecule} on {framework}" + pT
 ads_l = "Determine the adsorption enthalpy of {molecule_l} on {framework}" + pT
@@ -58,14 +62,10 @@ h_2 = (
 
 
 tasks_multi = {
-    "henry": {"l": h_l, "sl": h_2},
-    "ads_dil": {
-        "s": ads_dil,
-        "l": ads_dil_l,
-    },
+    "henry": {"l": h_l},
+    "ads_dil": {"l": ads_dil_l},
     "ads_iso": {"s": ads_1, "l": ads_l, "sl": ads_2},
 }
-
 
 # Single Step Tasks
 add_hvf = " given the helium void fraction of {hvf}"
@@ -73,16 +73,13 @@ add_rb_1 = " given the ideal gas rosenbluth weight of {rosenbluth} for {molecule
 
 hvf = "Calculate the helium void fraction of {framework}" + T
 rosenbluth_1 = "Calculate the ideal Rosenbluth weights for {molecule_l}" + T
-total = (
-    "Calculate the total energy of {molecule_l} in the gas phase to determine the internal energy"
-    + pT
-)
+total = "Calculate the total energy of {molecule_l} in the gas phase" + pT
 
 tasks_single = {
-    "total": {"l": total},
+    "total": {"l": total + add_rb_1},
     "hvf": {"x": hvf},
     "rosenbluth": {"l": rosenbluth_1},
-    "henry": {"s": h, "l": h_l + add_rb_1, "sl": h_2 + add_rb_1},
+    "henry": {"s": h, "l": h_l + add_rb_1},
     "ads_dil": {"s": ads_dil + add_hvf, "l": ads_dil_l + add_hvf},
     "ads_iso": {
         "s": ads_1 + add_hvf,
