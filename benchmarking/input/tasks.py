@@ -35,7 +35,7 @@ parameters = {
 }
 
 # Multistep Tasks
-p = " at 1 bar"
+p = " at 0.1 bar and 0.01 bar"
 T = " at 300 K"
 pT = p + " and" + T
 

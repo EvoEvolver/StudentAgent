@@ -1028,6 +1028,22 @@ raspa_knowledge[
 - IdentityChangeProbability can be safely used for all simulations to calculate adsorption isotherms of mixtures(more than one component) using GCMC simulations
 """
 
+raspa_knowledge[
+    "output"
+] = """*Output file analysis*
+- The output file contains all relevant properties calculated during the simulation.
+- The following checklist can be used to assess the quality of the output:
+    - RASPA reports the 95 percent confidence interval for all values: are the intervals sufficiently narrow?
+    - Is the energy drift below 10^-3?
+    - Was there a problem with one of the MC moves:
+        - Are the MC move acceptance rates high enough (significantly different from 0)?
+        - For swap moves: is the number of accepted additions and deletions similar?
+- For several derived properties, multiple values have to be extracted to calculate the final property
+"""
+
+# * selectivity, adsorptiondiluted = totalenergy -internalenergy - tailcorrections - RT
+# * analyze histograms with analyze_and_plot(path) tool (calculates statistical properties → is converged?)
+
 
 if __name__ == "__main__":
     import json
