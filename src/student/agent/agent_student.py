@@ -19,7 +19,7 @@ class StudentAgent(Agent):
         provider="openai",
         verbose=False,
         active_learning=True,
-        memory_path="memory.json",
+        memory_path=None,
     ):
         super().__init__(
             tools=tools,
@@ -41,7 +41,7 @@ class StudentAgent(Agent):
             cache=True,
             logger=self.logger,
         )
-        memory = Memory._load_from_file(memory_path)
+        memory = Memory._load_from_file(memory_path) if memory_path else Memory("root")
         memory.set_helper_agent(self.memory_agent)
         self.memory = memory
         self.memory_path = memory_path

@@ -11,7 +11,7 @@ import numpy as np
 from dotenv import load_dotenv
 from mllm import Chat
 
-from ..utils import file, quick_search
+from ..utils import all_files, file, quick_search
 from .input_gen.molecule_loader import MoleculeLoaderTrappe
 from .output import output_parser
 from .tools import RaspaTool
@@ -20,13 +20,7 @@ from .tools import RaspaTool
 class MoleculeLoader(MoleculeLoaderTrappe):
     def __init__(self, path=None):
         name = "molecule_loader"
-        description = """Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files.
-Accepts common molecule names and chemical formulas such as:
-- Simple formulas: CO2, N2, O2, CH4, H2O, NH3, Ar, Kr, Xe, He
-- Common names: carbon dioxide, nitrogen, oxygen, methane, water, ammonia, argon, krypton, xenon, helium
-- Organic molecules: ethane, propane, butane, pentane, hexane, heptane, octane, benzene, toluene
-
-The tool will automatically map common abbreviations to their proper names."""
+        description = """Generate the molecule definition (input) files and all corresponding force field and pseudoatom definition files."""
         super().__init__(name, description, path)
 
         # Common molecule name mappings
@@ -84,9 +78,11 @@ The tool will automatically map common abbreviations to their proper names."""
 
         torsions = [name for name in out.keys() if out[name] is True]
         if len(torsions) > 0:
-            response += f"The following molecules have torsions: {', '.join(torsions)}"
+            response += (
+                f"\nINFO The following molecules have torsions: {', '.join(torsions)}"
+            )
         else:
-            response += "\nNone of the molecules has torsions."
+            response += "\nINFO None of the molecules has torsions."
 
         return self.get_output(content=response)
 
@@ -94,14 +90,13 @@ The tool will automatically map common abbreviations to their proper names."""
 class ReadFile(RaspaTool):
     def __init__(self, path=None):
         name = "read_file"
-        description = """Use this tool to read the content of a text file (not directory!).
+        description = """Use this tool to read the content of a text file.
 You must provide the path to the file as file name (based on the root directory NOT the current working directory).
-For long documents, this tool only reads the beginning.
-The tool does not work on RASPA output files directly, use the output_parser tool for that.
+For long documents, this tool only reads the beginning. NEVER use for RASPA output files!
 """
         super().__init__(name, description, path)
 
-        self.blacklist = ["output/", "Output/"]
+        self.blacklist = ["output/", "Output/", ".data"]
 
     def run(self, file_name):
         path = self.get_path(full=False)
@@ -134,9 +129,7 @@ class WriteFile(RaspaTool):
     def __init__(self, path=None):
         name = "write_file"
         description = """Use this tool to write text into a new file.
-IMPORTANT: You must provide a file name based on the root directory NOT the current working directory.
-IMPORTANT: To edit a (small) file, you must first read a file with another tool and then write it completely new with this tool. Dont do this to copy files!
-IMPORTANT: This will overwrite any existing file with the same name!
+IMPORTANT: You must provide a file name based on the root directory NOT the current working directory. This will overwrite any existing file with the same name!
 """
         super().__init__(name, description, path)
 
@@ -161,7 +154,7 @@ class InputFile(WriteFile):
 
         self.name = "input_file"
         self.description = """Use this tool to write the simulation input file. The filename is always simulation.input.
-ALWAYS use the template and modify it based on examples from your memory!
+ALWAYS use the template and modify it!
 """
         self.has_file = False
         self.set_template(template_filename, advanced_template)
@@ -200,7 +193,7 @@ ALWAYS use the template and modify it based on examples from your memory!
 class ExecuteRaspa(RaspaTool):
     def __init__(self, agent, path=None):
         name = "execute_raspa"
-        description = """Use this to start a RASPA simulation. The output indicates the success of the simulation."""
+        description = "Use this to start a RASPA simulation."
         super().__init__(name, description, path)
         self.agent = agent
 
@@ -212,7 +205,7 @@ class ExecuteRaspa(RaspaTool):
             if self.check_success:
                 self.agent._advance_to_next_folder()
             return self.get_output(
-                content=f"<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created.)"
+                content=f"The simulation ran successfully:\n<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created.)"
             )
         return self.get_output(e=out)
 
@@ -568,23 +561,88 @@ Provide the path of the output file you want to read based on the root directory
 
 
 class OutputExtractor(OutputParser):
+
     def __init__(self, path=None):
         super().__init__(path=path)
 
     def _run(self, file_path: str, query: str):
-        path = os.path.join(self.get_path(full=False), file_path)
 
+        out = self._parse_file(file_path)
+        return self._answer(query, out)
+
+    def _check_ignore(self, file_name):
+        # Return True is file should be ignored
+        blacklist = [
+            "Movies/",
+            "VTK/",
+            "Restart/",
+            "run.sh",
+            ".DS_Store",
+            ".md",
+            ".json",
+            ".jsonl",
+            ".log",
+            ".def",
+            ".input",
+            ".cif",
+        ]
+        for p in blacklist:
+            if p in file_name:
+                return True
+        return False
+
+    def _filter_files(self, files: List[str]) -> str:
+        """Filter out ignored files and return a formatted string of available files."""
+        filtered_files = [f for f in files if not self._check_ignore(f)]
+        return "\n".join(filtered_files)
+
+    def _correct_path(self, file_path: str, e) -> str:
+        """Try to correct common mistakes in the provided file path."""
+        base_path = self.get_path(full=False)
+        available_files = self._filter_files(all_files(base_path))
+
+        chat = Chat()
+        chat += f"""You are helping to correct file paths for RASPA output files.
+Here are all available files in the accessible directory:
+<files>
+{available_files}
+</files>
+The following file_path was provided and raised a FileNotFoundError:
+<path>
+{file_path}
+</path>
+<error>
+{e}
+</error>
+Please find the the query based on this data. Provide only the correct file path without any additional text!
+"""
+        response = chat.complete()
+
+        return response
+
+    def _parse_file(self, file_path: str, corrected: bool = False):
         try:
+            path = os.path.join(self.get_path(full=False), file_path)
+
             with open(path) as in_file:
                 data = in_file.read()
             out = output_parser.parse(data)
 
             out = self.filter(out)
             out = self.strip_block_fields(out)
+            return out
 
+        except FileNotFoundError as e:
+            if corrected is False:
+                return self._parse_file(
+                    self._correct_path(file_path, e), corrected=True
+                )
+            else:
+                raise e
         except Exception as e:
-            return self.get_output(f"Error with output parsing: {e}, (path={path})")
+            raise e
 
+    def _answer(self, query, out):
         # Extract relevant information based on query using LLM
         chat = Chat()
         chat += f"""You are an expert in RASPA simulation software output analysis.
@@ -601,7 +659,10 @@ Please answer the query based on this data. Provide only the specific informatio
         return response
 
     def run(self, file_path: str, query: str):
-        res = self._run(file_path, query)
+        try:
+            res = self._run(file_path, query)
+        except Exception as e:
+            return self.get_output(e=e)
         return self.get_output(res)
 
 
