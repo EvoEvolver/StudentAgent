@@ -45,8 +45,8 @@ def error(s):
 
 
 def file(name, content=""):
-    # remove all before simulation_ in the path :
-    name = "simulation_" + name.split("simulation_")[-1]
+    if "simulation_" in name:
+        name = "simulation_" + name.split("simulation_")[-1]
     return f"<file name={name}>{content}</file>"
 
 

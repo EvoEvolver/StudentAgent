@@ -117,7 +117,8 @@ For long documents, this tool only reads the beginning. NEVER use for RASPA outp
                 content = "The is a directory, not a file!"
             else:
                 content = "This path does not exist!"
-            return self.get_output(content=f"{file(file_path)}:\n{content}")
+            path = file_path.replace(self.get_path(full=False) + "/", "")
+            return self.get_output(content=f"{file(path)}:\n{content}")
         except Exception as e:
             return self.get_output(
                 e="You must provide the path to the file based on the root directory NOT the current working directory)."
@@ -143,7 +144,8 @@ IMPORTANT: You must provide a file name based on the root directory NOT the curr
             os.makedirs(os.path.dirname(new_path), exist_ok=True)
             with open(new_path, "w") as f:
                 f.write(file_content)
-            return self.get_output(content=f"Successfully generated: {file(new_path)}")
+            path = file(new_path.replace(self.get_path(full=False) + "/", ""))
+            return self.get_output(content=f"Successfully generated: {path}")
         except Exception as e:
             return self.get_output(e=e)
 
@@ -271,7 +273,8 @@ class CoreMofLoader(RaspaTool):
                 mof.to_file(out_path)
                 self.has_file = True
                 return self.get_output(
-                    content=f"Generated from Coremof: {file(output_file)}"
+                    path=file(out_path.replace(self.get_path(full=False) + "/", "")),
+                    content=f"Generated from Coremof: {file(path)}",
                 )
             except Exception as e:
                 errors.append(e)
@@ -326,7 +329,7 @@ class OutputParser(RaspaTool):
     def __init__(self, path=None):
         name = "output_parser"
         description = """Use this tool to parse the raspa output files since they are too long to read directly.
-Provide the path of the output file you want to read based on the root directory (ALWAYS include the active subdirectory). Example: path=simulation_3/Output/System_0/output_Box_1.1.1_300.000000_100000.data"""
+Provide the path of the output file you want to read based on the root directory (ALWAYS include the active subdirectory). Example: path=simulation_[x]/Output/System_0/[x].data"""
         super().__init__(name, description, path)
 
     def _run(self, file_path):
@@ -349,6 +352,7 @@ Provide the path of the output file you want to read based on the root directory
             )
 
         except Exception as e:
+            path = path.replace(self.get_path(full=False) + "/", "")
             return self.get_output(f"Error with output parsing: {e}, (path={path})")
         return out
 

@@ -111,7 +111,6 @@ class RaspaTool(Tool):
 
     def get_path(self, full=False):
         if self.path is None:
-            # raise RuntimeWarning(f"No path was set for {self.name}.")
             print(f"Warning: No path was set for {self.name}!")
             return "./"
         else:
@@ -119,3 +118,10 @@ class RaspaTool(Tool):
                 return os.path.join(self.path, self.path_add)
             else:
                 return self.path
+
+    def get_output(self, content=None, e=None, LIMIT=2500):
+        if content is not None:
+            content = content.replace(self.get_path(full=False), "")
+        if e is not None:
+            e = e.replace(self.get_path(full=False), "")
+        return super().get_output(content=content, e=e, LIMIT=LIMIT)
