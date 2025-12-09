@@ -5,23 +5,11 @@ Run the RASPA benchmark for an agent
 import json
 import os
 
-import tqdm
-
 from student.agent.agent_raspa import RaspaAgent
 from student.agent.agent_student import StudentAgent
 
 TEST = False
 ADDITIONAL_INSTRUCTIONS = "This is a test of your capabilitys to run molecular simulations using RASPA. Strictly follow the steps to solve the task (no verifications, just report the result or error)."
-RASPA_TASKS = [
-    "total___l",
-    "hvf___x",
-    "rosenbluth___l",
-    "henry___s",
-    "henry___sl",
-    "henry___l",
-    "ads_dil___s",
-    "ads_iso___s",
-]
 
 
 def get_hint(task_name: str, single: bool = True) -> str:
@@ -84,49 +72,25 @@ def run_task(
     return agent.run(task_instructions)
 
 
-def run_multiple_tasks(
-    agent: StudentAgent,
-    tasks: list,
+def run_task_i(
+    i: int,
+    agent_params: dict,
     give_hint: bool = False,
     single: bool = True,
+    variant_index: int = 0,
 ):
     """
-    Run multiple tasks using the provided agent.
+    Run a specific task by index using the provided agent parameters.
 
     Parameters:
-    agent (StudentAgent): The agent to run the tasks.
-    tasks (list): A list of tasks to be executed.
-
-    Returns:
-    A list of results from the task executions.
-    """
-    results = []
-    for task in tqdm.tqdm(tasks):
-        result = run_task(agent, task, give_hint=give_hint, single=single)
-        results.append(result)
-    return results
-
-
-def test_agent_n_tasks(
-    n: int, agent: RaspaAgent = None, single: bool = True, give_hint=False, task_index=0
-):
-    """
-    Test the agent on n tasks from the RASPA benchmark.
-
-    Parameters:
-    n (int): The number of tasks to test.
-    agent (RaspaAgent): The agent to be tested. If None, a new RaspaAgent will be created.
+    i (int): The index of the task to run from the RASPA tasks list.
+    agent_params (dict): Configuration parameters for the agent.
+    give_hint (bool): Whether to provide a hint to the agent.
     single (bool): Whether to use single-framework tasks or multi-framework tasks.
-    give_hint (bool): Whether to provide hints to the agent.
-    task_index (int): The index of the task formulation variant to use (0, 1 or 2).
 
     Returns:
-    A list of results from the task executions.
+    The result of the task execution.
     """
-    if agent is None:
-        agent = RaspaAgent(path="../output/testing/")
-        agent.set_auto(True)
-
     # Load the RASPA benchmark tasks
     raspa_tasks_path = os.path.join(
         os.path.dirname(__file__),
@@ -135,22 +99,34 @@ def test_agent_n_tasks(
         f"tasks_{'single' if single else 'multi'}.json",
     )
     with open(raspa_tasks_path, "r") as f:
-        raspa_tasks = json.load(f)
-    raspa_tasks = [
-        (k, v[task_index]) for k, v in raspa_tasks.items() if k in RASPA_TASKS
-    ]
+        raspa_tasks_data = json.load(f)
 
-    # Run the tasks using the provided agent
-    results = run_multiple_tasks(
-        agent,
-        raspa_tasks[:n],
-        give_hint=give_hint,
-        single=single,
-    )
+    raspa_tasks = [(k, v[variant_index]) for k, v in raspa_tasks_data.items()]
 
-    return results
+    if i < 0 or i >= len(raspa_tasks):
+        raise ValueError(
+            f"Task index {i} is out of range. Available tasks: {len(raspa_tasks)}"
+        )
+
+    task = raspa_tasks[i]
+    task_name = task[0]
+
+    # Adjust path for this specific task
+    base_path = agent_params.get("path", "output/raspa_benchmark/")
+    task_path = os.path.join(base_path, f"task_{i}_{task_name}/")
+
+    # Create a copy of params to avoid side effects
+    current_agent_params = agent_params.copy()
+    current_agent_params["path"] = task_path
+
+    agent = RaspaAgent(**current_agent_params)
+    result = run_task(agent, task, give_hint=give_hint, single=single)
+
+    # TODO: save agent state
+
+    return result, agent
 
 
 if __name__ == "__main__":
 
-    print(test_agent_n_tasks(1, give_hint=True, single=True, task_index=0))
+    print(run_task_i(1, {}, give_hint=True, single=True))
