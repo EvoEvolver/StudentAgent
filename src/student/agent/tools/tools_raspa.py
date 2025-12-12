@@ -20,7 +20,8 @@ from .tools import RaspaTool
 class MoleculeLoader(MoleculeLoaderTrappe):
     def __init__(self, path=None):
         name = "molecule_loader"
-        description = """Generate the molecule definition (input) files and all corresponding force field and pseudoatom definition files."""
+        description = """Generate the molecule definition (input) files and all corresponding force field and pseudoatom definition files. Molecule names can be e.g. 'name' or ['name1', 'name2']."""
+
         super().__init__(name, description, path)
 
         # Common molecule name mappings
@@ -59,10 +60,41 @@ class MoleculeLoader(MoleculeLoaderTrappe):
 
         return normalized
 
+    def _parse_string_to_list(self, input_str: str) -> List[str]:
+        """Parse a string that may be an incorrectly formatted list into a proper list.
+
+        Handles cases like:
+        - '["co2", "n2"]' or '["co2, n2"]'
+        - '\\["name1", "name2"\\]'
+        - 'co2, n2' (comma-separated, but not splitting chemical names like '1,2-dimethylpropane')
+        """
+        # Remove escaped brackets and regular brackets
+        cleaned = input_str.strip()
+        cleaned = cleaned.replace("\\[", "").replace("\\]", "")
+        cleaned = cleaned.replace("[", "").replace("]", "")
+
+        # Remove quotes
+        cleaned = cleaned.replace('"', "").replace("'", "")
+
+        # Split by comma, but only if comma is not surrounded by digits (to preserve names like 1,2-dimethylpropane)
+        # Use regex to split on commas that are NOT between digits
+        parts = re.split(r",(?!\d)(?<!\d)", cleaned)
+
+        # Clean up each part
+        result = [part.strip() for part in parts if part.strip()]
+
+        return result
+
     def run(self, molecule_names: Union[List[str], str]):
         self.reset()
         if isinstance(molecule_names, str):
-            molecule_names = [molecule_names]
+            # Check if the string looks like a list (contains brackets or multiple comma-separated items)
+            if any(c in molecule_names for c in ["[", "]", "\\[", "\\]"]) or (
+                re.search(r",(?!\d)(?<!\d)", molecule_names) and len(molecule_names) > 1
+            ):
+                molecule_names = self._parse_string_to_list(molecule_names)
+            else:
+                molecule_names = [molecule_names]
 
         # Normalize molecule names
         normalized_names = [self.normalize_name(name) for name in molecule_names]

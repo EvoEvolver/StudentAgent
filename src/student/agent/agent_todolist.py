@@ -212,9 +212,10 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
         - Use [ ] for incomplete tasks in markdown format
         - Each task should specify which tool to use from the available tools
         - The steps should be actionable with the available tools
-        - Keep tasks focused and specific
+        - Keep tasks focused and concrete
         - The todo list can be as simple as one or two items
         - If relevant past experiences are provided, learn from them to create a better todo list
+        - Use minimal tasks necessary to achieve the instruction
 
         Return only the markdown todo list, nothing else:
         - [ ] Task 1
@@ -260,7 +261,7 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
 
         Please update the todo list by:
         1. Mark the completed task with [x] instead of [ ]
-        2. If the result suggests new tasks are needed, add them as new [ ] items
+        2. Only if the result suggests new tasks are strictly required, add them as new [ ] items
         3. Return the complete updated todo list in markdown format
 
         Only return the updated todo list, nothing else.

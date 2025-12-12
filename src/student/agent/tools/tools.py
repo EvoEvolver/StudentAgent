@@ -123,5 +123,5 @@ class RaspaTool(Tool):
         if content is not None:
             content = content.replace(self.get_path(full=False), "")
         if e is not None:
-            e = e.replace(self.get_path(full=False), "")
+            e = str(e).replace(self.get_path(full=False), "")
         return super().get_output(content=content, e=e, LIMIT=LIMIT)

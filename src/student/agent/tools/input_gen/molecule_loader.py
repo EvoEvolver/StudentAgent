@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import re
 from collections import defaultdict
 from io import StringIO
 from typing import List
@@ -104,9 +105,7 @@ class MoleculeLoaderTrappe(RaspaTool):
         self.ps_bag = PseudoAtomsBag()
 
     def _run(self, molecule_names: List[str]):
-
         molecule_names = self._sanitize_names(molecule_names)
-
         out_names = {}
         for name in molecule_names:
 
@@ -131,7 +130,7 @@ class MoleculeLoaderTrappe(RaspaTool):
                     raise ValueError(
                         "No molecule could be generated for ",
                         name,
-                        " (only use names recognized by PubChem)",
+                        " (only use names recognized by PubChem and be careful with the formatting when using multiple molecules)",
                     )
 
             res = res.replace(" ", "_")
@@ -209,13 +208,16 @@ class MoleculeLoaderTrappe(RaspaTool):
         matches = [i for i in matches if i not in self.blacklist]
 
         edge_cases = quick_search(
-            query, ["co2", "n2"], limit=1, score_cutoff=score_cutoff
+            query,
+            ["co2", "n2", "carbon dioxide", "nitrogen"],
+            limit=1,
+            score_cutoff=score_cutoff,
         )
         if len(edge_cases) > 0:
             x = edge_cases[0][0]
-            if x == "co2":
+            if x in ["co2", "carbon dioxide"]:
                 return "carbon dioxide"
-            if x == "n2":
+            if x in ["n2", "nitrogen"]:
                 return "nitrogen"
 
         if len(matches) == 0:
@@ -246,6 +248,8 @@ class MoleculeLoaderTrappe(RaspaTool):
     def load_unknown_molecule(self, name):
 
         smiles = molecule_name_to_smiles(name)
+        if smiles is None:
+            raise ValueError("No SMILES could be found for molecule name: " + name)
         Tc, pc, acentric_factor = get_properties(smiles)
 
         with open(

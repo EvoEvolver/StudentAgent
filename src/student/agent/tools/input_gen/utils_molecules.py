@@ -1,5 +1,5 @@
-from rdkit import Chem
 import requests
+from rdkit import Chem
 from rdkit.Chem import AllChem
 
 
@@ -24,7 +24,7 @@ def molecule_name_to_smiles(name: str):
             smiles = None
 
     except Exception as e:
-        if type(e) == requests.exceptions.ConnectionError:
+        if isinstance(e, requests.exceptions.ConnectionError):
             print("No connection PubChem API could be established.")
         return None
     return smiles
@@ -76,19 +76,17 @@ def pubchem_id_to_property(id, property_name: str):
 
 
 def smiles_to_pubchem_id(smiles: str, same_isotope=True):
-    url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastidentity/smiles/cids/txt"     
+    url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastidentity/smiles/cids/txt"
     if same_isotope:
         url += "?identity_type=same_isotope"
     try:
-        response = requests.post(url, data={'smiles':smiles}).text.strip().split()
-        
+        response = requests.post(url, data={"smiles": smiles}).text.strip().split()
+
     except Exception as e:
         if type(e) == requests.exceptions.ConnectionError:
             print("No connection PubChem API could be established.")
         return None
     return response
-
-
 
 
 def mol_from_smiles(smiles: str):
@@ -113,7 +111,7 @@ def mol_from_smiles(smiles: str):
 def get_mol(name, partial_Hs=True, verbose=False):
     smiles = molecule_name_to_smiles(name)
     if verbose:
-        print("SMILES found for ", name, " :" ,smiles)
+        print("SMILES found for ", name, " :", smiles)
     if smiles is None:
         return None
     mol = mol_from_smiles(smiles)
@@ -128,4 +126,3 @@ def get_mol(name, partial_Hs=True, verbose=False):
         if len(hetero_idx) > 0:
             mol = Chem.AddHs(mol, onlyOnAtoms=hetero_idx)
     return mol
-
