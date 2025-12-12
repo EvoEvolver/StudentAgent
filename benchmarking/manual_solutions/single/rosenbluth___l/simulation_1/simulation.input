@@ -1,0 +1,18 @@
+SimulationType                MonteCarlo
+NumberOfCycles                10000
+NumberOfInitializationCycles  0
+PrintEvery                    1000
+
+Forcefield                    local               
+CutOff                        14.0                
+RemoveAtomNumberCodeFromLabel yes
+
+Box 0
+BoxLengths 30 30 30
+ExternalTemperature 300
+
+Component 0 MoleculeName        n-hexane
+            MoleculeDefinition  local
+            WidomProbability     1.0
+            CreateNumberOfMolecules 0
+

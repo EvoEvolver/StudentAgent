@@ -1,0 +1,18 @@
+SimulationType                MonteCarlo
+NumberOfCycles                100000
+PrintEvery                    1000
+
+Forcefield                    local               
+CutOff                        14.0                
+RemoveAtomNumberCodeFromLabel yes
+
+Framework 0
+FrameworkName framework
+UnitCells 2 2 2
+ExternalTemperature 300
+
+Component 0 MoleculeName        n-hexane
+            MoleculeDefinition  local
+            IdealGasRosenbluthWeight 0.0029442
+            WidomProbability     1.0
+            CreateNumberOfMolecules 0
