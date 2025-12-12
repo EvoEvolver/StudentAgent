@@ -1,9 +1,9 @@
 # Hint Dictionaries
 import json
 
-steps = "NumberOfCycles                5000\nNumberOfInitializationCycles  1000\n"
+steps = "NumberOfCycles                2000\nNumberOfInitializationCycles  1000\n"
 few_steps = "NumberOfCycles                500\nNumberOfInitializationCycles  100\n"
-widom_steps = "NumberOfCycles                50000\nNumberOfInitializationCycles  0\n"
+widom_steps = "NumberOfCycles                10000\nNumberOfInitializationCycles  0\n"
 
 box = """Box 0
 BoxLengths 30 30 30"""
@@ -13,7 +13,7 @@ FrameworkName framework
 UnitCells [int] [int] [int] # from framework loader tool"""
 
 T = "ExternalTemperature 300"
-p = "ExternalPressure 1e5"
+p = "ExternalPressure 1e3 1e4"
 
 widom = """            WidomProbability   1.0
             CreateNumberOfMolecules 0"""

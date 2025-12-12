@@ -35,7 +35,7 @@ def get_hint(task_name: str, single: bool = True) -> str:
             hint = hint + "\n\n" + hints["rosenbluth"]
         if "iso" in ts[0]:
             hint = hint + "\n\n" + hints["multi_iso"] + ":\n\n" + hints["hvf"]
-
+    print("HINT:", hint)
     return hint
 
 
