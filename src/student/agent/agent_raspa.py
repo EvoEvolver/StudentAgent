@@ -1,218 +1,148 @@
 import json
 import os
-from typing import Dict
 
-from mllm import Chat
+from pydantic_ai import Agent, RunContext, Tool
 
-from .agent_todolist import TodoListAgent
-from .memory import Memory
-from .tools.tools import Tool
-from .tools.tools_raspa import (
-    ExecuteRaspa,
-    MakeInputFile,
-    ReadFile,
-    WriteFile,
-)
-from .tools.molecule_loader import MoleculeLoader
 from .tools.framework_loader import FrameworkLoader
-from .tools.output_parser import OutputExtractor
-from .tools.tools_system import AskHuman, ReportToHuman
-from .utils import all_files
+from .tools.molecule_loader import molecule_loader
+from .tools.output_parser import output_extractor
+from .tools.tools_raspa import execute_raspa, make_input_file, run_command
+from .tools.tools_system import report_to_human, ask_human
 
 
-class RaspaAgent(TodoListAgent):
-    name = "RaspaAgent"
-    tools: Dict[str, Tool]
-    system_prompt: str
-    chat: Chat
-    id: int
+class RaspaAgent:
     path: str
-    path_add: str
-    auto_run: bool
-    memory: Memory
-    memory_path: str
-    ask_when_no_memory = False
+
+    def make_tools(self):
+        if self.csd_path is None:
+            print("A CSD path is required to access the coremof files.")
+
+        def framework_loader(ctx: RunContext, framework_name: str):
+            """Load a framework file as framework.cif in the agent's working directory."""
+            path = ctx.deps["cwd"]
+            return FrameworkLoader(path=path, coremof=False, csd_path=self.csd_path).run(framework_name)
+
+        tool_list = [
+            framework_loader,
+            molecule_loader,
+            execute_raspa,
+            make_input_file,
+            run_command,
+            output_extractor,
+            report_to_human
+        ]
+
+        if self.ask_human:
+            tool_list.append(ask_human)
+
+        pydantic_tools = [Tool(t, takes_ctx=True) for t in tool_list]
+        return pydantic_tools
 
     def __init__(
-        self,
-        path="output",
-        provider="anthropic",
-        csd_path=None,
-        verbose=True,
-        ask_human=False,
-        expensive=True,
-        memory_path=None,
+            self,
+            path="output",
+            model_name="openai:gpt-5-mini",
+            csd_path=None,
+            ask_human=False
     ):
-        if csd_path is not None:
-            framework_loader = FrameworkLoader(path, coremof=False, csd_path=csd_path)
-        else:
-            print("A CSD path is required to access the coremof files.")
-            framework_loader = FrameworkLoader(path, coremof=False)
-
-        raspa_tools = [
-            framework_loader,
-            MoleculeLoader(path),
-            ExecuteRaspa(path=path),
-            MakeInputFile(path=path),
-            ReadFile(path=path),
-            WriteFile(path=path),
-            OutputExtractor(path=path),
-            ReportToHuman(path),
-        ]
-        tools = {tool.name: tool for tool in raspa_tools}
-
-        super().__init__(
-            tools=tools,
-            provider=provider,
-            verbose=verbose,
-            expensive=expensive,
-            memory_path=memory_path,
-        )
+        self.csd_path = csd_path
         self.ask_human = ask_human
-        if self.ask_human:
-            self.tools.append(AskHuman(path=path))
-
-        self.reset(path)  # base path
-        self.path_add = ""  # add onto path for simulations
-
-        self.auto_run = True
-        self.add_raspa_prompt()
-        self._advance_to_next_folder()
-        self.reset(path)
-
-    def add_raspa_prompt(self):
-        prompt = self._build_prompt("raspa", "v2")
-        self.reset_system_prompt(prompt, append=True)
-
-    def setup_path(self, path: str) -> None:
-        os.makedirs(path, exist_ok=True)
         self.path = path
-        for tool in self.tools.values():
-            if hasattr(tool, "path"):
-                tool.path = path
-        return
+        self.model_name = model_name
 
-    def set_path_add(self, path_add):
-        self.path_add = path_add
-        full_path = self.get_full_path()
-        os.makedirs(full_path, exist_ok=True)
-        for tool in self.tools.values():
-            if hasattr(tool, "path_add"):
-                tool.path_add = path_add
-        return full_path
+    def get_file_message(self):
+        """Return a formatted overview of files/folders up to depth 3.
 
-    def get_full_path(self):
-        return os.path.join(self.path, self.path_add)
+        Produces a readable tree (directories first) excluding ignored paths.
+        """
+        root = self.path
+        max_depth = 3
 
-    def reset(self, path=None):
-        if path is not None:
-            self.setup_path(path)
-        for tool in self.tools:
-            if hasattr(tool, "has_file"):
-                tool.has_file = False
-        return
+        if not os.path.exists(root):
+            return f"\n\n<file_overview>\nTree:\n(NOT FOUND)\n</file_overview>\n"
 
-    def check_files(self):
-        if all([tool.has_file for tool in self.tools if hasattr(tool, "has_file")]):
+        def list_children(base_path: str, base_root: str, current_depth: int):
+            lines = []
+            try:
+                entries = sorted(os.listdir(base_path))
+            except Exception:
+                return lines
+
+            # separate dirs and files; skip ignored
+            dirs = []
+            files = []
+            for name in entries:
+                full = os.path.join(base_path, name)
+                rel = os.path.relpath(full, start=base_root)
+                if check_ignore(rel):
+                    continue
+                if os.path.isdir(full):
+                    dirs.append((name, full, rel))
+                else:
+                    files.append((name, full, rel))
+
+            # list directories first
+            for name, full, rel in dirs:
+                item_depth = current_depth + 1
+                if item_depth <= max_depth:
+                    indent = "  " * (item_depth - 1)
+                    lines.append(f"{indent}- {name}/")
+                    # only descend if we haven't reached max depth
+                    if item_depth < max_depth:
+                        lines.extend(list_children(full, base_root, item_depth))
+
+            # then files
+            for name, full, rel in files:
+                item_depth = current_depth + 1
+                if item_depth <= max_depth:
+                    indent = "  " * (item_depth - 1)
+                    lines.append(f"{indent}- {name}")
+
+            return lines
+
+        tree_lines = list_children(root, root, 0)
+        tree_formatted = "\n".join(tree_lines) if tree_lines else "(empty)"
+
+        # Nicely formatted overview block
+        overview = (
+            f"\n\n<file_overview>\n"
+            f"Tree:\n{tree_formatted}\n"
+            f"</file_overview>\n"
+        )
+        return overview
+
+    def run(self, query: str):
+        current_file_overview = self.get_file_message()
+        agent = Agent(
+            tools=self.make_tools(),
+            system_prompt=system_prompt_v2 + current_file_overview,
+            model=self.model_name
+        )
+        result = agent.run_sync(query, deps={"cwd": self.path})
+        print(result.output)
+        return result.output
+
+
+def check_ignore(file_name):
+    # Return True is file should be ignored
+    blacklist = [
+        "Movies/",
+        "VTK/",
+        "Restart/",
+        "run.sh",
+        ".DS_Store",
+        ".md",
+        ".json",
+        ".jsonl",
+        ".log",
+    ]
+    for p in blacklist:
+        if p in file_name:
             return True
-        return False
+    return False
 
-    def _check_ignore(self, file_name):
-        # Return True is file should be ignored
-        blacklist = [
-            "Movies/",
-            "VTK/",
-            "Restart/",
-            "run.sh",
-            ".DS_Store",
-            ".md",
-            ".json",
-            ".jsonl",
-            ".log",
-        ]
-        for p in blacklist:
-            if p in file_name:
-                return True
-        return False
 
-    def _file_overview(self):
-        current_directory = self.path_add
-        files_all = [i for i in all_files(self.path) if self._check_ignore(i) is False]
-        file_list = ", ".join(f"{f}" for f in files_all) if files_all else "Empty"
-        # file_overview = f"\n\n<file_overview>\nCurrent directory: {current_directory}\nFiles:\n{file_list}\n</file_overview>"
-        return file_list, current_directory
-
-    def add_file_message(self):
-        file_list, current_directory = self._file_overview()
-        message = {
-            "role": "assistant",
-            "content": {
-                "type": "text",
-                "text": json.dumps(
-                    {
-                        "info": "This is an automatic message by the system with the current file system. This is not generated by the user!",
-                        "active_subdirectory": current_directory,
-                        "file_list (also from other subdirectories)": file_list,
-                    }
-                ),
-            },
-        }
-
-        self.chat.messages.append(message)
-        return self.chat_length() - 1
-
-    def remove_file_message(self, file_message_index):
-        del self.chat.messages[file_message_index]
-
-    def _run(self, options, iteration=0, append_files=True):
-        if append_files:
-            index = self.add_file_message()
-            out = super()._run(options, iteration=iteration)
-            self.remove_file_message(index)
-        else:
-            out = super()._run(options, iteration=iteration)
-        return out
-
-    def set_auto(self, auto):
-        self.auto_run = auto
-        return
-
-    def get_tool_mask(self):
-        mask = super().get_tool_mask()
-        if self.auto_run is False:
-            mask.append("execute_raspa")
-        return mask
-
-    def _advance_to_next_folder(self):
-        """
-        Find the next available folder (simulation_N) in self.path, create it, and set as path_add.
-        """
-        base_path = self.path
-        os.makedirs(base_path, exist_ok=True)
-        prefix = "simulation_"
-        existing_folders = [
-            d
-            for d in os.listdir(base_path)
-            if os.path.isdir(os.path.join(base_path, d))
-            and d.startswith(prefix)
-            and d[len(prefix) :].isdigit()
-        ]
-        if existing_folders:
-            nums = [int(d[len(prefix) :]) for d in existing_folders]
-            max_num = max(nums)
-            # If the highest-numbered folder is empty, reuse it
-            highest_folder = f"{prefix}{max_num}"
-            if not os.listdir(os.path.join(base_path, highest_folder)):
-                next_num = max_num
-            else:
-                next_num = max_num + 1
-        else:
-            next_num = 1
-        new_folder = f"{prefix}{next_num}"
-        new_path = os.path.join(base_path, new_folder)
-        os.makedirs(new_path, exist_ok=True)
-        self.set_path_add(new_folder)
-        return new_path
-
-    def setup(self):
-        return
+system_prompt_v2 = """
+You specialize to assist with RASPA simulations.
+You are equipped with tools to handle RASPA's input and output.
+"""

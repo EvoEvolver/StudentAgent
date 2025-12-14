@@ -1,5 +1,8 @@
 import subprocess
 import traceback
+
+from pydantic_ai import RunContext
+
 from .tools import RaspaTool
 from ..utils import *
 
@@ -123,6 +126,12 @@ class ReportToHuman(RaspaTool):
         except Exception as e:
             return self.get_output(e=f"Error generating markdown report: {str(e)}")
 
+def report_to_human(ctx: RunContext, report_content: str):
+    """
+    Use this tool to report to human your result in markdown when you finished or failed your task.
+    """
+    path = ctx.deps["cwd"]
+    return ReportToHuman(path=path).run(report_content)
 
 class AskHuman(RaspaTool):
     """Tool to ask questions to a human user via console input."""
@@ -165,6 +174,14 @@ class AskHuman(RaspaTool):
         except Exception as e:
             return self.get_output(e=f"Error getting user input: {str(e)}")
 
+
+def ask_human(ctx: RunContext, question: str):
+    """
+    Use this tool when you need to ask the human user a question during execution.
+    This is useful when you need clarification, additional information, or decisions from the user.
+    Provide a clear question, and the tool will prompt the user for input via the console.
+    """
+    return AskHuman().run(question)
 
 class ImageQuestionTool(RaspaTool):
     """Tool to ask questions about images using OpenAI's vision API."""

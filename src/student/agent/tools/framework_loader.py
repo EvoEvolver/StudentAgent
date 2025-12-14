@@ -5,6 +5,7 @@ import shutil
 
 import numpy as np
 from dotenv import load_dotenv
+from pydantic_ai import RunContext
 
 from student.agent.tools.tools import RaspaTool
 from student.agent.utils import quick_search
@@ -211,3 +212,9 @@ class FrameworkLoader(RaspaTool):
 
         print(f"RASPA UnitCells: {uc_x} {uc_y} {uc_z}")
         return [uc_x, uc_y, uc_z]
+
+
+def framework_loader(ctx: RunContext, framework_name: str):
+    """Load a framework file as framework.cif"""
+    path = ctx.deps["cwd"]
+    return FrameworkLoader(path=path).run(framework_name)
