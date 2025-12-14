@@ -73,7 +73,7 @@ Component 1 MoleculeName        [molecule name]    # Optional: second component 
 
 
 def call_input_file_agent(ctx: RunContext, simulation_name: str, message: str):
-    """Call a input file agent to generate a RASPA simulation input file. The message should contain the essential information for the simulation."""
+    """Call an input file agent to generate a RASPA simulation.input file. The message should contain the essential information for the simulation."""
     path = os.path.join(ctx.deps["cwd"], simulation_name)
     print(f"making input file: {path}")
     # create the folder if it doesn't exist

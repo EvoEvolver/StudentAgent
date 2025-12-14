@@ -10,7 +10,7 @@ MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_
 
 
 # Updated to use RaspaAgent with todo list functionality
-agent = TodoListAgent(model_name="gpt-5-mini", path = "output/manager/")
+agent = RaspaAgent(model_name="openai:gpt-5-mini", path = "output/manager/")
 
 # Use run_with_todo_list() for todo list-based execution
 reply = asyncio.run(agent.run("""

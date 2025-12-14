@@ -7,12 +7,12 @@ from student.agent.tools.output_parser import OutputParser
 from student.agent.tools.execute import run_command
 
 
-def parse_output(ctx: RunContext, file_path):
+def parse_output(ctx: RunContext, file_path: str):
     """Use this tool to read the raspa output files since they are too long to read directly."""
     path = os.path.join(ctx.deps["cwd"], file_path)
     with open(path) as in_file:
         data = in_file.read()
-    parser = OutputParser(path)
+    parser = OutputParser(os.path.dirname(path))
     out = parser.parse(data)
     out = parser.filter(out)
     out = parser.strip_block_fields(out)
@@ -40,11 +40,13 @@ File tree of the working directory:
         )
 
         res = agent.run_sync(query, deps={"cwd": self.path})
-        return res.output
+        print("====== Output Extractor Agent Response ======")
+        print(res)
+        print("=============================================")
+        return str(res.output)
 
 
-def output_extractor(ctx: RunContext, simulation_name: str, query: str):
-    """Use this tool to parse the raspa output files since they are too long to read directly.
-    Provide the path of the output file you want to read based on the root directory (ALWAYS include the active subdirectory). Example: path=simulation_3/Output/System_0/output_Box_1.1.1_300.000000_100000.data"""
+def output_extractor(ctx: RunContext, simulation_name: str, query: str)->str:
+    """Use this tool to extraction information the raspa output files ending with .data. The query should be a natural language question about the output."""
     path = os.path.join(ctx.deps["cwd"], simulation_name+"/Output")
     return OutputExtractor(path=path).run(query)

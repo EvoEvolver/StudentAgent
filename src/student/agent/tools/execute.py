@@ -64,30 +64,32 @@ def execute_raspa(ctx: RunContext, simulation_name:str):
 def run_command(ctx: RunContext, command: str):
     """Run an arbitrary shell command in the working directory (path) of the agent.
     Provide a full command line string; it will be executed with the tool's path as the current working directory (cwd)."""
-
-    timeout = 1200 # 20 minutes
-    work_dir = ctx.deps["cwd"]
-    process = subprocess.Popen(
-        command,
-        cwd=work_dir,
-        text=True,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
     try:
-        stdout, stderr = process.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        raise RuntimeError(f"Command timed out after {timeout} seconds")
+        timeout = 1200 # 20 minutes
+        work_dir = ctx.deps["cwd"]
+        process = subprocess.Popen(
+            command,
+            cwd=work_dir,
+            text=True,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            raise RuntimeError(f"Command timed out after {timeout} seconds")
 
-    if process.returncode != 0:
-        err = f"Command failed with return code {process.returncode}"
-        if stderr:
-            err += f"\nError: {stderr}"
-        if stdout:
-            err += f"\nStdout: {stdout}"
-        raise RuntimeError(err)
+        if process.returncode != 0:
+            err = f"Command failed with return code {process.returncode}"
+            if stderr:
+                err += f"\nError: {stderr}"
+            if stdout:
+                err += f"\nStdout: {stdout}"
+            raise RuntimeError(err)
 
-    return stdout if stdout else "(No output)"
+        return stdout if stdout else "(No output)"
+    except Exception as e:
+        return f"Error executing command: {str(e)}"
 
