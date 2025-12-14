@@ -1,3 +1,4 @@
+import os
 from typing import Union, List
 
 from pydantic_ai import RunContext
@@ -80,7 +81,7 @@ The tool will automatically map common abbreviations to their proper names."""
         return self.get_output(content=response)
 
 
-def molecule_loader(ctx: RunContext, molecule_names: Union[List[str], str]):
+def molecule_loader(ctx: RunContext, simulation_name: str, molecule_names: Union[List[str], str]):
     """Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files.
     Accepts common molecule names and chemical formulas such as:
     - Simple formulas: CO2, N2, O2, CH4, H2O, NH3, Ar, Kr, Xe, He
@@ -88,5 +89,5 @@ def molecule_loader(ctx: RunContext, molecule_names: Union[List[str], str]):
     - Organic molecules: ethane, propane, butane, pentane, hexane, heptane, octane, benzene, toluene
 
     The tool will automatically map common abbreviations to their proper names."""
-    path = ctx.deps["cwd"]
+    path = os.path.join(ctx.deps["cwd"], simulation_name)
     return MoleculeLoader(path=path).run(molecule_names)

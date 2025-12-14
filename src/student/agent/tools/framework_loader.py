@@ -214,7 +214,7 @@ class FrameworkLoader(RaspaTool):
         return [uc_x, uc_y, uc_z]
 
 
-def framework_loader(ctx: RunContext, framework_name: str):
-    """Load a framework file as framework.cif"""
-    path = ctx.deps["cwd"]
+def framework_loader(ctx: RunContext, simulation_name: str, framework_name: str):
+    """Load a framework as and save it as framework.cif in the folder with the simulation_name"""
+    path = os.path.join(ctx.deps["cwd"], simulation_name)
     return FrameworkLoader(path=path).run(framework_name)

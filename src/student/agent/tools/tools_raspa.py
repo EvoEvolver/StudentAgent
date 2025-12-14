@@ -2,65 +2,45 @@ import os
 import subprocess
 
 from dotenv import load_dotenv
+
+from .file_overview import get_file_message
 from ..utils import file
 from .tools import RaspaTool
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Tool, Agent, RunContext
 
-class MakeInputFile(RaspaTool):
-    def __init__(self, path=None, template_filename=None, advanced_template=False):
-        super().__init__(path, "")
+class MakeInputFile:
+    def __init__(self, path=None):
+        self.path = path
 
-        self.name = "input_file"
-        self.description = """Use this tool to write the simulation input file. The filename is always simulation.input.
-ALWAYS use the template and modify it based on examples from your memory!
+    def run(self, simulation_description: str):
+        # files prompt contains all the existing files in the working directory
+
+        agent = Agent(
+            model="openai:gpt-5-mini",
+            tools=[
+                Tool(run_command, takes_ctx=True)
+            ],
+            system_prompt=f"""
+You task is to create a RASPA simulation input file named 'simulation.input' based on the provided simulation description using the run_command tool.
+The input file must strictly adhere to the RASPA input file format.
+Use the following template as a reference for the structure and required parameters of the input file:
+<template>
+{template}
+</template>
+Here is the current files in the working directory:
+{get_file_message(self.path, 1)}
 """
-        self.has_file = False
-        self.set_template(template_filename, advanced_template)
+        )
 
-    def set_template(self, template_filename=None, advanced_template=False):
-        if template_filename is None:
-            if advanced_template:
-                template_filename = os.path.join(
-                    os.path.dirname(__file__),
-                    "templates/full_template_simulation.input",
-                )
-            else:
-                template_filename = os.path.join(
-                    os.path.dirname(__file__), "templates/template_simulation.input"
-                )
-        self.add_template(template_filename)
+        return agent.run_sync("Please generate 'simulation.input' based on the simulation description: "+simulation_description, deps={"cwd": self.path})
 
-    def add_template(self, template_filename):
-        if template_filename is None or not os.path.exists(template_filename):
-            return False
-
-        self.template_filename = template_filename
-        with open(self.template_filename, "r") as file:
-            template = file.read()
-        self.description += f"\n<template>{template}</template>"
-        return True
-
-    def _run(self, file_content, file_name, path):
-        try:
-            new_path = os.path.join(path, file_name)
-            os.makedirs(os.path.dirname(new_path), exist_ok=True)
-            with open(new_path, "w") as f:
-                f.write(file_content)
-            return self.get_output(content=f"Successfully generated: {file(new_path)}")
-        except Exception as e:
-            return self.get_output(e=e)
-
-    def run(self, file_content):
-        file_name = "simulation.input"
-        out = self._run(file_content, file_name, self.get_path(full=True))
-        if not (isinstance(out, str) and out.startswith("<error>")):
-            self.has_file = True
-        return out
-
-def make_input_file(ctx: RunContext, folder_name: str, file_content: str):
-    """Create a RASPA simulation input file named 'simulation.input' in the specified folder within the agent's working directory."""
-    path = os.path.join(ctx.deps["cwd"], folder_name)
-    return MakeInputFile(path=path).run(file_content)
+def call_input_file_agent(ctx: RunContext, simulation_name: str, message: str):
+    """Call a input file agent to generate a RASPA simulation input file. The message should contain the essential information for the simulation."""
+    path = os.path.join(ctx.deps["cwd"], simulation_name)
+    print(f"making input file: {path}")
+    # create the folder if it doesn't exist
+    os.makedirs(path, exist_ok=True)
+    return MakeInputFile(path=path).run(message)
 
 
 class ExecuteRaspa(RaspaTool):
@@ -80,8 +60,7 @@ class ExecuteRaspa(RaspaTool):
         return self.get_output(e=out)
 
     def check_success(self):
-        path = self.get_path(full=True)
-        if os.path.exists(os.path.join(path, "Output/")):
+        if os.path.exists(os.path.join(self.path, "Output/")):
             return True
         else:
             return False
@@ -95,8 +74,7 @@ class ExecuteRaspa(RaspaTool):
         content = (
             f"#! /bin/sh -f\nexport RASPA_DIR={raspa_dir}\n$RASPA_DIR/bin/simulate"
         )
-        path = self.get_path(full=True)
-        file_path = os.path.join(path, "run.sh")
+        file_path = os.path.join(self.path, "run.sh")
         with open(file_path, "w") as f:
             f.write(content)
         os.chmod(file_path, 0o755)
@@ -113,11 +91,10 @@ class ExecuteRaspa(RaspaTool):
         out = process.communicate()
         return out
 
-def execute_raspa(ctx: RunContext, path_to_input_file:str):
-    """Execute a RASPA simulation in the working directory (path) of the agent."""
-    input_file_path = os.path.join(ctx.deps["cwd"], path_to_input_file)
-    dir_name = os.path.dirname(input_file_path)
-    return ExecuteRaspa(path=dir_name)
+def execute_raspa(ctx: RunContext, simulation_name:str):
+    """Execute a RASPA simulation for a simulation."""
+    path = os.path.join(ctx.deps["cwd"], simulation_name)
+    return ExecuteRaspa(path=path).run()
 
 
 def run_command(ctx: RunContext, command: str):
@@ -150,4 +127,41 @@ def run_command(ctx: RunContext, command: str):
 
     return stdout if stdout else "(No output)"
 
+template = """
+SimulationType                MonteCarlo
+NumberOfCycles                [int] # The number of cycles for the production run.
+NumberOfInitializationCycles  [int] # The number of cycles used to initialize the system to equilibrate the positions of the atoms in the system.
+PrintEvery                    [int]
 
+Forcefield                    local
+CutOff                        14.0
+RemoveAtomNumberCodeFromLabel yes
+
+...                                                # Optional: Add here if properties should be computed
+# The square brackets respresent that this is optional! They have to be removed in a real setting!
+[                                                  # Optional: box specifications (NEVER use a .cif file for a box!)
+Box [int]                                          # IMPORTANT: System numbering is 0-based (always use 0 for first system)
+BoxLengths [real] [real] [real]                    # in Angström (MUST BE twice the CutOff)
+ExternalTemperature [real]                         # in Kelvin
+ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
+]
+
+[                                                  # Optional: framework specifications
+Framework [int]                                    # IMPORTANT: System numbering is 0-based (always use 0 for first system)
+FrameworkName framework                            # same as framework.cif file
+UnitCells [int] [int] [int]                        # number of unit cells in each dimension (must be twice the CutOff), calcuated automatically when generating a framework.cif with the tool
+HeliumVoidFraction [real]                          # has to be obtained from a separate simulation (essential to compute excess-adsorption)
+ExternalTemperature [real]                         # in Kelvin
+ExternalPressure [list of real]                    # in pascal e.g. 1e4 1e5 1e6
+...
+]
+
+Component 0 MoleculeName       [molecule name]     # IMPORTANT: same as the file name of [molecule name].def
+            MoleculeDefinition  local
+            ...                                    # Monte Carlo move probabilities or properties
+
+[
+Component 1 MoleculeName        [molecule name]    # Optional: second component (use 1 for second component)
+            MolFraction [real]                     # For multiple components, specify mol fraction (0 to 1) for all components
+]
+# always empty line in the end!"""

@@ -1,3 +1,4 @@
+import asyncio
 import os
 from dotenv import load_dotenv
 
@@ -11,7 +12,7 @@ MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_
 agent = RaspaAgent(model_name="openai:gpt-5-mini", path = "output/manager/")
 
 # Use run_with_todo_list() for todo list-based execution
-reply = agent.run("""
+reply = asyncio.run(agent.run("""
 Use RASPA2 to calculate the Henry’s coefficient of Methane in IRMOF-1 at 298 K using the Widom insertion method.
 Given:
                                  
@@ -27,5 +28,5 @@ Tasks:
                                  
 Write a RASPA input file to perform a Henry coefficient calculation (use the monte carlo move WidomProbability 1.0!)
 Report the calculated Henry’s coefficient value.
-""")
+"""))
 print(reply)

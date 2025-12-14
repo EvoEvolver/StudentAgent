@@ -107,6 +107,8 @@ class RaspaTool(Tool):
     def __init__(self, name, description, path=None, path_add=None):
         super().__init__(name, description)
         self.path = path
+        # if path does not exist, create it
+        os.makedirs(path, exist_ok=True)
         self.path_add = path_add
 
     def get_path(self, full=False):
