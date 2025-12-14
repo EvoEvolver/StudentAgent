@@ -1,25 +1,47 @@
 import re
 from typing import Any, Dict, List
 
-from .agent_student import StudentAgent
+from mllm import Chat
+from pydantic_ai import Agent
+
+from . import RaspaAgent
+from .agent_memory_helper import MemoryHelperAgent
+from .memory import Memory
 
 
-class TodoListAgent(StudentAgent):
+class TodoListAgent:
     name = "TodoListAgent"
     current_todo_list: str
     ask_human: bool
+    memory: Memory
+    memory_agent: MemoryHelperAgent
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def __init__(self, memory_path: str=None, model_name: str="gpt-5-mini", path = "output/", verbose: bool = True):
+        self.verbose = verbose
         self.current_todo_list = ""
-        self.ask_human = self.tools.get("ask_human") is not None
+        self.ask_human = False
+        self.initialize_memory(memory_path)
+        self.model_name = model_name
+        self.path = path
+        self.raspa_agent = RaspaAgent(path=path)
+
+    def initialize_memory(self, memory_path):
+        self.memory_agent = MemoryHelperAgent(
+            provider="openai",
+            verbose=self.verbose,
+            expensive=False,
+            cache=True,
+        )
+        memory = Memory._load_from_file(memory_path) if memory_path else Memory("root")
+        memory.set_helper_agent(self.memory_agent)
+        self.memory = memory
+        self.memory_path = memory_path
 
     def print_progress(self, message_type: str, details: str):
         """Print progress messages during execution."""
         print(f"[{message_type}]: {details}")
 
-    def run(self, prompt: str, max_iter: int = 25) -> str:
+    async def run(self, prompt: str, max_iter: int = 25) -> str:
         if self.verbose:
             print(f"[{self.name}] received instruction: {prompt}")
 
@@ -44,7 +66,7 @@ class TodoListAgent(StudentAgent):
 
             # Step 2: Execute the todo list using tools
             self.print_progress("execution_phase", "Starting execution of todo list")
-            execution_results = self.execute_todo_list_with_tools(
+            execution_results = await self.execute_todo_list_with_tools(
                 todo_list_markdown, max_iter
             )
 
@@ -68,7 +90,7 @@ class TodoListAgent(StudentAgent):
             return e
 
     def _create_memory_from_feedback(
-        self, context: str, query: str, user_answer: str
+            self, context: str, query: str, user_answer: str
     ) -> str:
         """
         Create and store a memory based on user feedback using LLM to generate content.
@@ -104,12 +126,8 @@ Create a comprehensive memory entry that includes:
 
 Format it as a clear, concise paragraph that would be useful for an AI agent to reference in the future.
 """
-
-            memory_content = self.single_run(
-                memory_generation_prompt,
-                expensive=self.expensive,
-                info="create_memory_from_feedback",
-            )
+            chat = Chat(user_message=memory_generation_prompt)
+            memory_content = chat.complete(self.model_name)
 
             if memory_content:
                 # Store the generated memory
@@ -161,9 +179,7 @@ Format it as a clear, concise paragraph that would be useful for an AI agent to 
                 if self.verbose:
                     print(f"[{self.name}] No relevant memories found.")
 
-                # Ask human for input
-                ask_human_tool = self.tools.get("ask_human")
-                if ask_human_tool and self.ask_human:
+                if self.ask_human and False:
                     question = f"""No relevant memories found for: "{instruction}"
 
 Do you have any guidance, best practices, or lessons learned for this type of task?
@@ -200,18 +216,23 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
         # Direct prompt to generate todo list
         todo_generation_prompt = f"""
         Analyze the following instruction and break it down into a actionable markdown todo list.
-        You must ensure that the todo list you generate can be solved by the tools
+        You must ensure that the todo list you generate can be solved by the worker agent
 
         Instruction: {instruction}
 
-        Available Tools:
-        {self.get_tool_schema(json=False)}
+        Skills of the worker agent:
+        - Create simulation input files for RASPA with a simulation name 
+        - Create molecule definition files for the specified simulation
+        - Create framework CIF files based on CSD entries for the specified simulation
+        - Execute RASPA simulations
+        - Extract information from RASPA output files
+        
         {relevant_memories}
 
         Rules:
         - Use [ ] for incomplete tasks in markdown format
-        - Each task should specify which tool to use from the available tools
-        - The steps should be actionable with the available tools
+        - The simulation name should be descriptive folder name for the RASPA simulation
+        - Each task should specify a simulation name
         - Keep tasks focused and concrete
         - The todo list can be as simple as one or two items
         - If relevant past experiences are provided, learn from them to create a better todo list
@@ -223,9 +244,8 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
         """
 
         try:
-            response = self.single_run(
-                todo_generation_prompt, expensive=self.expensive, info="decompose_task"
-            )
+            chat = Chat(todo_generation_prompt)
+            response = chat.complete(self.model_name)
             self.current_todo_list = response.strip()
 
             # Add progress message to display the generated todo list in chat
@@ -268,9 +288,8 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
         """
 
         try:
-            response = self.single_run(
-                update_prompt, expensive=self.expensive, info="update_todo_list"
-            )
+            chat = Chat(update_prompt)
+            response = chat.complete(self.model_name)
             updated_list = response.strip()
             self.current_todo_list = updated_list
             return updated_list
@@ -280,7 +299,7 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
             return self.current_todo_list
 
     def _suggest_next_action(
-        self, todo_list_markdown: str, current_results: Dict[str, Any]
+            self, todo_list_markdown: str, current_results: Dict[str, Any]
     ) -> str:
         """Use LLM to suggest the next action based on the todo list and current progress."""
 
@@ -372,22 +391,26 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
         {todo_list_markdown}
 
         Available Tools:
-        {self.get_tool_schema(json=False)}
+        - Create simulation input files for RASPA with a simulation name 
+        - Create molecule definition files for the specified simulation
+        - Create framework CIF files based on CSD entries for the specified simulation
+        - Execute RASPA simulations
+        - Extract information from RASPA output files
+        
         {completed_context}
         {relevant_memories}
 
         Based on the current todo list and progress, what should be the next action to take?
 
         Notice:
-        - Return a action description that contains all the information to run the tool
+        - Return a action description that contains all the information for the worker agent
         - Look at the todo list and identify the next incomplete task (marked with [ ])
         - Provide specific details needed to execute the task
         """
 
         try:
-            response = self.single_run(
-                next_action_prompt, expensive=self.expensive, info="suggest_next_action"
-            )
+            chat = Chat(next_action_prompt)
+            response = chat.complete(self.model_name)
             next_action = response.strip()
             return next_action
         except Exception as e:
@@ -408,27 +431,6 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
 
         # No incomplete tasks found
         return ""
-
-    def _extract_tool_results_from_chat(self) -> str:
-        """Extract tool results from chat messages when no response text is provided."""
-        tool_results = []
-
-        # Iterate through chat messages in reverse to get recent tool results
-        for message in reversed(self.chat.messages):
-            if message.get("role") == "tool":
-                tool_name = message.get("name", "unknown")
-                content = message.get("content", {})
-                if isinstance(content, dict) and content.get("type") == "tool_result":
-                    result = content.get("result", "")
-                    success = content.get("success", True)
-                    status = "✓" if success else "✗"
-                    tool_results.append(f"{status} {tool_name}: {result}")
-
-        if tool_results:
-            # Return the most recent tool results (reverse back to chronological order)
-            return "\n".join(reversed(tool_results))
-
-        return "Task executed (no output captured)"
 
     def _extract_tasks_from_markdown(self, markdown_todo: str) -> List[str]:
         """Extract task descriptions from markdown todo list."""
@@ -465,8 +467,8 @@ If yes, please share. If no, you can skip by typing 'skip' or 'no'."""
         # If we found no tasks at all, consider it completed
         return has_tasks
 
-    def execute_todo_list_with_tools(
-        self, todo_list_markdown: str, max_iter: int
+    async def execute_todo_list_with_tools(
+            self, todo_list_markdown: str, max_iter: int
     ) -> Dict[str, Any]:
         """Execute the markdown todo list using tools through the Agent framework."""
         results = {
@@ -519,17 +521,7 @@ Please execute the task taking into account the previous work done."""
                 else:
                     action_prompt = f"Execute this specific task: {next_action}"
 
-                # Get tool mask for current state
-                remove_tools = self.get_tool_mask()
-                self.reset_chat()
-
-                result = super().run(
-                    action_prompt, remove_tools=remove_tools, max_iter=3
-                )
-
-                # If result is empty, try to extract tool results from chat messages
-                if not result or result.strip() == "":
-                    result = self._extract_tool_results_from_chat()
+                result = await self.raspa_agent.run(action_prompt)
 
                 # Print the actual result for visibility
                 if self.verbose:
@@ -569,7 +561,7 @@ Please execute the task taking into account the previous work done."""
         return results
 
     def _generate_summary(
-        self, original_instruction: str, execution_results: Dict[str, Any]
+            self, original_instruction: str, execution_results: Dict[str, Any]
     ) -> str:
         """Generate a comprehensive summary of the execution."""
         summary = f"""

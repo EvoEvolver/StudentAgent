@@ -5,8 +5,6 @@ import re
 from typing import Dict, Union, Any
 
 import numpy as np
-from mllm import Chat
-from pydantic_ai import RunContext
 
 from student.agent.tools.output import output_parser
 from student.agent.tools.tools import RaspaTool
@@ -129,7 +127,7 @@ Provide the path of the output file you want to read based on the root directory
             return True
 
         if isinstance(content, float) and (
-            content == 0 or np.isnan(content) or np.isinf(content)
+                content == 0 or np.isnan(content) or np.isinf(content)
         ):
             return True
 
@@ -153,12 +151,12 @@ Provide the path of the output file you want to read based on the root directory
             )
             if not has_number:
                 if all(
-                    isinstance(x, str)
-                    and (
-                        x.strip() in _PLUSMINUS_TOKENS
-                        or _UNIT_TOKEN_RE.match(x.strip())
-                    )
-                    for x in content
+                        isinstance(x, str)
+                        and (
+                                x.strip() in _PLUSMINUS_TOKENS
+                                or _UNIT_TOKEN_RE.match(x.strip())
+                        )
+                        for x in content
                 ):
                     return True
 
@@ -252,48 +250,3 @@ Provide the path of the output file you want to read based on the root directory
 
         # Primitive value → return as-is
         return obj
-
-
-class OutputExtractor(OutputParser):
-    def __init__(self, path=None):
-        super().__init__(path=path)
-
-    def _run(self, file_path: str, query: str):
-        path = os.path.join(self.get_path(full=False), file_path)
-
-        try:
-            with open(path) as in_file:
-                data = in_file.read()
-            out = output_parser.parse(data)
-
-            out = self.filter(out)
-            out = self.strip_block_fields(out)
-
-        except Exception as e:
-            return self.get_output(f"Error with output parsing: {e}, (path={path})")
-
-        # Extract relevant information based on query using LLM
-        chat = Chat()
-        chat += f"""You are an expert in RASPA simulation software output analysis.
-Here is the parsed output data from a RASPA simulation in JSON format:
-<output>
-{out}
-</output>\n
-Please answer the query based on this data. Provide only the specific information requested, without additional explanation.
-<query>
-{query}
-</query>
-        """
-        response = chat.complete()
-        return response
-
-    def run(self, file_path: str, query: str):
-        res = self._run(file_path, query)
-        return self.get_output(res)
-
-
-def output_extractor(ctx: RunContext, file_path: str, query: str):
-    """Use this tool to parse the raspa output files since they are too long to read directly.
-    Provide the path of the output file you want to read based on the root directory (ALWAYS include the active subdirectory). Example: path=simulation_3/Output/System_0/output_Box_1.1.1_300.000000_100000.data"""
-    path = ctx.deps["cwd"]
-    return OutputExtractor(path=path).run(file_path, query)

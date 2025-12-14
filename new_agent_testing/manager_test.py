@@ -3,13 +3,14 @@ import os
 from dotenv import load_dotenv
 
 from student.agent import RaspaAgent
+from student.agent.agent_todolist import TodoListAgent
 
 load_dotenv()
 MEMORY_PATH = os.path.join(os.path.dirname(__file__), "agent", "memory", "raspa_memory", "mc5_5", "memory.txt")
 
 
 # Updated to use RaspaAgent with todo list functionality
-agent = RaspaAgent(model_name="openai:gpt-5-mini", path = "output/manager/")
+agent = TodoListAgent(model_name="gpt-5-mini", path = "output/manager/")
 
 # Use run_with_todo_list() for todo list-based execution
 reply = asyncio.run(agent.run("""
