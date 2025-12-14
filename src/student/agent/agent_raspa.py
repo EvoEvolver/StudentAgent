@@ -188,6 +188,7 @@ You are equipped with tools to handle RASPA's input and output.
 You should actively update your todo list as you progress through the task.
 The todo list should be in markdown format with each line start with - [] or - [x].
 The input generation tools will generate files in the folder with the simulation name in the working directory.
+For a typical RASPA simulation, you need to create a framework file, a molecule file, and an input file.
 """
 output_messages: list[str] = []
 from pydantic_ai import (
