@@ -12,16 +12,15 @@ from unittest.mock import Mock, patch
 import pytest
 
 from student.agent.tools.tools_raspa import (
-    CoreMofLoader,
     ExecuteRaspa,
-    FrameworkLoader,
-    InputFile,
-    MoleculeLoader,
-    OutputExtractor,
-    OutputParser,
+    MakeInputFile,
     ReadFile,
     WriteFile,
 )
+from student.agent.tools.molecule_loader import MoleculeLoader
+from student.agent.tools.framework_loader import FrameworkLoader
+from student.agent.tools.output_parser import OutputParser, OutputExtractor
+from student.agent.tools.coremof_loader import CoreMofLoader
 
 # Test data directory
 DATA_DIR = Path(__file__).parent / "data"
@@ -205,7 +204,7 @@ class TestInputFile:
 
     def test_init_with_default_template(self):
         """Test InputFile initialization with default template."""
-        tool = InputFile()
+        tool = MakeInputFile()
         assert tool.name == "input_file"
         assert "simulation input file" in tool.description
         assert "0-based indexing" in tool.description
@@ -217,13 +216,13 @@ class TestInputFile:
         template_content = "# Custom Template\nSimulationType MonteCarlo"
         template_file.write_text(template_content)
 
-        tool = InputFile(path=str(temp_dir), template_filename=str(template_file))
+        tool = MakeInputFile(path=str(temp_dir), template_filename=str(template_file))
 
         assert template_content in tool.description
 
     def test_write_simulation_input(self, temp_dir):
         """Test writing simulation.input file."""
-        tool = InputFile(path=str(temp_dir))
+        tool = MakeInputFile(path=str(temp_dir))
         input_content = """SimulationType MonteCarlo
 NumberOfCycles 1000
 Framework 0

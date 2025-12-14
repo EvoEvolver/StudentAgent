@@ -43,17 +43,18 @@ class MemoryHelperAgent(Agent):
 
     def generate_title(self, content: str, existing_titles: List[str] = None) -> str:
         """
-        Generate a concise title for memory content.
+        Generate a concise title for memory content based on when it would be needed.
 
         Args:
             content: The memory content
             existing_titles: Optional list of existing titles to avoid duplicates
 
         Returns:
-            Generated title (max 10 words)
+            Generated title (max 15 words) describing when the memory is needed
         """
-        prompt = f"""Generate a concise, descriptive title (max 10 words) for the following content.
-The title should capture the key topic or information.
+        prompt = f"""Generate a concise title (max 15 words) that describes WHEN this memory would be needed or useful.
+The title should describe the situation, question, or context where this information would be relevant.
+Frame it as "When [situation/question/context]" or similar.
 Only return the title, nothing else.
 
 Content:
@@ -74,11 +75,11 @@ Content:
             child_titles: List of child memory titles
 
         Returns:
-            Generated composite title (max 10 words)
+            Generated composite title (max 15 words)
         """
         titles_text = "\n".join([f"- {title}" for title in child_titles])
 
-        prompt = f"""Generate a concise, descriptive title (max 10 words) that captures the common theme or topic of these related memories:
+        prompt = f"""Generate a concise, descriptive title (max 15 words) that captures the common theme or topic of these related memories:
 
 {titles_text}
 

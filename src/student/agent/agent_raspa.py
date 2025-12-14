@@ -9,13 +9,13 @@ from .memory import Memory
 from .tools.tools import Tool
 from .tools.tools_raspa import (
     ExecuteRaspa,
-    FrameworkLoader,
-    InputFile,
-    MoleculeLoader,
-    OutputExtractor,
+    MakeInputFile,
     ReadFile,
     WriteFile,
 )
+from .tools.molecule_loader import MoleculeLoader
+from .tools.framework_loader import FrameworkLoader
+from .tools.output_parser import OutputExtractor
 from .tools.tools_system import AskHuman, ReportToHuman
 from .utils import all_files
 
@@ -52,8 +52,8 @@ class RaspaAgent(TodoListAgent):
         raspa_tools = [
             framework_loader,
             MoleculeLoader(path),
-            ExecuteRaspa(agent=self),
-            InputFile(path=path),
+            ExecuteRaspa(path=path),
+            MakeInputFile(path=path),
             ReadFile(path=path),
             WriteFile(path=path),
             OutputExtractor(path=path),
