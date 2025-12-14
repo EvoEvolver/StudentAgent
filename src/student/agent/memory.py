@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from mllm import Chat
+
 if TYPE_CHECKING:
     from .agent_memory_helper import MemoryHelperAgent
 
@@ -329,6 +331,49 @@ class Memory:
             )
 
         return formatted_pairs
+
+    def _create_memory_from_user_feedback(self, context: str, query: str, user_answer: str
+                                     ) -> str:
+        """
+        Create and store a memory based on user feedback using LLM to generate content.
+
+        Args:
+            context: The context/task being worked on
+            query: The specific query
+            user_answer: The user's feedback/answer
+
+        Returns:
+            The generated memory content as a string, or empty string if failed
+        """
+        try:
+            # Use LLM to generate structured memory content based on user feedback and context
+            memory_generation_prompt = f"""Generate a structured memory entry based on the following information.
+The memory should be informative and useful for future similar tasks.
+
+Task Context: {context}
+Query: {query}
+User Feedback: {user_answer}
+
+Create a comprehensive memory entry that includes:
+1. The task or scenario this applies to
+2. Key lessons or guidance
+3. Best practices or tips
+4. Any warnings or common pitfalls to avoid
+
+Format it as a clear, concise paragraph that would be useful for an AI agent to reference in the future.
+"""
+            chat = Chat(user_message=memory_generation_prompt)
+            memory_content = chat.complete("gpt-5-mini")
+
+            if memory_content:
+                # Store the generated memory
+                title = self.learn(memory_content.strip())
+                return memory_content.strip()
+
+        except Exception as e:
+            print(f"[WARNING] Failed to create memory from user input: {str(e)}")
+
+        return ""
 
 
 if __name__ == "__main__":

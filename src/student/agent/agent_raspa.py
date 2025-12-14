@@ -1,19 +1,23 @@
-import os
+import os, re
+from typing import List
 
-from pydantic_ai import Tool, AgentRunResultEvent, ModelMessage, ModelRequest, SystemPromptPart, UserPromptPart
+from pydantic_ai import Tool, AgentRunResultEvent, ModelMessage, ModelRequest, UserPromptPart
 
+from .agent_memory_helper import MemoryHelperAgent
+from .memory import Memory
 from .tools.file_overview import get_file_message
 from .tools.framework_loader import FrameworkLoader
 from .tools.molecule_loader import molecule_loader
 from .tools.output_extractor import output_extractor
 from .tools.execute import execute_raspa, run_command
 from .tools.make_input_file import call_input_file_agent
-from .tools.tools_system import ask_human
 
 
 class RaspaAgent:
     path: str
     todo_list: str
+    memory: Memory
+    memory_agent: MemoryHelperAgent
 
     def make_tools(self):
         if self.csd_path is None:
@@ -31,6 +35,19 @@ class RaspaAgent:
             print(self.todo_list)
             print("============================================")
             return f"Todo list updated to: {self.todo_list}"
+
+        def ask_human(ctx: RunContext, question: str):
+            """Ask a human for help with a specific question."""
+            print("====== Human Intervention Required ======")
+            print(question)
+            print("hint: you can type 'no' or 'skip' to skip this question.")
+            print("=========================================")
+            answer = input("Please provide your input: ")
+            if answer.strip().lower() in ["no", "skip"]:
+                return "No input provided by human."
+            context = "The agent is at the current todo list:\n" + self.todo_list + "\n---"
+            self.memory._create_memory_from_user_feedback(context, question, answer)
+            return answer
 
         tool_list = [
             framework_loader,
@@ -52,26 +69,41 @@ class RaspaAgent:
             self,
             path="output",
             model_name="openai:gpt-5-mini",
+            memory_path=None,
             csd_path=None,
-            ask_human=False
+            ask_human=False,
+            retrieve_memory=False,
     ):
         self.csd_path = csd_path
         self.ask_human = ask_human
+        self.retrieve_memory = retrieve_memory
         self.path = path
         self.model_name = model_name
+        self.verbose = True
+        self.initialize_memory(memory_path)
 
-
+    def initialize_memory(self, memory_path):
+        self.memory_agent = MemoryHelperAgent(
+            provider="openai",
+            verbose=self.verbose,
+            expensive=False,
+            cache=True,
+        )
+        memory = Memory._load_from_file(memory_path) if memory_path else Memory("root")
+        memory.set_helper_agent(self.memory_agent)
+        self.memory = memory
+        self.memory_path = memory_path
 
     async def run(self, query: str):
         current_file_overview = get_file_message(self.path, 3)
         self.todo_list = ""
 
-        def add_todo_list_to_message(messages: list[ModelMessage]) -> list[ModelMessage]:
+        def add_todo_list_to_message(ctx: RunContext[None], messages: list[ModelMessage]) -> list[ModelMessage]:
             new_messages = messages.copy()
             # find and delete existing todo list message
             if new_messages:
                 for i, message in enumerate(new_messages):
-                    if message.metadata and message.metadata.get("type") == "todo_list":
+                    if message.metadata and message.metadata.get("type") == "memory_retrieval":
                         del new_messages[i]
                         break
             # find all the tool calls that update the todo list and delete them except the last one
@@ -84,11 +116,26 @@ class RaspaAgent:
                             indices_to_delete.append(i)
                 for index in reversed(indices_to_delete[:-1]):
                     del new_messages[index]
-            # add updated todo list message
-            if self.todo_list != "":
-                todolist_message = ModelRequest(parts=[UserPromptPart(f"Current todo list:\n{self.todo_list}")])
-                todolist_message.metadata = {"type": "todo_list"}
-                #new_messages.append(todolist_message)
+            next_todo = ""
+            if self.todo_list=="":
+                next_todo = query
+            else:
+                todos = extract_tasks_from_markdown(self.todo_list)
+                if todos:
+                    next_todo = todos[0]
+
+            if self.retrieve_memory and next_todo:
+                memory_in_prompt = self.retrieve(next_todo)
+                if memory_in_prompt:
+                    memory_message = ModelRequest(parts=[UserPromptPart(memory_in_prompt)])
+                    memory_message.metadata = {"type": "memory_retrieval"}
+                    new_messages.append(memory_message)
+
+
+            current_tokens = ctx.usage.total_tokens
+            if current_tokens > 10000:
+                new_messages = new_messages[-20:]
+
             return new_messages
 
         agent = Agent(
@@ -103,13 +150,43 @@ class RaspaAgent:
             else:
                 await handle_event(event)
 
+    def retrieve(self, query: str) -> str:
+        """Retrieve relevant information from memory based on the query."""
+        # Placeholder for memory retrieval logic
+        # In a real implementation, this would query a memory database or knowledge base
+        print("Retrieving " + query)
+        items = self.memory.retrieve(query, top_k=3)
+        if len(items) == 0:
+            return ""
+        prompt =f"""
+Potentially relevant information from your memory:
+{''.join(['- ' + item.content + '\\n' for item in items])}
+----
+"""
+        print(prompt)
+        return prompt
 
+
+def extract_tasks_from_markdown(markdown_todo: str) -> List[str]:
+    """Extract task descriptions from markdown todo list."""
+    tasks = []
+    lines = markdown_todo.split("\n")
+
+    for line in lines:
+        line = line.strip()
+        # Match markdown checkbox format: - [ ] not - [x]
+        #match = re.match(r"^-\s*\[\s*[x ]?\s*\]\s*(.+)$", line)
+        match = re.match(r"^-\s*\[\s*\]\s*(.+)$", line)
+        if match:
+            tasks.append(match.group(1).strip())
+
+    return tasks
 
 system_prompt_v2 = """
 You specialize to assist with RASPA simulations.
 You are equipped with tools to handle RASPA's input and output.
 You should actively update your todo list as you progress through the task.
-The todo list should be in markdown [] [x] format.
+The todo list should be in markdown format with each line start with - [] or - [x].
 The input generation tools will generate files in the folder with the simulation name in the working directory.
 """
 output_messages: list[str] = []
