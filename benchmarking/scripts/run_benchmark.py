@@ -6,7 +6,6 @@ import json
 import os
 
 from student.agent.agent_raspa import RaspaAgent
-from student.agent.agent_student import StudentAgent
 
 TEST = False
 ADDITIONAL_INSTRUCTIONS = "This is a test of your capabilitys to run molecular simulations using RASPA. Strictly follow the steps to solve the task (no verifications, just report the result or error)."
@@ -39,8 +38,8 @@ def get_hint(task_name: str, single: bool = True) -> str:
     return hint
 
 
-def run_task(
-    agent: StudentAgent, task: str, give_hint: bool = False, single: bool = True
+async def run_task(
+    agent: RaspaAgent, task: str, give_hint: bool = False, single: bool = True
 ):
     """
     Run the given task using the provided agent.
@@ -69,10 +68,10 @@ def run_task(
     if TEST is True:
         return {"task": task_name, "hint": hint}
     task_instructions = ADDITIONAL_INSTRUCTIONS + task_instructions
-    return agent.run(task_instructions)
+    return await agent.run(task_instructions)
 
 
-def run_task_i(
+async def run_task_i(
     i: int,
     agent_params: dict,
     give_hint: bool = False,
@@ -120,7 +119,7 @@ def run_task_i(
     current_agent_params["path"] = task_path
 
     agent = RaspaAgent(**current_agent_params)
-    result = run_task(agent, task, give_hint=give_hint, single=single)
+    result = await run_task(agent, task, give_hint=give_hint, single=single)
 
     # TODO: save agent state
 
