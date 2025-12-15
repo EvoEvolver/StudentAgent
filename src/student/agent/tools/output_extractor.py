@@ -33,7 +33,8 @@ class OutputExtractor(OutputParser):
             system_prompt=f"""
 You task is to extract specific information from a RASPA simulation output file based on the provided query.
 You should find the correct output file first.
-Then you should call the output_parser tool to parse the output file and extract the relevant information.
+output_parser tool can be used parse the output file and extract the relevant information.
+If output_parser is not enough, you can use the run_command tool to read .data files with `grep` and `sed` because the file is too large to parse entirely.
 File tree of the working directory:
 {get_file_message(self.path, 3)}
 """
