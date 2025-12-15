@@ -2,7 +2,7 @@ import json
 import math
 import os
 import re
-from typing import Dict, Union, Any
+from typing import Any, Dict, Union
 
 import numpy as np
 
@@ -127,7 +127,7 @@ Provide the path of the output file you want to read based on the root directory
             return True
 
         if isinstance(content, float) and (
-                content == 0 or np.isnan(content) or np.isinf(content)
+            content == 0 or np.isnan(content) or np.isinf(content)
         ):
             return True
 
@@ -151,12 +151,12 @@ Provide the path of the output file you want to read based on the root directory
             )
             if not has_number:
                 if all(
-                        isinstance(x, str)
-                        and (
-                                x.strip() in _PLUSMINUS_TOKENS
-                                or _UNIT_TOKEN_RE.match(x.strip())
-                        )
-                        for x in content
+                    isinstance(x, str)
+                    and (
+                        x.strip() in _PLUSMINUS_TOKENS
+                        or _UNIT_TOKEN_RE.match(x.strip())
+                    )
+                    for x in content
                 ):
                     return True
 

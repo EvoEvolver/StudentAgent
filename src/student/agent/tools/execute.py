@@ -2,9 +2,9 @@ import os
 import subprocess
 
 from dotenv import load_dotenv
+from pydantic_ai import RunContext
 
 from .tools import RaspaTool
-from pydantic_ai import RunContext
 
 
 class ExecuteRaspa(RaspaTool):
@@ -19,7 +19,7 @@ class ExecuteRaspa(RaspaTool):
         if out and isinstance(out, tuple):
             stdout, stderr = out
             return self.get_output(
-                content=f"<terminal_output>{out.__str__()}</terminal_output>\\n (IMPORTANT: new, empty working directory created! To rerun, you must create all input files again!)"
+                content=f"<terminal_output>{out.__str__()}</terminal_output>"
             )
         return self.get_output(e=out)
 
@@ -55,7 +55,8 @@ class ExecuteRaspa(RaspaTool):
         out = process.communicate()
         return out
 
-def execute_raspa(ctx: RunContext, simulation_name:str):
+
+def execute_raspa(ctx: RunContext, simulation_name: str):
     """Execute a RASPA simulation for a simulation."""
     path = os.path.join(ctx.deps["cwd"], simulation_name)
     return ExecuteRaspa(path=path).run()
@@ -63,9 +64,10 @@ def execute_raspa(ctx: RunContext, simulation_name:str):
 
 def run_command(ctx: RunContext, command: str):
     """Run an arbitrary shell command in the working directory (path) of the agent.
-    Provide a full command line string; it will be executed with the tool's path as the current working directory (cwd)."""
+    Provide a full command line string; it will be executed with the tool's path as the current working directory (cwd).
+    """
     try:
-        timeout = 1200 # 20 minutes
+        timeout = 1200  # 20 minutes
         work_dir = ctx.deps["cwd"]
         process = subprocess.Popen(
             command,
@@ -92,4 +94,3 @@ def run_command(ctx: RunContext, command: str):
         return stdout if stdout else "(No output)"
     except Exception as e:
         return f"Error executing command: {str(e)}"
-

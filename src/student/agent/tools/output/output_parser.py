@@ -82,17 +82,22 @@ def parse(raspa_output):
         A data structure generated from the RASPA file
     """
     # Reads the string into a newline-separated list, skipping useless lines
-    data = [row.strip() for row in raspa_output.splitlines() if row and
-            all(d not in row for d in ["-----", "+++++"])]
+    data = [
+        row.strip()
+        for row in raspa_output.splitlines()
+        if row and all(d not in row for d in ["-----", "+++++"])
+    ]
 
     # Generally, categories in the output are delimited by equal signs
-    delimiters = [i for i, row in enumerate(data) if "=====" in row
-                  and "Exclusion constraints energy" not in data[i - 1]]
+    delimiters = [
+        i
+        for i, row in enumerate(data)
+        if "=====" in row and "Exclusion constraints energy" not in data[i - 1]
+    ]
 
     # Append a row for "absolute adsorption:" and "excess adsorption:"
     # These values are separated into two rows
-    abs_adsorp_rows = [i for i, row in enumerate(data)
-                       if "absolute adsorption:" in row]
+    abs_adsorp_rows = [i for i, row in enumerate(data) if "absolute adsorption:" in row]
     for row in abs_adsorp_rows:
         data[row] += "  " + data[row + 1]
         data[row + 2] += data[row + 3]
@@ -100,22 +105,29 @@ def parse(raspa_output):
 
     # Use the delimiters to make a high-level dict. Title is row before
     # delimiter, and content is every row after delimiter, up to the next title
-    info = {data[n - 1].strip(":"): data[n + 1: delimiters[i + 1] - 1]
-            for i, n in enumerate(delimiters[:-1])}
+    info = {
+        data[n - 1].strip(":"): data[n + 1 : delimiters[i + 1] - 1]
+        for i, n in enumerate(delimiters[:-1])
+    }
 
     # Let's PARSE!
     for key, values in info.items():
         d, note_index = {}, 1
         for item in values:
             # Takes care of all "Blocks[ #]", skipping hard-to-parse parts
-            if ("Block" in item and "Box-lengths" not in key
-                    and "Van der Waals:" not in item):
+            if (
+                "Block" in item
+                and "Box-lengths" not in key
+                and "Van der Waals:" not in item
+            ):
                 blocks = _clean(item.split())
                 d["".join(blocks[:2])] = blocks[2:]
 
             # Most of the average data values are parsed in this section
-            elif (any(s in item for s in ["Average     ", "Surface area:"])
-                  and "desorption" not in key):
+            elif (
+                any(s in item for s in ["Average     ", "Surface area:"])
+                and "desorption" not in key
+            ):
                 average_data = _clean(item.split())
                 # Average values organized by its unit, many patterns here
                 if len(average_data) == 8:
@@ -150,13 +162,15 @@ def parse(raspa_output):
                     d[heat_desorp[-1]] = heat_desorp[0:3]
 
             # Parts where Van der Waals are included
-            elif ("Host-" in key or "-Cation" in key or
-                  "Adsorbate-Adsorbate" in key) and "desorption" not in key:
+            elif (
+                "Host-" in key or "-Cation" in key or "Adsorbate-Adsorbate" in key
+            ) and "desorption" not in key:
                 van_der = item.split()
                 # First Column
                 if "Block" in van_der[0]:
-                    sub_data = [_clean(s.split(":"))
-                                for s in re.split("\s{2,}", item)[1:]]
+                    sub_data = [
+                        _clean(s.split(":")) for s in re.split("\s{2,}", item)[1:]
+                    ]
                     sub_dict = {s[0]: s[1] for s in sub_data[:2]}
                     d["".join(van_der[:2])] = [float(van_der[2]), sub_dict]
                 # Average for each columns
@@ -186,8 +200,10 @@ def parse(raspa_output):
                 d["Henry"] = _clean(item.rsplit(" ", 5))[1:]
 
             # Ignore these
-            elif any(s in item for s in ["=====", "Starting simulation",
-                     "Finishing simulation"]):
+            elif any(
+                s in item
+                for s in ["=====", "Starting simulation", "Finishing simulation"]
+            ):
                 continue
 
             # Other strings
@@ -213,9 +229,9 @@ def _clean(split_list):
 
 
 if __name__ == "__main__":
-    import sys
     import json
+    import sys
+
     with open(sys.argv[-1]) as in_file:
         data = in_file.read()
-    print(json.dumps(parse(data), indent=4, sort_keys=True,
-                     separators=[",", ":"]))
+    print(json.dumps(parse(data), indent=4, sort_keys=True, separators=[",", ":"]))

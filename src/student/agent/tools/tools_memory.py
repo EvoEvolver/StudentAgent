@@ -1,14 +1,17 @@
-from typing import List, Dict
-from .tools import Tool
+from typing import Dict, List
+
+from mllm import Chat
+
 from ..memory import Memory, MemoryNode
 from ..utils import *
-from mllm import Chat
+from .tools import Tool
+
 
 class AddMemory(Tool):
 
     def __init__(self, memory: Memory):
         name = "add"
-        description="""
+        description = """
         Store new knowledge in your memory that you can later recall.
         IMPORTANT: DO NOT use without recalling relevant memory first.
 
@@ -16,7 +19,7 @@ class AddMemory(Tool):
         Split knowledge into its building blocks by adding multiple memory entries
         NEVER use a memory id as key or content
             <stimuli>
-            ALWAYS choose stimuli that allow robust retrieval. 
+            ALWAYS choose stimuli that allow robust retrieval.
             Stimuli can be one or multiple words. You can retrieve entries with less keys easier.
             The stimuli should be associated with the content of the entry.
             ALWAYS add abstract keywords to the stimuli.
@@ -37,10 +40,12 @@ class AddMemory(Tool):
         new_node = MemoryNode(content=content, keys=stimuli)
         self.memory.add(new_node)
         return new_node
-    
+
     def run(self, stimuli: list[str], content: str):
         if len(stimuli) == 0:
-            return self.get_output(e="Error during creation of new memory node. Maybe you forgot to include stimuli!")
+            return self.get_output(
+                e="Error during creation of new memory node. Maybe you forgot to include stimuli!"
+            )
         new_node = self._run(stimuli, content)
         return self.get_output(f"Added:\n\t{new_node.__str__()}\n")
 
@@ -54,8 +59,8 @@ class RecallMemory(Tool):
         ALWAYS add more specific keywords to target more specific knowledge
         AFTER recalling, extract new keywords from the content, especially highlighted as xml: <keyword/>
         """
-        #The sensitivity value [0,1] controls the memory search. A smaller value returns less strict matches and is therefore prefered such as 0.1
-        old="""
+        # The sensitivity value [0,1] controls the memory search. A smaller value returns less strict matches and is therefore prefered such as 0.1
+        old = """
             You must provide a list of search keywords and a sensitivity value (a float between 0 and 1) that controls how loosely related the results can be. 
             A higher sensitivity retrieves more results even if the match is weaker. 
             The tool returns up to 3 memory items that are most similar to the given stimuli. 
@@ -111,20 +116,26 @@ class ModifyMemory(Tool):
         super().__init__(name, description)
         self.memory = memory
 
-    def run(self, id: str, new_stimuli: List[str] = None, new_content: str = None, delete=False) -> None:
+    def run(
+        self,
+        id: str,
+        new_stimuli: List[str] = None,
+        new_content: str = None,
+        delete=False,
+    ) -> None:
         if delete is True:
             node = self.memory.delete_node(id)
             return self.get_output("Memory deleted.")
-        
+
         node, deleted = self.memory.modify(id, new_stimuli, new_content)
         if node is None:
             return self.get_output(e="No memory found to modify: Incorrect ID")
-        
+
         return self.get_output(f"Modified entry: \n\t{node.__str__()}")
 
 
 class ExtendedModifyMemory(ModifyMemory):
-    def __init__(self, memory:Memory, chat):
+    def __init__(self, memory: Memory, chat):
         super().__init__(memory)
         self.chat = chat
         self.description = """
@@ -137,7 +148,7 @@ class ExtendedModifyMemory(ModifyMemory):
         node = self.memory.get_node(id)
         if node is None:
             return self.get_output(e="No memory found to modify: Incorrect ID")
-        
+
         old_stimuli = node.keys
         old_content = node.content
 

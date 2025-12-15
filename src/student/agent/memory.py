@@ -332,8 +332,9 @@ class Memory:
 
         return formatted_pairs
 
-    def _create_memory_from_user_feedback(self, context: str, query: str, user_answer: str
-                                     ) -> str:
+    def _create_memory_from_user_feedback(
+        self, context: str, query: str, user_answer: str
+    ) -> str:
         """
         Create and store a memory based on user feedback using LLM to generate content.
 
@@ -367,7 +368,7 @@ Format it as a clear, concise paragraph that would be useful for an AI agent to 
 
             if memory_content:
                 # Store the generated memory
-                title = self.learn(memory_content.strip())
+                _ = self.learn(memory_content.strip())
                 return memory_content.strip()
 
         except Exception as e:

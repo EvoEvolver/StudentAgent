@@ -1,10 +1,10 @@
 import os
 
-from pydantic_ai import RunContext, Agent, Tool
+from pydantic_ai import Agent, RunContext, Tool
 
+from student.agent.tools.execute import run_command
 from student.agent.tools.file_overview import get_file_message
 from student.agent.tools.output_parser import OutputParser
-from student.agent.tools.execute import run_command
 
 
 def parse_output(ctx: RunContext, file_path: str):
@@ -28,7 +28,7 @@ class OutputExtractor(OutputParser):
             model="openai:gpt-5-mini",
             tools=[
                 Tool(run_command, takes_ctx=True),
-                Tool(parse_output, takes_ctx=True)
+                Tool(parse_output, takes_ctx=True),
             ],
             system_prompt=f"""
 You task is to extract specific information from a RASPA simulation output file based on the provided query.
@@ -37,7 +37,7 @@ output_parser tool can be used parse the output file and extract the relevant in
 If output_parser is not enough, you can use the run_command tool to read .data files with `grep` and `sed` because the file is too large to parse entirely.
 File tree of the working directory:
 {get_file_message(self.path, 3)}
-"""
+""",
         )
 
         res = agent.run_sync(query, deps={"cwd": self.path})
@@ -47,7 +47,7 @@ File tree of the working directory:
         return str(res.output)
 
 
-def output_extractor(ctx: RunContext, simulation_name: str, query: str)->str:
+def output_extractor(ctx: RunContext, simulation_name: str, query: str) -> str:
     """Use this tool to extraction information the raspa output files ending with .data. The query should be a natural language question about the output."""
-    path = os.path.join(ctx.deps["cwd"], simulation_name+"/Output")
+    path = os.path.join(ctx.deps["cwd"], simulation_name + "/Output")
     return OutputExtractor(path=path).run(query)

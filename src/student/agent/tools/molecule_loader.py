@@ -1,5 +1,5 @@
 import os
-from typing import Union, List
+from typing import List, Union
 
 from pydantic_ai import RunContext
 
@@ -81,7 +81,9 @@ The tool will automatically map common abbreviations to their proper names."""
         return self.get_output(content=response)
 
 
-def molecule_loader(ctx: RunContext, simulation_name: str, molecule_names: Union[List[str], str]):
+def molecule_loader(
+    ctx: RunContext, simulation_name: str, molecule_names: Union[List[str], str]
+):
     """Generate the molecule definition (input) files and the corresponding force field and pseudoatoms files.
     Accepts common molecule names and chemical formulas such as:
     - Simple formulas: CO2, N2, O2, CH4, H2O, NH3, Ar, Kr, Xe, He

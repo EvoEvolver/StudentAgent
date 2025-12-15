@@ -17,7 +17,9 @@ from pydantic_ai import (
     TextPartDelta,
     ThinkingPartDelta,
     Tool,
+    ToolCallPart,
     ToolCallPartDelta,
+    ToolReturnPart,
     UserPromptPart,
 )
 
@@ -56,7 +58,7 @@ class RaspaAgent:
             print("====== Current todo list in messages ======")
             print(self.todo_list)
             print("============================================")
-            return f"Todo list updated."
+            return "Todo list updated."
 
         def ask_human(ctx: RunContext, question: str):
             """Ask a human for help with a specific question."""

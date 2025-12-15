@@ -1,11 +1,10 @@
+import os
 import subprocess
 import traceback
 
 from pydantic_ai import RunContext
 
 from .tools import RaspaTool
-from ..utils import *
-
 
 
 class SystemAgent(RaspaTool):
@@ -35,34 +34,44 @@ class SystemAgent(RaspaTool):
             work_dir = self.get_path(full=True)
 
             print(f"[SystemAgent] Executing query in: {work_dir}")
-            print(f"[SystemAgent] Query: {query[:100]}..." if len(query) > 100 else f"[SystemAgent] Query: {query}")
+            print(
+                f"[SystemAgent] Query: {query[:100]}..."
+                if len(query) > 100
+                else f"[SystemAgent] Query: {query}"
+            )
 
             # Execute claude command with the query
             # IMPORTANT: Close stdin to prevent child process from waiting for input
             process = subprocess.Popen(
-                ['claude', '--dangerously-skip-permissions', '-p', query],
+                ["claude", "--dangerously-skip-permissions", "-p", query],
                 cwd=work_dir,
                 text=True,
                 stdin=subprocess.DEVNULL,  # Close stdin to prevent hanging
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 bufsize=0,  # Unbuffered
-                universal_newlines=True
+                universal_newlines=True,
             )
 
-            print(f"[SystemAgent] Process started (PID: {process.pid}), waiting up to {timeout}s...")
+            print(
+                f"[SystemAgent] Process started (PID: {process.pid}), waiting up to {timeout}s..."
+            )
 
             try:
                 stdout, stderr = process.communicate(timeout=timeout)
             except subprocess.TimeoutExpired:
-                print(f"[SystemAgent] Process timed out after {timeout}s, terminating...")
+                print(
+                    f"[SystemAgent] Process timed out after {timeout}s, terminating..."
+                )
                 process.kill()
                 stdout, stderr = process.communicate()
                 return self.get_output(
                     e=f"Command timed out after {timeout} seconds.\nPartial stdout: {stdout[:500]}\nPartial stderr: {stderr[:500]}"
                 )
 
-            print(f"[SystemAgent] Process completed with return code: {process.returncode}")
+            print(
+                f"[SystemAgent] Process completed with return code: {process.returncode}"
+            )
 
             if process.returncode != 0:
                 error_msg = f"Command failed with return code {process.returncode}"
@@ -77,9 +86,12 @@ class SystemAgent(RaspaTool):
 
         except FileNotFoundError:
             return self.get_output(
-                e="Claude CLI not found. Please ensure 'claude' command is installed and available in PATH.")
+                e="Claude CLI not found. Please ensure 'claude' command is installed and available in PATH."
+            )
         except Exception as e:
-            return self.get_output(e=f"Error executing system agent: {str(e)}\n{traceback.format_exc()}")
+            return self.get_output(
+                e=f"Error executing system agent: {str(e)}\n{traceback.format_exc()}"
+            )
 
 
 class ReportToHuman(RaspaTool):
@@ -126,12 +138,14 @@ class ReportToHuman(RaspaTool):
         except Exception as e:
             return self.get_output(e=f"Error generating markdown report: {str(e)}")
 
+
 def report_to_human(ctx: RunContext, report_content: str):
     """
     Use this tool to report to human your result in markdown when you finished or failed your task.
     """
     path = ctx.deps["cwd"]
     return ReportToHuman(path=path).run(report_content)
+
 
 class AskHuman(RaspaTool):
     """Tool to ask questions to a human user via console input."""
@@ -183,6 +197,7 @@ def ask_human(ctx: RunContext, question: str):
     """
     return AskHuman().run(question)
 
+
 class ImageQuestionTool(RaspaTool):
     """Tool to ask questions about images using OpenAI's vision API."""
 
@@ -201,11 +216,14 @@ class ImageQuestionTool(RaspaTool):
         """Initialize OpenAI client for vision API."""
         try:
             from openai import OpenAI
+
             self.client = OpenAI()
             self.vision_model = "gpt-4o"
         except ImportError:
             self.client = None
-            print("Warning: OpenAI package not found. Image question tool will not work.")
+            print(
+                "Warning: OpenAI package not found. Image question tool will not work."
+            )
 
     def run(self, query: str, image_path: str):
         """
@@ -219,7 +237,9 @@ class ImageQuestionTool(RaspaTool):
             The answer from the vision model
         """
         if self.client is None:
-            return self.get_output(e="OpenAI client not initialized. Please install openai package.")
+            return self.get_output(
+                e="OpenAI client not initialized. Please install openai package."
+            )
 
         try:
             import base64
@@ -230,7 +250,9 @@ class ImageQuestionTool(RaspaTool):
                 full_image_path = os.path.join(self.get_path(full=True), image_path)
                 if not os.path.exists(full_image_path):
                     # Try relative to base path
-                    full_image_path = os.path.join(self.get_path(full=False), image_path)
+                    full_image_path = os.path.join(
+                        self.get_path(full=False), image_path
+                    )
                     if not os.path.exists(full_image_path):
                         # Try as-is
                         full_image_path = image_path
@@ -243,20 +265,22 @@ class ImageQuestionTool(RaspaTool):
 
             # Read and encode image
             with open(full_image_path, "rb") as image_file:
-                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+                image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
             # Determine image format from file extension
             ext = os.path.splitext(full_image_path)[1].lower()
             mime_types = {
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.webp': 'image/webp'
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".gif": "image/gif",
+                ".webp": "image/webp",
             }
 
             if ext not in mime_types:
-                return self.get_output(e=f"Unsupported image format: {ext}. Supported: {list(mime_types.keys())}")
+                return self.get_output(
+                    e=f"Unsupported image format: {ext}. Supported: {list(mime_types.keys())}"
+                )
 
             mime_type = mime_types[ext]
 
@@ -267,20 +291,17 @@ class ImageQuestionTool(RaspaTool):
                     {
                         "role": "user",
                         "content": [
-                            {
-                                "type": "text",
-                                "text": query
-                            },
+                            {"type": "text", "text": query},
                             {
                                 "type": "image_url",
                                 "image_url": {
                                     "url": f"data:{mime_type};base64,{image_data}"
-                                }
-                            }
-                        ]
+                                },
+                            },
+                        ],
                     }
                 ],
-                max_tokens=1000
+                max_tokens=1000,
             )
 
             answer = response.choices[0].message.content.strip()

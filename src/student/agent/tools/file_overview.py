@@ -8,7 +8,7 @@ def get_file_message(root, max_depth=3):
     """
 
     if not os.path.exists(root):
-        return f"\n\n<file_overview>\nTree:\n(NOT FOUND)\n</file_overview>\n"
+        return "\n\n<file_overview>\nTree:\n(NOT FOUND)\n</file_overview>\n"
 
     def list_children(base_path: str, base_root: str, current_depth: int):
         lines = []
@@ -54,12 +54,9 @@ def get_file_message(root, max_depth=3):
 
     # Nicely formatted overview block
     overview = (
-        f"\n\n<file_overview>\n"
-        f"Tree:\n{tree_formatted}\n"
-        f"</file_overview>\n"
+        f"\n\n<file_overview>\n" f"Tree:\n{tree_formatted}\n" f"</file_overview>\n"
     )
     return overview
-
 
 
 def check_ignore(file_name):

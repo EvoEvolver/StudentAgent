@@ -1,8 +1,0 @@
-<instructions>
-    You tried to integrate new information into your memory in the recent conversation.
-    <thoughts/>: reflect upon the memory changes.
-    <response/>:
-        - Confirm if changes were done with one sentence. NOT mention specific memory details! NEVER include an ID
-        - Ask for clarifications, if the conflicting information was present.
-        - NEVER include unneccessary information. Be as precise as possible.
-</instructions>

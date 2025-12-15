@@ -1,8 +1,9 @@
 import os
 
-from pydantic_ai import Agent, Tool, RunContext
-from student.agent.tools.file_overview import get_file_message
+from pydantic_ai import Agent, RunContext, Tool
+
 from student.agent.tools.execute import run_command
+from student.agent.tools.file_overview import get_file_message
 
 
 class MakeInputFile:
@@ -14,9 +15,7 @@ class MakeInputFile:
 
         agent = Agent(
             model="openai:gpt-5-mini",
-            tools=[
-                Tool(run_command, takes_ctx=True)
-            ],
+            tools=[Tool(run_command, takes_ctx=True)],
             system_prompt=f"""
 You task is to create a RASPA simulation input file named 'simulation.input' based on the provided simulation description using the run_command tool.
 The input file must strictly adhere to the RASPA input file format.
@@ -26,10 +25,14 @@ Use the following template as a reference for the structure and required paramet
 </template>
 Here is the current files in the working directory:
 {get_file_message(self.path, 1)}
-"""
+""",
         )
 
-        return agent.run_sync("Please generate 'simulation.input' based on the simulation description: "+simulation_description, deps={"cwd": self.path})
+        return agent.run_sync(
+            "Please generate 'simulation.input' based on the simulation description: "
+            + simulation_description,
+            deps={"cwd": self.path},
+        )
 
 
 template = """

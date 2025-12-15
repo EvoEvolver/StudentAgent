@@ -15,7 +15,7 @@ class FrameworkLoader(RaspaTool):
 
     def __init__(self, path=None, coremof=True, csd_path="CSD-modified/", cutoff=14.0):
         name = "framework_loader"
-        description = """Load a framework file as framework.cif"""
+        description = "Load a framework file as framework.cif (dont use for a simulation in an empty box!)"
         super().__init__(name, description, path)
         self.has_file = False
         self.output_file = "framework.cif"
