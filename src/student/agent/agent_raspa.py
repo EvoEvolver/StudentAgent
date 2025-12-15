@@ -1,16 +1,34 @@
-import os, re
+import os
+import re
 from typing import List
 
-from pydantic_ai import Tool, AgentRunResultEvent, ModelMessage, ModelRequest, UserPromptPart
+from pydantic_ai import (
+    Agent,
+    AgentRunResultEvent,
+    AgentStreamEvent,
+    FinalResultEvent,
+    FunctionToolCallEvent,
+    FunctionToolResultEvent,
+    ModelMessage,
+    ModelRequest,
+    PartDeltaEvent,
+    PartStartEvent,
+    RunContext,
+    TextPartDelta,
+    ThinkingPartDelta,
+    Tool,
+    ToolCallPartDelta,
+    UserPromptPart,
+)
 
 from .agent_memory_helper import MemoryHelperAgent
 from .memory import Memory
+from .tools.execute import execute_raspa, run_command
 from .tools.file_overview import get_file_message
 from .tools.framework_loader import FrameworkLoader
+from .tools.make_input_file import call_input_file_agent
 from .tools.molecule_loader import molecule_loader
 from .tools.output_extractor import output_extractor
-from .tools.execute import execute_raspa, run_command
-from .tools.make_input_file import call_input_file_agent
 
 
 class RaspaAgent:
@@ -23,10 +41,14 @@ class RaspaAgent:
         if self.csd_path is None:
             print("A CSD path is required to access the coremof files.")
 
-        def framework_loader(ctx: RunContext, simulation_name: str, framework_name: str):
+        def framework_loader(
+            ctx: RunContext, simulation_name: str, framework_name: str
+        ):
             """Load a framework file as framework.cif in the agent's working directory."""
             path = os.path.join(ctx.deps["cwd"], simulation_name)
-            return FrameworkLoader(path=path, coremof=False, csd_path=self.csd_path).run(framework_name)
+            return FrameworkLoader(
+                path=path, coremof=False, csd_path=self.csd_path
+            ).run(framework_name)
 
         def update_todo_list(ctx: RunContext, todo_list: str):
             """Update the agent's todo list."""
@@ -45,7 +67,9 @@ class RaspaAgent:
             answer = input("Please provide your input: ")
             if answer.strip().lower() in ["no", "skip"]:
                 return "No input provided by human."
-            context = "The agent is at the current todo list:\n" + self.todo_list + "\n---"
+            context = (
+                "The agent is at the current todo list:\n" + self.todo_list + "\n---"
+            )
             self.memory._create_memory_from_user_feedback(context, question, answer)
             return answer
 
@@ -56,7 +80,7 @@ class RaspaAgent:
             call_input_file_agent,
             run_command,
             output_extractor,
-            update_todo_list
+            update_todo_list,
         ]
 
         if self.ask_human:
@@ -66,13 +90,13 @@ class RaspaAgent:
         return pydantic_tools
 
     def __init__(
-            self,
-            path="output",
-            model_name="openai:gpt-5-mini",
-            memory_path=None,
-            csd_path=None,
-            ask_human=False,
-            retrieve_memory=False,
+        self,
+        path="output",
+        model_name="openai:gpt-5-mini",
+        memory_path=None,
+        csd_path=None,
+        ask_human=False,
+        retrieve_memory=False,
     ):
         self.csd_path = csd_path
         self.ask_human = ask_human
@@ -98,12 +122,17 @@ class RaspaAgent:
         current_file_overview = get_file_message(self.path, 3)
         self.todo_list = ""
 
-        def add_todo_list_to_message(ctx: RunContext[None], messages: list[ModelMessage]) -> list[ModelMessage]:
+        def add_todo_list_to_message(
+            ctx: RunContext[None], messages: list[ModelMessage]
+        ) -> list[ModelMessage]:
             new_messages = messages.copy()
             # find and delete existing todo list message
             if new_messages:
                 for i, message in enumerate(new_messages):
-                    if message.metadata and message.metadata.get("type") == "memory_retrieval":
+                    if (
+                        message.metadata
+                        and message.metadata.get("type") == "memory_retrieval"
+                    ):
                         del new_messages[i]
                         break
             # find all the tool calls that update the todo list and delete them except the last one
@@ -117,7 +146,7 @@ class RaspaAgent:
                 for index in reversed(indices_to_delete[:-1]):
                     del new_messages[index]
             next_todo = ""
-            if self.todo_list=="":
+            if self.todo_list == "":
                 next_todo = query
             else:
                 todos = extract_tasks_from_markdown(self.todo_list)
@@ -127,10 +156,11 @@ class RaspaAgent:
             if self.retrieve_memory and next_todo:
                 memory_in_prompt = self.retrieve(next_todo)
                 if memory_in_prompt:
-                    memory_message = ModelRequest(parts=[UserPromptPart(memory_in_prompt)])
+                    memory_message = ModelRequest(
+                        parts=[UserPromptPart(memory_in_prompt)]
+                    )
                     memory_message.metadata = {"type": "memory_retrieval"}
                     new_messages.append(memory_message)
-
 
             current_tokens = ctx.usage.total_tokens
             if current_tokens > 10000:
@@ -142,7 +172,7 @@ class RaspaAgent:
             tools=self.make_tools(),
             system_prompt=system_prompt_v2 + current_file_overview,
             model=self.model_name,
-            history_processors=[add_todo_list_to_message]
+            history_processors=[add_todo_list_to_message],
         )
         async for event in agent.run_stream_events(query, deps={"cwd": self.path}):
             if isinstance(event, AgentRunResultEvent):
@@ -158,11 +188,11 @@ class RaspaAgent:
         items = self.memory.retrieve(query, top_k=3)
         if len(items) == 0:
             return ""
-        prompt =f"""
-Potentially relevant information from your memory:
-{''.join(['- ' + item.content + '\\n' for item in items])}
-----
-"""
+        prompt = (
+            "Potentially relevant information from your memory:"
+            + "".join(["- " + item.content + "\\n" for item in items])
+            + "\n----\n"
+        )
         print(prompt)
         return prompt
 
@@ -175,12 +205,13 @@ def extract_tasks_from_markdown(markdown_todo: str) -> List[str]:
     for line in lines:
         line = line.strip()
         # Match markdown checkbox format: - [ ] not - [x]
-        #match = re.match(r"^-\s*\[\s*[x ]?\s*\]\s*(.+)$", line)
+        # match = re.match(r"^-\s*\[\s*[x ]?\s*\]\s*(.+)$", line)
         match = re.match(r"^-\s*\[\s*\]\s*(.+)$", line)
         if match:
             tasks.append(match.group(1).strip())
 
     return tasks
+
 
 system_prompt_v2 = """
 You specialize to assist with RASPA simulations.
@@ -191,34 +222,27 @@ The input generation tools will generate files in the folder with the simulation
 For a typical RASPA simulation, you need to create a framework file, a molecule file, and an input file.
 """
 output_messages: list[str] = []
-from pydantic_ai import (
-    Agent,
-    AgentStreamEvent,
-    FinalResultEvent,
-    FunctionToolCallEvent,
-    FunctionToolResultEvent,
-    PartDeltaEvent,
-    PartStartEvent,
-    RunContext,
-    TextPartDelta,
-    ThinkingPartDelta,
-    ToolCallPartDelta,
-)
+
+
 async def handle_event(event: AgentStreamEvent):
     if isinstance(event, PartStartEvent):
-        print(f'[Request] Starting part {event.index}: {event.part!r}')
+        print(f"[Request] Starting part {event.index}: {event.part!r}")
     elif isinstance(event, PartDeltaEvent):
         if isinstance(event.delta, TextPartDelta):
-            print(f'{event.delta.content_delta}', end='', flush=True)
+            print(f"{event.delta.content_delta}", end="", flush=True)
         elif isinstance(event.delta, ThinkingPartDelta):
-            print(f'{event.delta.content_delta}', end='', flush=True)
+            print(f"{event.delta.content_delta}", end="", flush=True)
         elif isinstance(event.delta, ToolCallPartDelta):
-            print(f'{event.delta.args_delta}', end='', flush=True)
+            print(f"{event.delta.args_delta}", end="", flush=True)
     elif isinstance(event, FunctionToolCallEvent):
         print(
-            f'[Tools] The LLM calls tool={event.part.tool_name!r} with args={event.part.args} (tool_call_id={event.part.tool_call_id!r})'
+            f"[Tools] The LLM calls tool={event.part.tool_name!r} with args={event.part.args} (tool_call_id={event.part.tool_call_id!r})"
         )
     elif isinstance(event, FunctionToolResultEvent):
-        print(f'[Tools] Tool call {event.tool_call_id!r} returned => {event.result.content}')
+        print(
+            f"[Tools] Tool call {event.tool_call_id!r} returned => {event.result.content}"
+        )
     elif isinstance(event, FinalResultEvent):
-        print(f'[Result] The model starting producing a final result (tool_name={event.tool_name})')
+        print(
+            f"[Result] The model starting producing a final result (tool_name={event.tool_name})"
+        )
