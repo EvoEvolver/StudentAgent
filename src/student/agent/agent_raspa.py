@@ -1,7 +1,8 @@
 import os, re
 from typing import List
 
-from pydantic_ai import Tool, AgentRunResultEvent, ModelMessage, ModelRequest, UserPromptPart
+from pydantic_ai import Tool, AgentRunResultEvent, ModelMessage, ModelRequest, UserPromptPart, ToolCallPart, \
+    ToolReturnPart
 
 from .agent_memory_helper import MemoryHelperAgent
 from .memory import Memory
@@ -34,7 +35,7 @@ class RaspaAgent:
             print("====== Current todo list in messages ======")
             print(self.todo_list)
             print("============================================")
-            return f"Todo list updated to: {self.todo_list}"
+            return f"Todo list updated."
 
         def ask_human(ctx: RunContext, question: str):
             """Ask a human for help with a specific question."""
@@ -100,6 +101,8 @@ class RaspaAgent:
 
         def add_todo_list_to_message(ctx: RunContext[None], messages: list[ModelMessage]) -> list[ModelMessage]:
             new_messages = messages.copy()
+            if len(new_messages) < 3:
+                return new_messages
             # find and delete existing todo list message
             if new_messages:
                 for i, message in enumerate(new_messages):
@@ -110,12 +113,24 @@ class RaspaAgent:
             if new_messages:
                 indices_to_delete = []
                 for i, message in enumerate(new_messages):
-                    if message.metadata and message.metadata.get("type") == "tool_call":
-                        tool_name = message.metadata.get("tool_name")
-                        if tool_name == "update_todo_list":
-                            indices_to_delete.append(i)
+                    if message.kind == "response":
+                        for part in message.parts:
+                            if isinstance(part, ToolCallPart):
+                                if part.tool_name == "update_todo_list":
+                                    indices_to_delete.append(i)
                 for index in reversed(indices_to_delete[:-1]):
                     del new_messages[index]
+
+                indices_to_delete = []
+                for i, message in enumerate(new_messages):
+                    if message.kind == "request":
+                        for part in message.parts:
+                            if isinstance(part, ToolReturnPart):
+                                if part.tool_name == "update_todo_list":
+                                    indices_to_delete.append(i)
+                for index in reversed(indices_to_delete[:-1]):
+                    del new_messages[index]
+
             next_todo = ""
             if self.todo_list=="":
                 next_todo = query
@@ -133,8 +148,15 @@ class RaspaAgent:
 
 
             current_tokens = ctx.usage.total_tokens
-            if current_tokens > 10000:
-                new_messages = new_messages[-20:]
+            if current_tokens > 10000 and len(new_messages)>25:
+                # keep the first message (system prompt) and the last 20 messages
+                new_messages = new_messages[:1] + new_messages[-20:]
+
+            for message in new_messages:
+                #print(message.kind)
+                for p in message.parts:
+                    #print(p)
+                    ...
 
             return new_messages
 
