@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from mllm import Chat
-
 if TYPE_CHECKING:
     from .agent_memory_helper import MemoryHelperAgent
 

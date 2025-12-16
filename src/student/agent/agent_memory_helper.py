@@ -18,7 +18,7 @@ from .agent import Agent
 class MemoryHelperAgent(Agent):
     """
     Specialized agent for handling LLM operations in hierarchical memory.
-    Uses the existing Agent infrastructure for provider abstraction and logging.
+    Uses the pydantic-ai based Agent infrastructure for provider abstraction and logging.
     """
 
     def __init__(
@@ -30,15 +30,13 @@ class MemoryHelperAgent(Agent):
         verbose: bool = False,
     ):
         super().__init__(
-            tools={},
-            cache=cache,
-            expensive=expensive,
+            tools=[],  # No tools needed for memory helper
+            system_prompt="You are a helpful assistant for memory management operations.",
             provider=provider,
+            expensive=expensive,
+            cache=cache,
             logger=logger,
             verbose=verbose,
-        )
-        self.reset_system_prompt(
-            "You are a helpful assistant for memory management operations."
         )
 
     def generate_title(self, content: str, existing_titles: List[str] = None) -> str:
@@ -207,7 +205,7 @@ If a memory doesn't fit into any pair, you can omit it or create a single-item p
 
 Return ONLY the JSON object, no other text."""
 
-        result = self.single_run(prompt, expensive=self.expensive, parse="dict")
+        result = self.single_run(prompt, expensive=self.expensive)
 
         try:
             # Parse the JSON response

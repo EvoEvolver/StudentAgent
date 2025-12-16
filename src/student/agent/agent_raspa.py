@@ -24,6 +24,8 @@ from pydantic_ai import (
 )
 
 from .agent_memory_helper import MemoryHelperAgent
+from .event_logger import EventLogger
+from .logger import Logger
 from .memory import Memory
 from .tools.execute import execute_raspa, run_command
 from .tools.file_overview import get_file_message
@@ -99,13 +101,26 @@ class RaspaAgent:
         csd_path=None,
         ask_human=False,
         retrieve_memory=False,
+        logger: Logger = None,
+        verbose: bool = True,
     ):
         self.csd_path = csd_path
         self.ask_human = ask_human
         self.retrieve_memory = retrieve_memory
         self.path = path
         self.model_name = model_name
-        self.verbose = True
+        self.verbose = verbose
+
+        # Setup logger
+        self.logger = logger
+        if self.logger is None:
+            import os
+            from datetime import datetime
+            log_dir = os.path.join(os.getcwd(), "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            log_file = os.path.join(log_dir, f"raspa_agent_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            self.logger = Logger(file=log_file, format="json", auto_load=False)
+
         self.initialize_memory(memory_path)
 
     def initialize_memory(self, memory_path):
@@ -197,7 +212,20 @@ class RaspaAgent:
             model=self.model_name,
             history_processors=[add_todo_list_to_message],
         )
+
+        # Create event logger for better logging integration
+        event_logger = EventLogger(
+            logger=self.logger,
+            agent_id=f"raspa_agent_{id(self)}",
+            agent_type="RaspaAgent",
+            model_name=self.model_name,
+            verbose=self.verbose,
+        )
+
         async for event in agent.run_stream_events(query, deps={"cwd": self.path}):
+            # Log the event
+            event_logger.log_event(event)
+
             if isinstance(event, AgentRunResultEvent):
                 return {event.result.output}
             else:

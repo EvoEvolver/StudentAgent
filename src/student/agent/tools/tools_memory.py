@@ -1,8 +1,6 @@
 from typing import Dict, List
 
-from mllm import Chat
-
-from ..memory import Memory, MemoryNode
+from ..memory import Memory
 from ..utils import *
 from .tools import Tool
 

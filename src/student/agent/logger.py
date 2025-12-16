@@ -16,7 +16,6 @@ class LogEntry:
     timestamp: str
     agent_id: str
     agent_type: str
-    model: str
     event_type: str  # "llm_call", "tool_call", "error", "info"
     input_data: Optional[Any] = None
     output_data: Optional[Any] = None
@@ -93,7 +92,6 @@ class Logger:
         self,
         agent_id: str,
         agent_type: str,
-        model: str,
         input_messages: List[Dict[str, Any]],
         output_message: Dict[str, Any],
         metadata: Optional[Dict[str, Any]] = None,
@@ -104,7 +102,6 @@ class Logger:
         Args:
             agent_id: Unique identifier for the agent instance
             agent_type: Type of agent (e.g., "StudentAgent", "RaspaAgent")
-            model: Model name (e.g., "gpt-4", "claude-sonnet-4")
             input_messages: List of input messages sent to LLM
             output_message: Response from LLM
             metadata: Additional info (token counts, temperature, etc.)
@@ -113,7 +110,6 @@ class Logger:
             timestamp=datetime.now().isoformat(),
             agent_id=agent_id,
             agent_type=agent_type,
-            model=model,
             event_type="llm_call",
             input_data=input_messages,
             output_data=output_message,
@@ -145,7 +141,6 @@ class Logger:
             timestamp=datetime.now().isoformat(),
             agent_id=agent_id,
             agent_type=agent_type,
-            model="N/A",
             event_type="tool_call",
             input_data={"tool": tool_name, "parameters": tool_input},
             output_data=tool_output,
@@ -175,7 +170,6 @@ class Logger:
             timestamp=datetime.now().isoformat(),
             agent_id=agent_id,
             agent_type=agent_type,
-            model="N/A",
             event_type="error",
             input_data={"error_type": error_type},
             output_data=error_message,
@@ -203,7 +197,6 @@ class Logger:
             timestamp=datetime.now().isoformat(),
             agent_id=agent_id,
             agent_type=agent_type,
-            model="N/A",
             event_type="info",
             input_data=None,
             output_data=message,
@@ -226,7 +219,7 @@ class Logger:
         lines = [
             f"{'='*80}",
             f"[{entry.timestamp}] {entry.agent_type} ({entry.agent_id})",
-            f"Event: {entry.event_type.upper()} | Model: {entry.model}",
+            f"Event: {entry.event_type.upper()}",
             "",
         ]
 
@@ -298,7 +291,6 @@ class Logger:
             "agent_id": agent_id,
             "total_events": len(entries),
             "event_counts": {},
-            "models_used": set(),
             "total_tokens": 0,
             "errors": 0,
         }
@@ -309,10 +301,6 @@ class Logger:
                 summary["event_counts"].get(entry.event_type, 0) + 1
             )
 
-            # Track models
-            if entry.model != "N/A":
-                summary["models_used"].add(entry.model)
-
             # Sum tokens if available
             if entry.metadata and "tokens" in entry.metadata:
                 summary["total_tokens"] += entry.metadata["tokens"]
@@ -321,7 +309,6 @@ class Logger:
             if entry.event_type == "error":
                 summary["errors"] += 1
 
-        summary["models_used"] = list(summary["models_used"])
         return summary
 
     def export_to_json(self, output_file: str):
