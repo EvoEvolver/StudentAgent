@@ -196,7 +196,8 @@ class RaspaAgent:
             current_tokens = ctx.usage.total_tokens
             if current_tokens > 10000 and len(new_messages) > 25:
                 # keep the first message (system prompt) and the last 20 messages
-                new_messages = new_messages[:1] + new_messages[-20:]
+                # new_messages = new_messages[:1] + new_messages[-20:]
+                ...
 
             for message in new_messages:
                 # print(message.kind)
