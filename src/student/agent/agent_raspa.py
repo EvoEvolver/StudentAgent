@@ -219,12 +219,13 @@ class RaspaAgent:
         )
 
         # Create event logger for better logging integration
+        # Note: verbose=False since handle_event already handles console output
         event_logger = EventLogger(
             logger=self.logger,
             agent_id=f"raspa_agent_{id(self)}",
             agent_type="RaspaAgent",
             model_name=self.model_name,
-            verbose=self.verbose,
+            verbose=False,  # Don't print here, handle_event does the printing
         )
         event_logger.set_input_prompt(query)
 
