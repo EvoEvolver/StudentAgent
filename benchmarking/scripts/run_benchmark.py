@@ -84,11 +84,14 @@ async def run_task_i(
     Parameters:
     i (int): The index of the task to run from the RASPA tasks list.
     agent_params (dict): Configuration parameters for the agent.
+        Supported keys: path, model_name, memory_path, csd_path, ask_human,
+        retrieve_memory, logger, verbose
     give_hint (bool): Whether to provide a hint to the agent.
     single (bool): Whether to use single-framework tasks or multi-framework tasks.
+    variant_index (int): Which variant of the task to use.
 
     Returns:
-    The result of the task execution.
+    The result of the task execution and the agent.
     """
     # Load the RASPA benchmark tasks
     raspa_tasks_path = os.path.join(
@@ -107,21 +110,19 @@ async def run_task_i(
             f"Task index {i} is out of range. Available tasks: {len(raspa_tasks)}"
         )
 
-    task = raspa_tasks[i]
-    task_name = task[0]
+    # task = raspa_tasks[i]
+    # task_name = task[0]
 
     # Adjust path for this specific task
     base_path = agent_params.get("path", "output/raspa_benchmark/")
-    task_path = os.path.join(base_path, f"task_{i}_{task_name}/")
+    # task_path = os.path.join(base_path, f"task_{i}_{task_name}/")
 
     # Create a copy of params to avoid side effects
     current_agent_params = agent_params.copy()
-    current_agent_params["path"] = task_path
+    current_agent_params["path"] = base_path
 
     agent = RaspaAgent(**current_agent_params)
     result = await run_task(agent, task, give_hint=give_hint, single=single)
-
-    # TODO: save agent state
 
     return result, agent
 
