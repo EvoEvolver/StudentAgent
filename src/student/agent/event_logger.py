@@ -37,6 +37,7 @@ class EventLogger:
         agent_id: str,
         agent_type: str,
         verbose: bool = False,
+        model_name: str = None,
     ):
         """
         Initialize event logger.
@@ -46,15 +47,22 @@ class EventLogger:
             agent_id: Unique agent identifier
             agent_type: Type of agent (class name)
             verbose: Whether to print events to console
+            model_name: Model name for logging
         """
         self.logger = logger
         self.agent_id = agent_id
         self.agent_type = agent_type
         self.verbose = verbose
+        self.model_name = model_name
 
         # Track events for aggregation
         self.current_text_parts = []
         self.tool_calls = {}
+        self.input_prompt = None  # Track the input prompt
+
+    def set_input_prompt(self, prompt: str):
+        """Set the input prompt for logging."""
+        self.input_prompt = prompt
 
     def log_event(self, event: AgentStreamEvent):
         """
@@ -208,10 +216,16 @@ class EventLogger:
                 "total_tokens": usage.total_tokens,
             }
 
+        # Build input messages from tracked prompt
+        input_messages = []
+        if self.input_prompt:
+            input_messages.append({"role": "user", "content": self.input_prompt})
+
         self.logger.log_llm_call(
             agent_id=self.agent_id,
             agent_type=self.agent_type,
-            input_messages=[],  # Would need to be passed from context
+            model=self.model_name or "unknown",
+            input_messages=input_messages,
             output_message={
                 "content": str(event.result.output),
                 "full_text": full_text,
@@ -222,6 +236,7 @@ class EventLogger:
         # Reset accumulators
         self.current_text_parts = []
         self.tool_calls = {}
+        self.input_prompt = None
 
 
 async def log_stream_events(
@@ -230,6 +245,8 @@ async def log_stream_events(
     agent_id: str,
     agent_type: str,
     verbose: bool = False,
+    model_name: str = None,
+    input_prompt: str = None,
 ):
     """
     Async generator that logs all events from a pydantic-ai stream.
@@ -240,11 +257,15 @@ async def log_stream_events(
         agent_id: Agent identifier
         agent_type: Agent type name
         verbose: Whether to print to console
+        model_name: Model name for logging
+        input_prompt: The input prompt to log
 
     Yields:
         Original stream events
     """
-    event_logger = EventLogger(logger, agent_id, agent_type, verbose)
+    event_logger = EventLogger(logger, agent_id, agent_type, verbose, model_name)
+    if input_prompt:
+        event_logger.set_input_prompt(input_prompt)
 
     async for event in stream:
         event_logger.log_event(event)

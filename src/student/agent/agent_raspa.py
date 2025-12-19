@@ -116,9 +116,12 @@ class RaspaAgent:
         if self.logger is None:
             import os
             from datetime import datetime
+
             log_dir = os.path.join(os.getcwd(), "logs")
             os.makedirs(log_dir, exist_ok=True)
-            log_file = os.path.join(log_dir, f"raspa_agent_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            log_file = os.path.join(
+                log_dir, f"raspa_agent_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            )
             self.logger = Logger(file=log_file, format="json", auto_load=False)
 
         self.initialize_memory(memory_path)
@@ -129,6 +132,7 @@ class RaspaAgent:
             verbose=self.verbose,
             expensive=False,
             cache=True,
+            logger=self.logger,
         )
         memory = Memory._load_from_file(memory_path) if memory_path else Memory("root")
         memory.set_helper_agent(self.memory_agent)
@@ -222,6 +226,7 @@ class RaspaAgent:
             model_name=self.model_name,
             verbose=self.verbose,
         )
+        event_logger.set_input_prompt(query)
 
         async for event in agent.run_stream_events(query, deps={"cwd": self.path}):
             # Log the event

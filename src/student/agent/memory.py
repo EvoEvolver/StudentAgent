@@ -361,8 +361,10 @@ Create a comprehensive memory entry that includes:
 
 Format it as a clear, concise paragraph that would be useful for an AI agent to reference in the future.
 """
-            chat = Chat(user_message=memory_generation_prompt)
-            memory_content = chat.complete("gpt-5-mini")
+            helper_agent = self._get_helper_agent()
+            memory_content = helper_agent.single_run(
+                memory_generation_prompt, expensive=helper_agent.expensive
+            )
 
             if memory_content:
                 # Store the generated memory
