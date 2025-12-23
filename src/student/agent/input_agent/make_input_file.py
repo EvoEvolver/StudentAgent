@@ -1,9 +1,42 @@
 import os
+import asyncio
 
 from pydantic_ai import Agent, RunContext, Tool
 
 from student.agent.tools.execute import run_command
 from student.agent.tools.file_overview import get_file_message
+from student.agent.reader_agent.agentic_reader import agentic_reader, AgenticReaderOptions, agentic_reader_with_events
+
+
+def read_documentation(ctx: RunContext, question: str) -> str:
+    """Read and query the RASPA input file documentation using an agentic reader.
+
+    Args:
+        ctx: The run context containing dependencies
+        question: The question to ask about the documentation
+
+    Returns:
+        The answer from the documentation
+    """
+    # Get the path to input_files.tex (in the same directory as this file)
+    doc_path = os.path.join(os.path.dirname(__file__), "input_files.tex")
+
+    try:
+        # Read the documentation file
+        with open(doc_path, "r") as f:
+            tex_content = f.read()
+
+        # Use agentic reader to answer the question
+        print("Agentic started solveing documentation question...")
+        print("Question:", question)
+        options = AgenticReaderOptions(max_iterations=5, model="openai:gpt-5-mini")
+        result = asyncio.run(agentic_reader_with_events(question, tex_content, emit_event=lambda _, data: print(data), options=options))
+        print("Agentic reader result:", result)
+        return result
+    except FileNotFoundError:
+        return f"Documentation file not found at {doc_path}"
+    except Exception as e:
+        return f"Error reading documentation: {str(e)}"
 
 
 class MakeInputFile:
@@ -15,7 +48,10 @@ class MakeInputFile:
 
         agent = Agent(
             model="openai:gpt-5-mini",
-            tools=[Tool(run_command, takes_ctx=True)],
+            tools=[
+                Tool(run_command, takes_ctx=True),
+                Tool(read_documentation, takes_ctx=True)
+            ],
             system_prompt=f"""
 You task is to create a RASPA simulation input file named 'simulation.input' based on the provided simulation description using the run_command tool.
 The input file must strictly adhere to the RASPA input file format.
@@ -23,6 +59,9 @@ Use the following template as a reference for the structure and required paramet
 <template>
 {template}
 </template>
+
+If you need additional information about RASPA input file format, parameters, or examples, use the read_documentation tool to query the documentation.
+
 Here is the current files in the working directory:
 {get_file_message(self.path, 1)}
 """,

@@ -18,8 +18,7 @@ agent = RaspaAgent(model_name="openai:gpt-5-mini", path=working_path, retrieve_m
 reply: Set[str] = asyncio.run(agent.run("""
 Use RASPA2 to calculate the Henry’s coefficient of Methane in IRMOF-1 at 298 K using the Widom insertion method.
 Given:
-                                 
-
+              
 Framework: IRMOF-1
 Adsorbate: Methane (CH4)
 Temperature: 298 K
