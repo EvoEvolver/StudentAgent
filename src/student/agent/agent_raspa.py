@@ -219,7 +219,6 @@ class RaspaAgent:
         )
 
         # Create event logger for better logging integration
-        # Note: verbose=False since handle_event already handles console output
         event_logger = EventLogger(
             logger=self.logger,
             agent_id=f"raspa_agent_{id(self)}",
