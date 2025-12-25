@@ -16,7 +16,7 @@ from student.agent.tools.execute import (
     ReadFile,
     WriteFile,
 )
-from student.agent.tools.make_input_file import MakeInputFile
+from student.agent.input_agent.make_input_file import MakeInputFile
 from student.agent.tools.molecule_loader import MoleculeLoader
 from student.agent.tools.framework_loader import FrameworkLoader
 from student.agent.tools.output_extractor import OutputExtractor

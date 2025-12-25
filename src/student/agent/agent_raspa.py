@@ -27,10 +27,10 @@ from .agent_memory_helper import MemoryHelperAgent
 from .event_logger import EventLogger
 from .logger import Logger
 from .memory import Memory
-from .tools.execute import execute_raspa, run_command
+from .tools.execute import execute_raspa, run_command, execute_python_script
 from .tools.file_overview import get_file_message
 from .tools.framework_loader import FrameworkLoader
-from .tools.make_input_file import call_input_file_agent
+from student.agent.input_agent.make_input_file import call_input_file_agent
 from .tools.molecule_loader import molecule_loader
 from .tools.output_extractor import output_extractor
 
@@ -82,6 +82,7 @@ class RaspaAgent:
             molecule_loader,
             execute_raspa,
             call_input_file_agent,
+            execute_python_script,
             run_command,
             output_extractor,
             update_todo_list,
